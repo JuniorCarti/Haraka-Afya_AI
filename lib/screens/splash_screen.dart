@@ -24,34 +24,55 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 24, 182, 24), // Green theme color
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Replace with your logo asset
-            SvgPicture.asset(
-              'assets/logo.png',
-              width: 150,
-              height: 150,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Haraka-Afya',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
+      backgroundColor: const Color(0xFF18B618), // Consistent green
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo Section
+              Container(
+                padding: const EdgeInsets.all(24.0),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+                child: SvgPicture.asset(
+                  'assets/logo.png',
+                  width: 120,
+                  height: 120,
+                  placeholderBuilder: (context) =>
+                      const CircularProgressIndicator(color: Colors.white),
+                ),
               ),
-            ),
-            const Text(
-              'AI Health Companion',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 18,
+              const SizedBox(height: 24),
+
+              // Title Text
+              const Text(
+                'Haraka-Afya',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
               ),
-            ),
-          ],
+
+              // Subtitle
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 12.0),
+                child: Text(
+                  'Your AI Health Companion',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
