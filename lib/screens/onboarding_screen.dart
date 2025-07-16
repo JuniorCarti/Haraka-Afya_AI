@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:haraka_afya_ai/screens/name_input_screen.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'home_screen.dart';
 
 class OnboardingScreens extends StatefulWidget {
   const OnboardingScreens({super.key});
@@ -13,6 +12,7 @@ class OnboardingScreens extends StatefulWidget {
 class _OnboardingScreensState extends State<OnboardingScreens> {
   final PageController _controller = PageController();
   int _currentPage = 0;
+  final Color _primaryColor = const Color(0xFF0C6D5B); // Brand green color
 
   final List<Map<String, dynamic>> _onboardingData = [
     {
@@ -72,23 +72,30 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
             },
           ),
           
-          // Skip Button (positioned top-right)
+          // Sleek Skip Button
           Positioned(
-            top: 50,
+            top: MediaQuery.of(context).padding.top + 20,
             right: 20,
-            child: TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const NameInputScreen()),
-                );
-              },
-              child: const Text(
-                'SKIP',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NameInputScreen()),
+                  );
+                },
+                child: const Text(
+                  'SKIP',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
             ),
@@ -96,7 +103,7 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
           
           // Page Indicator
           Positioned(
-            bottom: 100,
+            bottom: 120, // Increased from 100 to prevent overlap
             left: 0,
             right: 0,
             child: Center(
@@ -106,8 +113,8 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
                 effect: const WormEffect(
                   activeDotColor: Colors.white,
                   dotColor: Colors.white54,
-                  dotHeight: 10,
-                  dotWidth: 10,
+                  dotHeight: 8,
+                  dotWidth: 8,
                 ),
               ),
             ),
@@ -125,6 +132,7 @@ class OnboardingPage extends StatelessWidget {
   final String buttonText;
   final bool isLastPage;
   final Color bgColor;
+  final Color _primaryColor = const Color(0xFF0C6D5B);
 
   const OnboardingPage({
     super.key,
@@ -155,7 +163,7 @@ class OnboardingPage extends StatelessWidget {
         
         // Content
         Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,7 +178,7 @@ class OnboardingPage extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               
               Text(
                 description,
@@ -183,6 +191,7 @@ class OnboardingPage extends StatelessWidget {
               
               const SizedBox(height: 40),
               
+              // Fixed button with proper spacing
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -204,21 +213,21 @@ class OnboardingPage extends StatelessWidget {
                     backgroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(12), // More modern 12px radius
                     ),
+                    elevation: 2,
                   ),
                   child: Text(
                     buttonText,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
-                      color: Colors.black,
+                      color: _primaryColor, // Using brand color for text
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 20),
+              const SizedBox(height: 20), // Added extra spacing
             ],
           ),
         ),
