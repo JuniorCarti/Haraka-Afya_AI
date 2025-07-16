@@ -1,6 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'onboarding_screen.dart'; // We'll create this next
+import 'package:flutter_svg/flutter_svg.dart';
+import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,11 +13,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-navigate to onboarding after 3 seconds
-    Timer(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 2), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        MaterialPageRoute(builder: (context) => const OnboardingScreens()),
       );
     });
   }
@@ -25,15 +24,16 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF24C26B), // Bright green background
+      backgroundColor: const Color(0xFF0C6D5B), // Green theme color
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.favorite,
-              color: Colors.white,
-              size: 80,
+            // Replace with your logo asset
+            SvgPicture.asset(
+              'assets/logo.svg',
+              width: 150,
+              height: 150,
             ),
             const SizedBox(height: 20),
             const Text(
@@ -50,10 +50,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.white70,
                 fontSize: 18,
               ),
-            ),
-            const SizedBox(height: 30),
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ],
         ),
