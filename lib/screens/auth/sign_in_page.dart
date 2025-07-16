@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:haraka_afya_ai/screens/auth/reset_password_page.dart';
 import 'package:haraka_afya_ai/screens/name_input_screen.dart';
 
@@ -211,23 +210,23 @@ class _SignInPageState extends State<SignInPage> {
                 _buildDivider(),
                 const SizedBox(height: 30),
 
-                // Social Login Buttons
+                // Social Login Buttons with PNG icons
                 _buildSocialButton(
-                  icon: FontAwesomeIcons.google,
+                  iconPath: 'assets/icons/google.png',
                   text: 'Continue with Google',
                   color: Colors.red,
                   onPressed: _handleGoogleSignIn,
                 ),
                 const SizedBox(height: 12),
                 _buildSocialButton(
-                  icon: FontAwesomeIcons.facebookF,
+                  iconPath: 'assets/icons/facebook.png',
                   text: 'Continue with Facebook',
                   color: Colors.blue,
                   onPressed: _handleFacebookSignIn,
                 ),
                 const SizedBox(height: 12),
                 _buildSocialButton(
-                  icon: FontAwesomeIcons.xTwitter,
+                  iconPath: 'assets/icons/twitter.png',
                   text: 'Continue with X',
                   color: Colors.black,
                   onPressed: _handleTwitterSignIn,
@@ -286,7 +285,7 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Widget _buildSocialButton({
-    required IconData icon,
+    required String iconPath,
     required String text,
     required Color color,
     required VoidCallback onPressed,
@@ -304,7 +303,11 @@ class _SignInPageState extends State<SignInPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 20),
+          Image.asset(
+            iconPath,
+            width: 20,
+            height: 20,
+          ),
           const SizedBox(width: 12),
           Text(
             text,
