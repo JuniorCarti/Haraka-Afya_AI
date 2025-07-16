@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:haraka_afya_ai/screens/auth/create_password_screen.dart';
+import 'sign_in_page.dart'; // Make sure to import your SignInPage
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -47,7 +48,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               Center(
                 child: SmoothPageIndicator(
                   controller: _pageController,
-                  count: 4, // Updated to match total steps (name, email, password, complete)
+                  count: 4,
                   effect: WormEffect(
                     activeDotColor: _primaryColor,
                     dotColor: Colors.grey,
@@ -141,11 +142,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
               const SizedBox(height: 30),
 
-              // Sign In Option
+              // Sign In Option - Now functional
               Center(
                 child: TextButton(
                   onPressed: () {
-                    // Navigate to sign in screen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignInPage(),
+                      ),
+                    );
                   },
                   child: RichText(
                     text: TextSpan(
