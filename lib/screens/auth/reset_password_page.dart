@@ -6,7 +6,7 @@ class ResetPasswordPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color primaryColor = const Color(0xFF0C6D5B);
-    final Color backgroundColor = const Color(0xFFF5F5F5);
+    final Color backgroundColor = const Color(0xFFfcfcf5);
 
     return Scaffold(
       backgroundColor: backgroundColor,

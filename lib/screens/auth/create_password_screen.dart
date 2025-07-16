@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:haraka_afya_ai/screens/home_screen.dart';
 import 'package:haraka_afya_ai/screens/auth/email_verification_screen.dart';
+import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart'; // Import the sign-in page
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CreatePasswordScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   final Color _primaryColor = const Color(0xFF0C6D5B);
-  final Color _backgroundColor = const Color(0xFFF5F5F5);
+  final Color _backgroundColor = const Color(0xFFfcfcf5);
 
   @override
   void dispose() {
@@ -56,7 +57,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
               Center(
                 child: SmoothPageIndicator(
                   controller: _pageController,
-                  count: 4, // Total onboarding steps
+                  count: 4,
                   effect: WormEffect(
                     activeDotColor: _primaryColor,
                     dotColor: Colors.grey,
@@ -71,17 +72,19 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
               // Header
               Text(
                 "Create a password",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: _primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: _primaryColor,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 "Make it secure and memorable",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black54,
-                    ),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade600,
+                ),
               ),
               const SizedBox(height: 40),
               
@@ -176,11 +179,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     // Create Account Button
                     SizedBox(
                       width: double.infinity,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _primaryColor,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -197,7 +200,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                             : const Text(
                                 'Create Account',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -209,18 +212,24 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
               ),
               const SizedBox(height: 30),
               
-              // Sign In Option
+              // Sign In Option - Updated with navigation
               Center(
                 child: TextButton(
                   onPressed: () {
-                    // Navigate to sign in screen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignInPage(),
+                      ),
+                    );
                   },
                   child: RichText(
                     text: TextSpan(
                       text: 'Already have an account? ',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black54,
-                          ),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
                       children: [
                         TextSpan(
                           text: 'Sign In',
@@ -262,10 +271,6 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   }
 
   Future<void> _createAccount() async {
-    // Here you would:
-    // 1. Combine all collected data (name, email, password)
-    // 2. Send to your backend API
-    // 3. Handle the response
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network call
+    await Future.delayed(const Duration(seconds: 1));
   }
 }

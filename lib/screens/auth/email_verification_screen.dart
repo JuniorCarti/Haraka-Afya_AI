@@ -16,7 +16,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   final _pageController = PageController();
   bool _isLoading = false;
   final Color _primaryColor = const Color(0xFF0C6D5B);
-  final Color _backgroundColor = const Color(0xFFF5F5F5);
+  final Color _backgroundColor = const Color(0xFFfcfcf5);
 
   @override
   void dispose() {
