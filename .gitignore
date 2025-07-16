@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Add to .gitignore
+android/app/google-services.json
+firebase.json
+
