@@ -1,21 +1,71 @@
-<<<<<<< HEAD
-# haraka_afya_ai
+# Haraka Afya AI 🚑🧠
 
-A new Flutter project.
+**Haraka Afya AI** is a mobile-first health companion app built with **Flutter** and **Firebase**, tailored for underserved Kenyan communities.  
+It delivers AI-powered emergency help, first aid guidance, civic health education (SHA), and offline support — all in **Swahili**, **Sheng**, and **English**.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🩺 Key Features
 
-A few resources to get you started if this is your first Flutter project:
+- 🧠 **AI-Powered voice assistant** for emergency health support
+- 📍 **Traffic-aware hospital routing** via Google Maps
+- 📶 **Offline fallback via SMS**
+- 🗣️ **Multilingual support** (English, Swahili, Sheng)
+- 🧾 **Civic education on health & sanitation (SHA)**
+- 🔥 **Firebase integration** for:
+  - Authentication
+  - Cloud Firestore for health content
+  - Analytics & crash tracking
+  - Optional: Cloud Messaging for alerts
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
-# Haraka-Afya_AI
-Haraka-Afya AI is a mobile-first health companion built for underserved Kenyan communities. It delivers AI-powered first aid, SHA civic health education, and emergency help — in Swahili, Sheng, and even offline.
->>>>>>> 675f074bdef7a2bc46361bbeb85df079dcbbe84a
+## 🚀 Tech Stack
+
+- **Flutter** (Dart)
+- **Firebase** (Auth, Firestore, Analytics, etc.)
+- **Google Maps API**
+- **Text-to-Speech (TTS)**
+- **Provider** for state management
+- **SMS** for offline fallback
+
+---
+
+## 📦 Getting Started
+
+### Prerequisites
+
+- Flutter SDK installed
+- Firebase CLI configured
+- Emulator/device connected
+
+### Installation
+
+```bash
+git clone https://github.com/JuniorCarti/Haraka-Afya_AI.git
+cd Haraka-Afya_AI
+flutter pub get
+````
+
+### Run the App
+
+```bash
+flutter run
+```
+
+---
+## 🤝 Contributing
+
+Contributions are welcome! If you'd like to suggest a feature or fix a bug, feel free to open an issue or a pull request.
+
+---
+
+## 📜 License
+
+MIT License
+
+---
+
+> Built with ❤️ in Nairobi 🇰🇪 by [JuniorCarti](https://github.com/JuniorCarti)
+
+
