@@ -18,21 +18,21 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
       'title': 'AI-Powered Health Analysis',
       'description':
           'Get instant health insights powered by advanced AI technology. Describe your symptoms in English, Swahili, or Sheng.',
-      'image': 'assets/onboarding1.png',
+      'image': 'assets/onboarding1.jpg',
       'buttonText': 'Continue',
     },
     {
       'title': 'Instant Healthcare Access',
       'description':
           'Connect with healthcare providers instantly. Find nearby hospitals, clinics, and emergency services in real-time.',
-      'image': 'assets/onboarding2.png',
+      'image': 'assets/onboarding2.jpg',
       'buttonText': 'Continue',
     },
     {
       'title': '24/7 Health Support',
       'description':
           'Your health companion is always available. Get medical guidance, track symptoms, and stay informed about your wellness.',
-      'image': 'assets/onboarding3.png',
+      'image': 'assets/onboarding3.jpg',
       'buttonText': 'Get Started',
     },
   ];
