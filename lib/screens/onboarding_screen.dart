@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:haraka_afya_ai/screens/name_input_screen.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'home_screen.dart';
 
@@ -79,7 +80,7 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  MaterialPageRoute(builder: (context) => const NameInputScreen()),
                 );
               },
               child: const Text(
@@ -189,7 +190,7 @@ class OnboardingPage extends StatelessWidget {
                     if (isLastPage) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        MaterialPageRoute(builder: (context) => const NameInputScreen()),
                       );
                     } else {
                       final onboardingState = context.findAncestorStateOfType<_OnboardingScreensState>();
