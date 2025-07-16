@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import 'package:haraka_afya_ai/screens/auth/email_verification_screen.dart';
 import 'package:haraka_afya_ai/screens/home_screen.dart';
 import 'package:haraka_afya_ai/screens/onboarding_screen.dart';
@@ -19,14 +18,17 @@ class _NameInputScreenState extends State<NameInputScreen> {
   final _firstNameController = TextEditingController();
   final _pageController = PageController();
   bool _isLoading = false;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
   final Color _primaryColor = const Color(0xFF0C6D5B);
   final Color _backgroundColor = const Color(0xFFfcfcf5);
+  final Color _cardColor = Colors.white;
 
   @override
   void dispose() {
     _firstNameController.dispose();
     _pageController.dispose();
+    _googleSignIn.disconnect();
     super.dispose();
   }
 
@@ -40,12 +42,10 @@ class _NameInputScreenState extends State<NameInputScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: _primaryColor),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const OnboardingScreens()),
-            );
-          },
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingScreens()),
+          ),
         ),
       ),
       body: SafeArea(
@@ -58,7 +58,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
                 count: 3,
                 effect: WormEffect(
                   activeDotColor: _primaryColor,
-                  dotColor: Colors.grey,
+                  dotColor: Colors.grey.shade300,
                   dotHeight: 10,
                   dotWidth: 10,
                   spacing: 8,
@@ -72,7 +72,6 @@ class _NameInputScreenState extends State<NameInputScreen> {
               _buildDivider(),
               const SizedBox(height: 30),
 
-              // Social Login Buttons with PNG icons
               _buildSocialButton(
                 iconPath: 'assets/icons/google.png',
                 text: 'Continue with Google',
@@ -108,50 +107,64 @@ class _NameInputScreenState extends State<NameInputScreen> {
         children: [
           Text(
             "What's your name?",
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: _primaryColor,
+            style: TextStyle(
+              fontSize: 28,
               fontWeight: FontWeight.bold,
+              color: _primaryColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             "We'll use this to personalize your experience",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black54,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 40),
-          TextFormField(
-            controller: _firstNameController,
-            decoration: InputDecoration(
-              labelText: 'First Name',
-              prefixIcon: Icon(Icons.person_outline, color: _primaryColor),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: _cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Please enter your first name';
-              }
-              return null;
-            },
+            child: TextFormField(
+              controller: _firstNameController,
+              decoration: InputDecoration(
+                labelText: 'First Name',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                prefixIcon: Icon(Icons.person_outline, color: _primaryColor),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 16, horizontal: 16,
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your first name';
+                }
+                return null;
+              },
+            ),
           ),
           const SizedBox(height: 30),
           SizedBox(
             width: double.infinity,
+            height: 50,
             child: ElevatedButton(
               onPressed: _submitForm,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+                elevation: 0,
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -165,7 +178,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
                   : const Text(
                       'Continue',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -180,12 +193,28 @@ class _NameInputScreenState extends State<NameInputScreen> {
   Widget _buildDivider() {
     return Row(
       children: [
-        const Expanded(child: Divider(color: Colors.grey)),
+        Expanded(
+          child: Divider(
+            color: Colors.grey.shade300,
+            thickness: 1,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text('OR', style: TextStyle(color: Colors.grey)),
+          child: Text(
+            'OR',
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 14,
+            ),
+          ),
         ),
-        const Expanded(child: Divider(color: Colors.grey)),
+        Expanded(
+          child: Divider(
+            color: Colors.grey.shade300,
+            thickness: 1,
+          ),
+        ),
       ],
     );
   }
@@ -196,30 +225,48 @@ class _NameInputScreenState extends State<NameInputScreen> {
     required Color color,
     required VoidCallback onPressed,
   }) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: color,
-        side: BorderSide(color: color),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            iconPath,
-            width: 20,
-            height: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+    return Container(
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          side: BorderSide(color: Colors.grey.shade200),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: _cardColor,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              iconPath,
+              width: 20,
+              height: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -250,66 +297,78 @@ class _NameInputScreenState extends State<NameInputScreen> {
   Future<void> _handleGoogleSignIn() async {
     try {
       setState(() => _isLoading = true);
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
+      
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
+      final GoogleSignInAuthentication googleAuth = 
+          await googleUser.authentication;
+      
+      final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      final UserCredential userCredential = 
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() => _isLoading = false);
+      String errorMessage = 'Google sign-in failed';
+      
+      if (e.code == 'account-exists-with-different-credential') {
+        errorMessage = 'Account exists with different sign-in method';
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = 'Invalid credentials';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 4),
+        ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in failed: $e')),
-      );
-    } finally {
       setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error during Google sign-in: ${e.toString()}'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
   Future<void> _handleFacebookSignIn() async {
     try {
       setState(() => _isLoading = true);
-      // Implement Facebook login here
-      // You'll need the flutter_facebook_auth package
-      // final LoginResult result = await FacebookAuth.instance.login();
-      // final OAuthCredential credential = FacebookAuthProvider.credential(result.accessToken!.token);
-      // await FirebaseAuth.instance.signInWithCredential(credential);
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen());
+      // Implement Facebook login
     } catch (e) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Facebook sign-in failed: $e')),
       );
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _handleTwitterSignIn() async {
     try {
       setState(() => _isLoading = true);
-      // Implement Twitter/X login here
-      // You'll need the twitter_login package
-      // final twitterLogin = TwitterLogin(apiKey: 'YOUR_API_KEY', apiSecretKey: 'YOUR_API_SECRET');
-      // final authResult = await twitterLogin.login();
-      // final credential = TwitterAuthProvider.credential(
-      //   accessToken: authResult.authToken!,
-      //   secret: authResult.authTokenSecret!,
-      // );
-      // await FirebaseAuth.instance.signInWithCredential(credential);
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen());
+      // Implement Twitter login
     } catch (e) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Twitter sign-in failed: $e')),
       );
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 }
