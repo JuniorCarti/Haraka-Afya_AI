@@ -24,14 +24,14 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0C6D5B), // Green theme color
+      backgroundColor: const Color.fromARGB(255, 24, 182, 24), // Green theme color
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Replace with your logo asset
             SvgPicture.asset(
-              'assets/logo.svg',
+              'assets/logo.png',
               width: 150,
               height: 150,
             ),
