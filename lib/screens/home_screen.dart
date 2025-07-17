@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// Main App Pages
+import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
 import 'package:haraka_afya_ai/features/hospitals_page.dart';
@@ -17,12 +16,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Get personalized greeting based on time and user name
   String _getGreeting(String? displayName) {
     final hour = DateTime.now().hour;
     final name = displayName?.split(' ')[0] ?? 'there';
-    
     return hour < 12 ? 'Good Morning, $name!'
          : hour < 17 ? 'Good Afternoon, $name!'
          : 'Good Evening, $name!';
@@ -40,9 +38,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final greeting = _getGreeting(user?.displayName);
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
       body: PageView(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // Disable swipe
+        physics: const NeverScrollableScrollPhysics(),
         children: const [
           HomeContent(),
           LearnPage(),
@@ -61,8 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
       type: BottomNavigationBarType.fixed,
       selectedItemColor: const Color(0xFF0C6D5B),
       unselectedItemColor: Colors.grey,
-      showSelectedLabels: true,
-      showUnselectedLabels: true,
       onTap: (index) {
         setState(() => _currentIndex = index);
         _pageController.jumpToPage(index);
@@ -103,58 +101,212 @@ class HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final displayName = user?.displayName ?? '';
+    return CustomScrollView(
+      slivers: [
+        // Sticky header with hamburger menu
+        SliverAppBar(
+          pinned: true,
+          floating: true,
+          snap: false,
+          title: const Text(
+            'Health Education',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+          backgroundColor: Colors.white,
+          elevation: 1,
+        ),
+        
+        // Main content
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Greeting Section
+                _buildGreetingSection(context),
+                const SizedBox(height: 24),
+                
+                // AI Assistant Card
+                _buildAIAssistantCard(),
+                const SizedBox(height: 24),
+                
+                // Emergency Services
+                _buildEmergencyCard(),
+                const SizedBox(height: 24),
+                
+                // Symptom Checker
+                _buildSymptomChecker(),
+                const SizedBox(height: 24),
+                
+                // Health Overview
+                _buildHealthOverview(),
+                const SizedBox(height: 24),
+                
+                // Health Articles Section
+                _buildHealthArticlesSection(),
+                const SizedBox(height: 24),
+                
+                // Quick Actions Grid
+                _buildQuickActionsGrid(),
+                const SizedBox(height: 24),
+                
+                // Health Tools
+                _buildHealthTools(),
+                const SizedBox(height: 24),
+                
+                // Health Tips
+                _buildHealthTips(),
+                const SizedBox(height: 24),
+                
+                // Medication Reminder
+                _buildMedicationReminder(),
+                const SizedBox(height: 24),
+                
+                // Premium Upgrade
+                _buildPremiumUpgrade(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Greeting Section
-          _buildGreetingSection(context, displayName),
-          const SizedBox(height: 24),
-          
-          // AI Assistant Card
-          _buildAIAssistantCard(),
-          const SizedBox(height: 24),
-          
-          // Emergency Services
-          _buildEmergencyCard(),
-          const SizedBox(height: 24),
-          
-          // Symptom Checker
-          _buildSymptomChecker(),
-          const SizedBox(height: 24),
-          
-          // Health Overview
-          _buildHealthOverview(),
-          const SizedBox(height: 24),
-          
-          // Quick Actions Grid
-          _buildQuickActionsGrid(),
-          const SizedBox(height: 24),
-          
-          // Health Tools
-          _buildHealthTools(),
-          const SizedBox(height: 24),
-          
-          // Health Tips
-          _buildHealthTips(),
-          const SizedBox(height: 24),
-          
-          // Medication Reminder
-          _buildMedicationReminder(),
-          const SizedBox(height: 24),
-          
-          // Premium Upgrade
-          _buildPremiumUpgrade(),
-        ],
+  Widget _buildHealthArticlesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Health Articles',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildArticleCard(
+          title: 'Understanding Malaria',
+          description: 'Essential tips for protecting yourself and your family from malaria',
+          author: 'Dr. Sarah Wanjiku',
+          readTime: '5 min read • 2 days ago',
+        ),
+        const SizedBox(height: 16),
+        _buildArticleCard(
+          title: 'Healthy Eating on a Budget',
+          description: 'How to maintain a nutritious diet without breaking the bank',
+          author: 'Nutritionist Mary Kibet',
+          readTime: '8 min read • 1 week ago',
+        ),
+        const SizedBox(height: 16),
+        _buildArticleCard(
+          title: 'Managing Stress in Urban Kenya',
+          description: 'Practical strategies for mental wellness in busy city life',
+          author: 'Dr. James Mwanqi',
+          readTime: '6 min read • 3 days ago',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArticleCard({
+    required String title,
+    required String description,
+    required String author,
+    required String readTime,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              author,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              readTime,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildGreetingSection(BuildContext context, String displayName) {
+  Widget _buildPremiumUpgrade() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Upgrade to Premium',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Unlock advanced features and personalized health insights.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () {},
+                child: const Text('Upgrade'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreetingSection(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = user?.displayName ?? '';
     final hour = DateTime.now().hour;
     String greeting;
     
@@ -200,19 +352,28 @@ class HomeContent extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.chat, color: Colors.green),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Need help? Chat with our AI assistant anytime!',
-                style: TextStyle(fontWeight: FontWeight.w500),
+            const Text(
+              'Haraka-Afya Support',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.arrow_forward, color: Colors.green),
-              onPressed: () {},
+            const SizedBox(height: 8),
+            const Text(
+              'Need help? Chat with our AI assistant anytime!',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {},
+              ),
             ),
           ],
         ),
@@ -226,25 +387,30 @@ class HomeContent extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      color: Colors.red[50],
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.warning, color: Colors.red),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Emergency: Call 911 for severe symptoms',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w500,
-                ),
+            const Text(
+              'Emergency Services',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.arrow_forward, color: Colors.red),
-              onPressed: () {},
+            const SizedBox(height: 8),
+            const Text(
+              'Multiple hospitals • Real-time ambulance tracking',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {},
+              ),
             ),
           ],
         ),
@@ -263,7 +429,7 @@ class HomeContent extends StatelessWidget {
         child: Column(
           children: [
             const Text(
-              'Tell me your symptoms',
+              'Hujambo! Tell me your symptoms',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -282,17 +448,16 @@ class HomeContent extends StatelessWidget {
                   icon: const Icon(Icons.keyboard),
                   label: const Text('Type'),
                   onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.blue,
-                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             const Text(
-              'Available in multiple languages',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              'Available in Swahili, English, Sheng, Luo, Kikuyu & Luhya',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
             ),
           ],
         ),
@@ -301,62 +466,39 @@ class HomeContent extends StatelessWidget {
   }
 
   Widget _buildHealthOverview() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(
-          title: 'Health Overview',
-          actionText: 'View All',
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHealthMetric(
-              value: '72 bpm',
-              label: 'Heart Rate',
-              icon: Icons.favorite,
-              color: Colors.red,
+            const Text(
+              'Health Overview',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            _buildHealthMetric(
-              value: '36.5°C',
-              label: 'Temperature',
-              icon: Icons.thermostat,
-              color: Colors.orange,
+            const SizedBox(height: 8),
+            const Text(
+              'Track your health metrics and get personalized insights.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {},
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        const Text(
-          'Last checked 2 days ago',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHealthMetric({
-    required String value,
-    required String label,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, size: 40, color: color),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14),
-        ),
-      ],
+      ),
     );
   }
 
@@ -364,194 +506,119 @@ class HomeContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'Quick Actions'),
-        const SizedBox(height: 12),
+        const Text(
+          'Quick Actions',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
         GridView.count(
+          crossAxisCount: 3,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          childAspectRatio: 1.5,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
           children: [
-            _buildQuickAction(
-              icon: Icons.search,
-              label: 'Check Symptoms',
-              color: Colors.blue,
-            ),
-            _buildQuickAction(
-              icon: Icons.local_hospital,
-              label: 'Find Hospitals',
-              color: Colors.green,
-            ),
-            _buildQuickAction(
-              icon: Icons.lightbulb,
-              label: 'Health Tips',
-              color: Colors.orange,
-            ),
-            _buildQuickAction(
-              icon: Icons.emergency,
-              label: 'Emergency',
-              color: Colors.red,
-            ),
+            _buildQuickActionItem(Icons.health_and_safety, 'Health Tips'),
+            _buildQuickActionItem(Icons.local_hospital, 'Hospitals'),
+            _buildQuickActionItem(Icons.medical_services, 'Symptoms'),
+            _buildQuickActionItem(Icons.school, 'Learn'),
+            _buildQuickActionItem(Icons.notifications, 'Alerts'),
+            _buildQuickActionItem(Icons.settings, 'Settings'),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildQuickAction({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
+  Widget _buildQuickActionItem(IconData icon, String label) {
     return Card(
-      elevation: 2,
+      elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 30, color: color),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 32, color: Colors.teal),
+            const SizedBox(height: 8),
+            Text(label, textAlign: TextAlign.center),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildHealthTools() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: 'Health Tools'),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 120,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildHealthTool(
-                icon: Icons.book,
-                label: 'Medical Dictionary',
-                description: '500+ terms explained',
-                color: Colors.purple,
-              ),
-              const SizedBox(width: 12),
-              _buildHealthTool(
-                icon: Icons.notifications,
-                label: 'Medication Reminders',
-                description: 'Track your medications',
-                color: Colors.blue,
-              ),
-              const SizedBox(width: 12),
-              _buildHealthTool(
-                icon: Icons.people,
-                label: 'Health Community',
-                description: 'Connect with others',
-                color: Colors.green,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHealthTool({
-    required IconData icon,
-    required String label,
-    required String description,
-    required Color color,
-  }) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: SizedBox(
-          width: 160,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 30, color: color),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Health Tools',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: const TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'BMI calculator, step tracker, and more.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {},
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildHealthTips() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(
-          title: "Today's Health Tips",
-          actionText: 'View More',
-        ),
-        const SizedBox(height: 12),
-        Column(
-          children: [
-            _buildHealthTip(
-              tip: '1. Stay hydrated - aim for 8 glasses of water daily',
-            ),
-            const SizedBox(height: 8),
-            _buildHealthTip(
-              tip: '2. Take a 10-minute walk after meals',
-            ),
-            const SizedBox(height: 8),
-            _buildHealthTip(
-              tip: '3. Practice deep breathing for 5 minutes',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHealthTip({required String tip}) {
     return Card(
-      elevation: 1,
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.lightbulb_outline, color: Colors.green, size: 20),
-            const SizedBox(width: 8),
-            Expanded(child: Text(tip)),
+            const Text(
+              'Health Tips',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Daily tips to keep you healthy and fit.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {},
+              ),
+            ),
           ],
         ),
       ),
@@ -566,111 +633,32 @@ class HomeContent extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.medical_services, color: Colors.blue, size: 40),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Medication Reminder',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text('Vitamin D'),
-                  Text('Take with breakfast'),
-                ],
+            const Text(
+              'Medication Reminder',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Column(
-              children: [
-                const Text('9:00 AM'),
-                Switch(value: true, onChanged: (val) {}),
-              ],
+            const SizedBox(height: 8),
+            const Text(
+              'Set reminders for your medications and never miss a dose.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.alarm),
+                onPressed: () {},
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPremiumUpgrade() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      color: const Color(0xFF0C6D5B),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Icon(Icons.star, color: Colors.white, size: 40),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Upgrade to Premium',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'Unlimited AI consultations & more features',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF0C6D5B),
-              ),
-              child: const Text('Upgrade'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SectionHeader extends StatelessWidget {
-  final String title;
-  final String? actionText;
-  final VoidCallback? onAction;
-
-  const SectionHeader({
-    super.key,
-    required this.title,
-    this.actionText,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        if (actionText != null)
-          TextButton(
-            onPressed: onAction,
-            child: Text(actionText!),
-          ),
-      ],
     );
   }
 }
