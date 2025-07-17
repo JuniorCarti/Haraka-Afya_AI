@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:haraka_afya_ai/screens/name_input_screen.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
@@ -47,6 +48,15 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
     super.dispose();
   }
 
+  Future<void> _completeOnboarding() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboardingComplete', true);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const NameInputScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,26 +78,23 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
                 buttonText: _onboardingData[index]['buttonText']!,
                 isLastPage: index == _onboardingData.length - 1,
                 bgColor: _onboardingData[index]['bgColor']!,
+                onComplete: _completeOnboarding,
+                controller: _controller,
               );
             },
           ),
-          
-          // Sleek Skip Button
+
+          // Skip Button
           Positioned(
             top: MediaQuery.of(context).padding.top + 20,
             right: 20,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(15),
               ),
               child: TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const NameInputScreen()),
-                  );
-                },
+                onPressed: _completeOnboarding,
                 child: const Text(
                   'SKIP',
                   style: TextStyle(
@@ -100,10 +107,10 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
               ),
             ),
           ),
-          
+
           // Page Indicator
           Positioned(
-            bottom: 120, // Increased from 100 to prevent overlap
+            bottom: 120, // Raised above button area
             left: 0,
             right: 0,
             child: Center(
@@ -132,6 +139,8 @@ class OnboardingPage extends StatelessWidget {
   final String buttonText;
   final bool isLastPage;
   final Color bgColor;
+  final VoidCallback onComplete;
+  final PageController controller;
   final Color _primaryColor = const Color(0xFF0C6D5B);
 
   const OnboardingPage({
@@ -142,26 +151,25 @@ class OnboardingPage extends StatelessWidget {
     required this.buttonText,
     required this.isLastPage,
     required this.bgColor,
+    required this.onComplete,
+    required this.controller,
   });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Full-screen background image
         Positioned.fill(
           child: Image.asset(
             imagePath,
             fit: BoxFit.cover,
           ),
         ),
-        
-        // Color overlay
+
         Container(
           color: bgColor,
         ),
-        
-        // Content
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Column(
@@ -177,9 +185,9 @@ class OnboardingPage extends StatelessWidget {
                   height: 1.3,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               Text(
                 description,
                 style: const TextStyle(
@@ -188,22 +196,17 @@ class OnboardingPage extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
-              // Fixed button with proper spacing
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     if (isLastPage) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const NameInputScreen()),
-                      );
+                      onComplete();
                     } else {
-                      final onboardingState = context.findAncestorStateOfType<_OnboardingScreensState>();
-                      onboardingState?._controller.nextPage(
+                      controller.nextPage(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeIn,
                       );
@@ -213,7 +216,7 @@ class OnboardingPage extends StatelessWidget {
                     backgroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // More modern 12px radius
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 2,
                   ),
@@ -221,13 +224,13 @@ class OnboardingPage extends StatelessWidget {
                     buttonText,
                     style: TextStyle(
                       fontSize: 18,
-                      color: _primaryColor, // Using brand color for text
+                      color: _primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20), // Added extra spacing
+              const SizedBox(height: 20),
             ],
           ),
         ),
