@@ -22,7 +22,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _pageController = PageController();
+  final _pageController = PageController(initialPage: 3);
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -73,16 +73,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              
-              if (_accountCreated) ...[
-                _buildSuccessUI(),
-              ] else ...[
-                _buildPasswordForm(),
-              ],
-              
+              _accountCreated ? _buildSuccessUI() : _buildPasswordForm(),
               const SizedBox(height: 30),
-              
-              // Sign In Option
               Center(
                 child: TextButton(
                   onPressed: () {
@@ -124,7 +116,6 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Text(
           "Create a secure password",
           style: TextStyle(
@@ -142,13 +133,10 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
           ),
         ),
         const SizedBox(height: 40),
-        
-        // Form
         Form(
           key: _formKey,
           child: Column(
             children: [
-              // Password Field
               TextFormField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -157,15 +145,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                   prefixIcon: Icon(Icons.lock_outline, color: _primaryColor),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
                       color: _primaryColor,
                     ),
                     onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
+                      setState(() => _obscurePassword = !_obscurePassword);
                     },
                   ),
                   filled: true,
@@ -174,32 +158,19 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 16,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
-                  }
-                  if (value.length < 8) {
-                    return 'Password must be at least 8 characters';
-                  }
-                  if (!value.contains(RegExp(r'[A-Z]'))) {
-                    return 'Include at least one uppercase letter';
-                  }
-                  if (!value.contains(RegExp(r'[0-9]'))) {
-                    return 'Include at least one number';
-                  }
+                  if (value == null || value.isEmpty) return 'Please enter a password';
+                  if (value.length < 8) return 'Password must be at least 8 characters';
+                  if (!value.contains(RegExp(r'[A-Z]'))) return 'Include at least one uppercase letter';
+                  if (!value.contains(RegExp(r'[0-9]'))) return 'Include at least one number';
                   return null;
                 },
               ),
               const SizedBox(height: 10),
               _buildPasswordRequirements(),
               const SizedBox(height: 20),
-              
-              // Confirm Password Field
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
@@ -208,15 +179,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                   prefixIcon: Icon(Icons.lock_outline, color: _primaryColor),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
                       color: _primaryColor,
                     ),
                     onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
+                      setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
                     },
                   ),
                   filled: true,
@@ -225,21 +192,14 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 16,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 ),
                 validator: (value) {
-                  if (value != _passwordController.text) {
-                    return 'Passwords do not match';
-                  }
+                  if (value != _passwordController.text) return 'Passwords do not match';
                   return null;
                 },
               ),
               const SizedBox(height: 40),
-              
-              // Create Account Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -281,77 +241,21 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Password must contain:',
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-          ),
-        ),
+        Text('Password must contain:', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
         const SizedBox(height: 4),
-        Row(
-          children: [
-            Icon(
-              _passwordController.text.length >= 8
-                  ? Icons.check_circle
-                  : Icons.circle,
-              size: 12,
-              color: _passwordController.text.length >= 8
-                  ? Colors.green
-                  : Colors.grey,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '8+ characters',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            Icon(
-              _passwordController.text.contains(RegExp(r'[A-Z]'))
-                  ? Icons.check_circle
-                  : Icons.circle,
-              size: 12,
-              color: _passwordController.text.contains(RegExp(r'[A-Z]'))
-                  ? Colors.green
-                  : Colors.grey,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '1 uppercase letter',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            Icon(
-              _passwordController.text.contains(RegExp(r'[0-9]'))
-                  ? Icons.check_circle
-                  : Icons.circle,
-              size: 12,
-              color: _passwordController.text.contains(RegExp(r'[0-9]'))
-                  ? Colors.green
-                  : Colors.grey,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '1 number',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
+        _buildRequirementRow('8+ characters', _passwordController.text.length >= 8),
+        _buildRequirementRow('1 uppercase letter', _passwordController.text.contains(RegExp(r'[A-Z]'))),
+        _buildRequirementRow('1 number', _passwordController.text.contains(RegExp(r'[0-9]'))),
+      ],
+    );
+  }
+
+  Widget _buildRequirementRow(String text, bool met) {
+    return Row(
+      children: [
+        Icon(met ? Icons.check_circle : Icons.circle, size: 12, color: met ? Colors.green : Colors.grey),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
       ],
     );
   }
@@ -359,55 +263,27 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   Widget _buildSuccessUI() {
     return Column(
       children: [
-        Icon(
-          Icons.check_circle_outline,
-          size: 80,
-          color: _primaryColor,
-        ),
+        Icon(Icons.check_circle_outline, size: 80, color: _primaryColor),
         const SizedBox(height: 20),
-        Text(
-          'Account created!',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: _primaryColor,
-          ),
-        ),
+        Text('Account created!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: _primaryColor)),
         const SizedBox(height: 10),
-        Text(
-          'Welcome to Haraka Afya, ${widget.firstName}!',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey.shade600,
-          ),
-        ),
+        Text('Welcome to Haraka Afya, ${widget.firstName}!', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
         const SizedBox(height: 40),
         SizedBox(
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HomeScreen(),
-                ),
-              );
-            },
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Continue to App',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text('Continue to App', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ),
       ],
@@ -418,30 +294,19 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        // Create user with Firebase Auth
-        UserCredential userCredential = 
-            await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: widget.email,
-          password: _passwordController.text,
-        );
+        final UserCredential userCredential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(email: widget.email, password: _passwordController.text);
 
-        // Send email verification
         await userCredential.user?.sendEmailVerification();
-
-        // Update user display name
         await userCredential.user?.updateDisplayName(widget.firstName);
-
-        // In a real app, you would also save additional user data to Firestore here
 
         setState(() {
           _isLoading = false;
           _accountCreated = true;
         });
-
       } on FirebaseAuthException catch (e) {
         setState(() => _isLoading = false);
         String errorMessage = 'Account creation failed';
-        
         if (e.code == 'weak-password') {
           errorMessage = 'The password provided is too weak';
         } else if (e.code == 'email-already-in-use') {
@@ -449,20 +314,13 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
         } else if (e.code == 'invalid-email') {
           errorMessage = 'The email address is invalid';
         }
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       } catch (e) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     }
