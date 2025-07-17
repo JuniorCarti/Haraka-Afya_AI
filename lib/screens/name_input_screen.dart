@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:haraka_afya_ai/screens/auth/email_verification_screen.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:haraka_afya_ai/screens/auth/email_verification_screen.dart';
 import 'package:haraka_afya_ai/screens/home_screen.dart';
 import 'package:haraka_afya_ai/screens/onboarding_screen.dart';
 
@@ -20,6 +20,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
   bool _isLoading = false;
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
+  // Color scheme
   final Color _primaryColor = const Color(0xFF0C6D5B);
   final Color _backgroundColor = const Color(0xFFfcfcf5);
   final Color _cardColor = Colors.white;
@@ -65,10 +66,14 @@ class _NameInputScreenState extends State<NameInputScreen> {
                 ),
               ),
               const SizedBox(height: 40),
+
               _buildNameForm(),
+
               const SizedBox(height: 30),
               _buildDivider(),
               const SizedBox(height: 30),
+
+              // Social login buttons
               _buildSocialButton(
                 iconPath: 'assets/icons/google.png',
                 text: 'Continue with Google',
@@ -131,23 +136,29 @@ class _NameInputScreenState extends State<NameInputScreen> {
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextFormField(
-                controller: _firstNameController,
-                decoration: InputDecoration(
-                  labelText: 'First Name',
-                  labelStyle: TextStyle(color: Colors.grey.shade600),
-                  prefixIcon: Icon(Icons.person_outline, color: _primaryColor),
-                  border: InputBorder.none,
+            child: TextFormField(
+              controller: _firstNameController,
+              decoration: InputDecoration(
+                labelText: 'First Name',
+                labelStyle: TextStyle(color: Colors.grey.shade600),
+                prefixIcon: Icon(Icons.person_outline, color: _primaryColor),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 16, horizontal: 16,
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your first name';
-                  }
-                  return null;
-                },
               ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your first name';
+                }
+                if (value.trim().length < 2) {
+                  return 'Name must be at least 2 characters';
+                }
+                if (!RegExp(r'^[a-zA-Z ]+$').hasMatch(value.trim())) {
+                  return 'Name can only contain letters';
+                }
+                return null;
+              },
             ),
           ),
           const SizedBox(height: 30),
@@ -185,18 +196,6 @@ class _NameInputScreenState extends State<NameInputScreen> {
         ],
       ),
     );
-  }
-
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final formattedName = _firstNameController.text.trim();
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(firstName: formattedName),
-        ),
-      );
-    }
   }
 
   Widget _buildDivider() {
@@ -260,7 +259,11 @@ class _NameInputScreenState extends State<NameInputScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(iconPath, width: 20, height: 20),
+            Image.asset(
+              iconPath,
+              width: 20,
+              height: 20,
+            ),
             const SizedBox(width: 12),
             Text(
               text,
@@ -276,50 +279,113 @@ class _NameInputScreenState extends State<NameInputScreen> {
     );
   }
 
+  void _submitForm() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      
+      // Format the name (trim and capitalize first letter)
+      final formattedName = _firstNameController.text.trim();
+      final capitalizedName = formattedName.isNotEmpty
+          ? formattedName[0].toUpperCase() + formattedName.substring(1).toLowerCase()
+          : formattedName;
+
+      // Navigate to email verification screen with the name
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EmailVerificationScreen(
+            firstName: capitalizedName,
+          ),
+        ),
+      ).then((_) {
+        setState(() => _isLoading = false);
+      });
+    }
+  }
+
   Future<void> _handleGoogleSignIn() async {
     try {
       setState(() => _isLoading = true);
-
+      
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         setState(() => _isLoading = false);
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
+      final GoogleSignInAuthentication googleAuth = 
+          await googleUser.authentication;
+      
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential =
+      final UserCredential userCredential = 
           await FirebaseAuth.instance.signInWithCredential(credential);
 
+      // Set the display name from Google account if available
       if (userCredential.user != null) {
+        final user = userCredential.user!;
+        if (user.displayName == null || user.displayName!.isEmpty) {
+          await user.updateDisplayName(googleUser.displayName ?? 'User');
+        }
+        
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in failed: $e')),
-      );
-    } finally {
+    } on FirebaseAuthException catch (e) {
       setState(() => _isLoading = false);
+      String errorMessage = 'Google sign-in failed';
+      
+      if (e.code == 'account-exists-with-different-credential') {
+        errorMessage = 'Account exists with different sign-in method';
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = 'Invalid credentials';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error during Google sign-in: ${e.toString()}'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
   Future<void> _handleFacebookSignIn() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Facebook sign-in not implemented')),
-    );
+    try {
+      setState(() => _isLoading = true);
+      // Implement Facebook login
+      // Similar pattern to Google sign-in
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Facebook sign-in failed: $e')),
+      );
+    }
   }
 
   Future<void> _handleTwitterSignIn() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Twitter sign-in not implemented')),
-    );
+    try {
+      setState(() => _isLoading = true);
+      // Implement Twitter login
+      // Similar pattern to Google sign-in
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Twitter sign-in failed: $e')),
+      );
+    }
   }
 }
