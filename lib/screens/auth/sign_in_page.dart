@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:haraka_afya_ai/screens/auth/reset_password_page.dart';
 import 'package:haraka_afya_ai/screens/name_input_screen.dart';
+import 'package:haraka_afya_ai/screens/home_screen.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -15,6 +18,7 @@ class _SignInPageState extends State<SignInPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   final Color _primaryColor = const Color(0xFF0C6D5B);
   final Color _backgroundColor = const Color(0xFFfcfcf5);
@@ -177,7 +181,7 @@ class _SignInPageState extends State<SignInPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _submitForm,
+                    onPressed: _signInWithEmailAndPassword,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primaryColor,
                       shape: RoundedRectangleBorder(
@@ -210,12 +214,12 @@ class _SignInPageState extends State<SignInPage> {
                 _buildDivider(),
                 const SizedBox(height: 30),
 
-                // Social Login Buttons with PNG icons
+                // Social Login Buttons
                 _buildSocialButton(
                   iconPath: 'assets/icons/google.png',
                   text: 'Continue with Google',
                   color: Colors.red,
-                  onPressed: _handleGoogleSignIn,
+                  onPressed: _signInWithGoogle,
                 ),
                 const SizedBox(height: 12),
                 _buildSocialButton(
@@ -321,27 +325,171 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
-  void _submitForm() {
+  Future<void> _signInWithEmailAndPassword() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      // Simulate sign in process
-      Future.delayed(const Duration(seconds: 2), () {
+      try {
+        final UserCredential userCredential = 
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Check if email is verified
+        if (userCredential.user?.emailVerified ?? false) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        } else {
+          await _showEmailNotVerifiedDialog();
+        }
+      } on FirebaseAuthException catch (e) {
+        String errorMessage = 'Sign in failed. Please try again.';
+        if (e.code == 'user-not-found') {
+          errorMessage = 'No user found with this email.';
+        } else if (e.code == 'wrong-password') {
+          errorMessage = 'Incorrect password. Please try again.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'The email address is invalid.';
+        } else if (e.code == 'user-disabled') {
+          errorMessage = 'This account has been disabled.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } finally {
         setState(() => _isLoading = false);
-        // Navigate to home screen on success
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomeScreen()));
-      });
+      }
     }
   }
 
-  void _handleGoogleSignIn() {
-    // Implement Google sign-in logic
+  Future<void> _showEmailNotVerifiedDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Email Not Verified'),
+          content: const Text(
+              'Please verify your email before signing in. Check your inbox for a verification email.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Resend Verification'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _resendVerificationEmail();
+              },
+            ),
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.sendEmailVerification();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification email sent. Please check your inbox.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send verification email: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = 
+          await googleUser.authentication;
+      
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = 
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Google sign-in failed';
+      
+      if (e.code == 'account-exists-with-different-credential') {
+        errorMessage = 'An account already exists with the same email but different sign-in method.';
+      } else if (e.code == 'invalid-credential') {
+        errorMessage = 'Invalid credentials.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error during Google sign-in: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _handleFacebookSignIn() {
-    // Implement Facebook sign-in logic
+    // TODO: Implement Facebook sign-in
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Facebook sign-in not implemented yet')),
+    );
   }
 
   void _handleTwitterSignIn() {
-    // Implement Twitter/X sign-in logic
+    // TODO: Implement Twitter/X sign-in
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Twitter sign-in not implemented yet')),
+    );
   }
 }
