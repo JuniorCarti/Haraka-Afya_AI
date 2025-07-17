@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:haraka_afya_ai/screens/auth/create_password_screen.dart';
 import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart';
