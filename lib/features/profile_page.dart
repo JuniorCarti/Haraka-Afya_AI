@@ -38,7 +38,7 @@ class ProfilePage extends StatelessWidget {
   }
 
   Widget _buildSettingsList(BuildContext context) {
-    final FirebaseAuth _auth = FirebaseAuth.instance;
+    final FirebaseAuth auth = FirebaseAuth.instance;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -91,7 +91,7 @@ class ProfilePage extends StatelessWidget {
           color: Colors.red,
           onTap: () async {
             try {
-              await _auth.signOut();
+              await auth.signOut();
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => const SignInPage()),
