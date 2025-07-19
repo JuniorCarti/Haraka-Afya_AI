@@ -17,6 +17,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
       time: "Now",
     ),
   ];
+  bool _isMinimized = false;
 
   @override
   void dispose() {
@@ -26,107 +27,161 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        constraints: const BoxConstraints(
-          maxHeight: 600,
-          maxWidth: 400,
-        ),
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0C6D5B),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+    return Stack(
+      children: [
+        if (!_isMinimized)
+          Positioned(
+            right: 20,
+            bottom: 80,
+            child: Material(
+              borderRadius: BorderRadius.circular(16),
+              elevation: 8,
+              child: Container(
+                width: 350,
+                height: 500,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF0C6D5B), width: 1),
+                ),
+                child: Column(
+                  children: [
+                    // Header with minimize button
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0C6D5B),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.medical_services, color: Color(0xFF0C6D5B)),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Haraka-Afya AI Support',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.minimize, color: Colors.white),
+                            onPressed: () => setState(() => _isMinimized = true),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Chat messages
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        reverse: false,
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          return _buildMessage(_messages[index]);
+                        },
+                      ),
+                    ),
+                    
+                    // Input area
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(16),
+                          bottomRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              decoration: InputDecoration(
+                                hintText: 'Type your message...',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 8),
+                          CircleAvatar(
+                            backgroundColor: const Color(0xFF0C6D5B),
+                            child: IconButton(
+                              icon: const Icon(Icons.send, color: Colors.white),
+                              onPressed: _sendMessage,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.medical_services, color: Color(0xFF0C6D5B)),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Haraka-Afya AI Support',
+            ),
+          ),
+        
+        // Minimized state
+        if (_isMinimized)
+          Positioned(
+            right: 20,
+            bottom: 20,
+            child: GestureDetector(
+              onTap: () => setState(() => _isMinimized = false),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0C6D5B),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.medical_services, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'AI Assistant',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Chat messages
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                reverse: false,
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  return _buildMessage(_messages[index]);
-                },
-              ),
-            ),
-            
-            // Input area
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
+                    SizedBox(width: 8),
+                    Icon(Icons.keyboard_arrow_up, color: Colors.white),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'Type your message...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF0C6D5B),
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white),
-                      onPressed: _sendMessage,
-                    ),
-                  ),
-                ],
-              ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 

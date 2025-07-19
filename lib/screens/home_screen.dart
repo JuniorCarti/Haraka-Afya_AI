@@ -106,7 +106,6 @@ class HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        // Sticky header with hamburger menu
         SliverAppBar(
           pinned: true,
           floating: true,
@@ -128,54 +127,32 @@ class HomeContent extends StatelessWidget {
           elevation: 1,
         ),
         
-        // Main content
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Greeting Section
                 _buildGreetingSection(context),
                 const SizedBox(height: 24),
-                
-                // AI Assistant Card
                 _buildAIAssistantCard(context),
                 const SizedBox(height: 24),
-                
-                // Emergency Services
                 _buildEmergencyCard(context),
                 const SizedBox(height: 24),
-                
-                // Symptom Checker
                 _buildSymptomChecker(),
                 const SizedBox(height: 24),
-                
-                // Health Overview
                 _buildHealthOverview(),
                 const SizedBox(height: 24),
-                
-                // Health Articles Section
                 _buildHealthArticlesSection(),
                 const SizedBox(height: 24),
-                
-                // Quick Actions Grid
                 _buildQuickActionsGrid(),
                 const SizedBox(height: 24),
-                
-                // Health Tools
                 _buildHealthTools(),
                 const SizedBox(height: 24),
-                
-                // Health Tips
                 _buildHealthTips(),
                 const SizedBox(height: 24),
-                
-                // Medication Reminder
                 _buildMedicationReminder(),
                 const SizedBox(height: 24),
-                
-                // Premium Upgrade
                 _buildPremiumUpgrade(),
               ],
             ),
@@ -348,141 +325,142 @@ class HomeContent extends StatelessWidget {
   }
 
   Widget _buildAIAssistantCard(BuildContext context) {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Haraka-Afya Support',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Need help? Chat with our AI assistant anytime!',
-            style: TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_forward),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const AIAssistantPopup(),
-                );
-              },
-            ),
-          ),
-        ],
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-    ),
-  );
-}
-
-// In home_screen.dart
-Widget _buildEmergencyCard(BuildContext context) {
-  return Card(
-    elevation: 2,
-    color: Colors.white, // Changed to white background
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const EmergencyServicesPage(),
-          ),
-        );
-      },
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.emergency, color: Colors.red[700]),
-                const SizedBox(width: 8),
-                const Text(
-                  'Emergency Services',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+            const Text(
+              'Haraka-Afya Support',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Multiple hospitals • Real-time ambulance tracking',
+              'Need help? Chat with our AI assistant anytime!',
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.phone, size: 20),
-                  label: const Text('Call 911'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: const BorderSide(color: Colors.red),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  ),
-                  onPressed: () async {
-                    const url = 'tel:911';
-                    if (await canLaunchUrl(Uri.parse(url))) {
-                      await launchUrl(Uri.parse(url));
-                    }
-                  },
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.local_taxi, size: 20),
-                  label: const Text('Uber Ambulance'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Opening Uber for ambulance request'),
-                      ),
-                    );
-                  },
-                ),
-              ],
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierColor: Colors.transparent,
+                    builder: (context) => const AIAssistantPopup(),
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildEmergencyCard(BuildContext context) {
+    return Card(
+      elevation: 2,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const EmergencyServicesPage(),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.emergency, color: Colors.red[700]),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Emergency Services',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Multiple hospitals • Real-time ambulance tracking',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.phone, size: 20),
+                    label: const Text('Call 911'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: const BorderSide(color: Colors.red),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    ),
+                    onPressed: () async {
+                      const url = 'tel:911';
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(Uri.parse(url));
+                      }
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.local_taxi, size: 20),
+                    label: const Text('Uber Ambulance'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    ),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Opening Uber for ambulance request'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSymptomChecker() {
     return Card(
       elevation: 2,
