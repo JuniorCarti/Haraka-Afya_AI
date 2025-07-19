@@ -5,6 +5,7 @@ import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
 import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
+import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -137,7 +138,7 @@ class HomeContent extends StatelessWidget {
                 const SizedBox(height: 24),
                 
                 // AI Assistant Card
-                _buildAIAssistantCard(),
+                _buildAIAssistantCard(context),
                 const SizedBox(height: 24),
                 
                 // Emergency Services
@@ -344,42 +345,47 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildAIAssistantCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildAIAssistantCard(BuildContext context) {
+  return Card(
+    elevation: 2,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Haraka-Afya Support',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Need help? Chat with our AI assistant anytime!',
+            style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => const AIAssistantPopup(),
+                );
+              },
+            ),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Haraka-Afya Support',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Need help? Chat with our AI assistant anytime!',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_forward),
-                onPressed: () {},
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildEmergencyCard() {
     return Card(
