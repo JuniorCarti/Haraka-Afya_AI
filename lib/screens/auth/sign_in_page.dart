@@ -214,25 +214,22 @@ class _SignInPageState extends State<SignInPage> {
                 _buildDivider(),
                 const SizedBox(height: 30),
 
-                // Social Login Buttons
+                // Social Login Buttons - Updated to match sign-up page style
                 _buildSocialButton(
                   iconPath: 'assets/icons/google.png',
                   text: 'Continue with Google',
-                  color: Colors.red,
                   onPressed: _signInWithGoogle,
                 ),
                 const SizedBox(height: 12),
                 _buildSocialButton(
                   iconPath: 'assets/icons/facebook.png',
                   text: 'Continue with Facebook',
-                  color: Colors.blue,
                   onPressed: _handleFacebookSignIn,
                 ),
                 const SizedBox(height: 12),
                 _buildSocialButton(
                   iconPath: 'assets/icons/twitter.png',
                   text: 'Continue with X',
-                  color: Colors.black,
                   onPressed: _handleTwitterSignIn,
                 ),
                 const SizedBox(height: 30),
@@ -291,36 +288,39 @@ class _SignInPageState extends State<SignInPage> {
   Widget _buildSocialButton({
     required String iconPath,
     required String text,
-    required Color color,
     required VoidCallback onPressed,
   }) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: color,
-        side: BorderSide(color: color),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.black,
+          side: BorderSide(color: Colors.grey.shade300),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: Colors.white,
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            iconPath,
-            width: 20,
-            height: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              iconPath,
+              width: 20,
+              height: 20,
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -335,7 +335,6 @@ class _SignInPageState extends State<SignInPage> {
           password: _passwordController.text.trim(),
         );
 
-        // Check if email is verified
         if (userCredential.user?.emailVerified ?? false) {
           Navigator.pushReplacement(
             context,
@@ -480,14 +479,12 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   void _handleFacebookSignIn() {
-    // TODO: Implement Facebook sign-in
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Facebook sign-in not implemented yet')),
     );
   }
 
   void _handleTwitterSignIn() {
-    // TODO: Implement Twitter/X sign-in
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Twitter sign-in not implemented yet')),
     );
