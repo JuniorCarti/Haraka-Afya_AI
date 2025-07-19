@@ -18,6 +18,9 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
     ),
   ];
   bool _isMinimized = false;
+  final Color _whatsappGreen = const Color(0xFF25D366);
+  final Color _whatsappLightGreen = const Color(0xFFDCF8C6);
+  final Color _whatsappLightGray = const Color(0xFFECECEC);
 
   @override
   void dispose() {
@@ -42,15 +45,15 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF0C6D5B), width: 1),
+                  border: Border.all(color: _whatsappGreen, width: 1),
                 ),
                 child: Column(
                   children: [
-                    // Header with minimize button
+                    // Header with WhatsApp-like styling
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0C6D5B),
+                        color: _whatsappGreen,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(16),
                           topRight: Radius.circular(16),
@@ -58,9 +61,13 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                       ),
                       child: Row(
                         children: [
-                          const CircleAvatar(
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.medical_services, color: Color(0xFF0C6D5B)),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.chat, color: _whatsappGreen),
                           ),
                           const SizedBox(width: 12),
                           const Expanded(
@@ -85,23 +92,23 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                       ),
                     ),
                     
-                    // Chat messages
+                    // Chat messages with WhatsApp-like bubbles
                     Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.all(16),
                         reverse: false,
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
-                          return _buildMessage(_messages[index]);
+                          return _buildWhatsAppMessage(_messages[index]);
                         },
                       ),
                     ),
                     
-                    // Input area
+                    // Input area with WhatsApp-like styling
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
+                        color: _whatsappLightGray,
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(16),
                           bottomRight: Radius.circular(16),
@@ -127,7 +134,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                             ),
                           const SizedBox(width: 8),
                           CircleAvatar(
-                            backgroundColor: const Color(0xFF0C6D5B),
+                            backgroundColor: _whatsappGreen,
                             child: IconButton(
                               icon: const Icon(Icons.send, color: Colors.white),
                               onPressed: _sendMessage,
@@ -142,7 +149,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
             ),
           ),
         
-        // Minimized state
+        // Minimized state with WhatsApp-like floating button
         if (_isMinimized)
           Positioned(
             right: 20,
@@ -150,9 +157,9 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
             child: GestureDetector(
               onTap: () => setState(() => _isMinimized = false),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0C6D5B),
+                  color: _whatsappGreen,
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
@@ -162,22 +169,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                     ),
                   ],
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.medical_services, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text(
-                      'AI Assistant',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.keyboard_arrow_up, color: Colors.white),
-                  ],
-                ),
+                child: const Icon(Icons.chat, color: Colors.white, size: 30),
               ),
             ),
           ),
@@ -185,7 +177,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
     );
   }
 
-  Widget _buildMessage(ChatMessage message) {
+  Widget _buildWhatsAppMessage(ChatMessage message) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -195,9 +187,13 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
             : MainAxisAlignment.start,
         children: [
           if (!message.isUser)
-            const CircleAvatar(
-              backgroundColor: Color(0xFF0C6D5B),
-              child: Icon(Icons.medical_services, color: Colors.white),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _whatsappGreen,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.chat, color: Colors.white),
             ),
           if (!message.isUser) const SizedBox(width: 8),
           Flexible(
@@ -205,8 +201,8 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: message.isUser 
-                    ? const Color(0xFF0C6D5B).withOpacity(0.1)
-                    : const Color(0xFF0C6D5B),
+                    ? _whatsappLightGreen
+                    : _whatsappLightGray,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(12),
                   topRight: const Radius.circular(12),
@@ -219,16 +215,19 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                 children: [
                   Text(
                     message.text,
-                    style: TextStyle(
-                      color: message.isUser ? Colors.black : Colors.white,
+                    style: const TextStyle(
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    message.time,
-                    style: TextStyle(
-                      color: message.isUser ? Colors.grey : Colors.white70,
-                      fontSize: 10,
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Text(
+                      message.time,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                 ],

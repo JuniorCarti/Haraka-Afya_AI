@@ -325,47 +325,60 @@ class HomeContent extends StatelessWidget {
   }
 
   Widget _buildAIAssistantCard(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Haraka-Afya Support',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+  return Card(
+    elevation: 2,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF25D366), // WhatsApp green
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.chat, color: Colors.white),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Need help? Chat with our AI assistant anytime!',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_forward),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    barrierColor: Colors.transparent,
-                    builder: (context) => const AIAssistantPopup(),
-                  );
-                },
+              const SizedBox(width: 12),
+              const Text(
+                'Haraka-Afya Support',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Chat with our AI assistant anytime!',
+            style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_forward),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  barrierColor: Colors.transparent,
+                  builder: (context) => const AIAssistantPopup(),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildEmergencyCard(BuildContext context) {
     return Card(
