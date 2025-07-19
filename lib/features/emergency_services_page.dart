@@ -19,102 +19,106 @@ class EmergencyServicesPage extends StatelessWidget {
         title: const Text('Emergency Services'),
         backgroundColor: Colors.red[700],
       ),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          _buildEmergencyCard(
-            title: 'General Emergency',
-            location: 'Citywide',
-            available: 5,
-            inUse: 3,
-            waitTime: '8-12 min',
-            onCallPressed: _callEmergency,
-          ),
-          const SizedBox(height: 16),
-          _buildEmergencyCard(
-            title: 'Aga Khan Hospital',
-            location: 'Parklands',
-            available: 3,
-            inUse: 1,
-            waitTime: '5-8 min',
-            onCallPressed: _callEmergency,
-          ),
-          const SizedBox(height: 16),
-          _buildEmergencyCard(
-            title: 'Nairobi Hospital',
-            location: 'Upper Hill',
-            available: 4,
-            inUse: 2,
-            waitTime: '4 Available',
-            status: 'En Route',
-            onCallPressed: _callEmergency,
-          ),
-          const SizedBox(height: 16),
-          _buildEmergencyCard(
-            title: 'Kenyatta National Hospital',
-            location: 'Dagoretti',
-            available: 8,
-            inUse: 0,
-            waitTime: '10-15 min',
-            onCallPressed: _callEmergency,
-          ),
-          const SizedBox(height: 16),
-          _buildEmergencyCard(
-            title: 'MP Shah Hospital',
-            location: 'Parklands',
-            available: 2,
-            inUse: 0,
-            waitTime: '7-12 min',
-            onCallPressed: _callEmergency,
-          ),
-          const SizedBox(height: 24),
-          Card(
-            color: Colors.orange[50],
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Emergency Tip',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "If you're experiencing chest pain, difficulty breathing, or severe bleeding, call immediately. Don't wait!",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red[700],
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onPressed: _callEmergency,
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.emergency, size: 24),
-                          SizedBox(width: 8),
-                          Text(
-                            'CALL EMERGENCY (911)',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ],
+        child: Column(
+          children: [
+            _buildEmergencyCard(
+              title: 'General Emergency',
+              location: 'Citywide',
+              available: 5,
+              inUse: 3,
+              waitTime: '8-12 min',
+              onCallPressed: _callEmergency,
+            ),
+            const SizedBox(height: 16),
+            _buildEmergencyCard(
+              title: 'Aga Khan Hospital',
+              location: 'Parklands',
+              available: 3,
+              inUse: 1,
+              waitTime: '5-8 min',
+              onCallPressed: _callEmergency,
+            ),
+            const SizedBox(height: 16),
+            _buildEmergencyCard(
+              title: 'Nairobi Hospital',
+              location: 'Upper Hill',
+              available: 4,
+              inUse: 2,
+              waitTime: '4 Available',
+              status: 'En Route',
+              onCallPressed: _callEmergency,
+            ),
+            const SizedBox(height: 16),
+            _buildEmergencyCard(
+              title: 'Kenyatta National Hospital',
+              location: 'Dagoretti',
+              available: 8,
+              inUse: 0,
+              waitTime: '10-15 min',
+              onCallPressed: _callEmergency,
+            ),
+            const SizedBox(height: 16),
+            _buildEmergencyCard(
+              title: 'MP Shah Hospital',
+              location: 'Parklands',
+              available: 2,
+              inUse: 0,
+              waitTime: '7-12 min',
+              onCallPressed: _callEmergency,
+            ),
+            const SizedBox(height: 24),
+            Card(
+              color: Colors.orange[50],
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Emergency Tip',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      "If you're experiencing chest pain, difficulty breathing, or severe bleeding, call immediately. Don't wait!",
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                        onPressed: _callEmergency,
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.emergency, size: 24, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text(
+                              'CALL EMERGENCY (911)',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -195,12 +199,15 @@ class EmergencyServicesPage extends StatelessWidget {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[700],
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
+                      horizontal: 16, vertical: 12), // Reduced padding
+                    side: const BorderSide(color: Colors.red),
                   ),
                   onPressed: onCallPressed,
                   child: const Row(
+                    mainAxisSize: MainAxisSize.min, // Fix overflow
                     children: [
                       Icon(Icons.phone),
                       SizedBox(width: 8),

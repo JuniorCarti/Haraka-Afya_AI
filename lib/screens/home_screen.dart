@@ -389,27 +389,24 @@ class HomeContent extends StatelessWidget {
   );
 }
 
-// Update the _buildEmergencyCard method in home_screen.dart
+// In home_screen.dart
 Widget _buildEmergencyCard(BuildContext context) {
-  return InkWell(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const EmergencyServicesPage(),
-        ),
-      );
-    },
-    child: Card(
-      elevation: 2,
-      color: Colors.red[50], // Light red background
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.red[300]!,
-          width: 1,
-        ),
-      ),
+  return Card(
+    elevation: 2,
+    color: Colors.white, // Changed to white background
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const EmergencyServicesPage(),
+          ),
+        );
+      },
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -424,7 +421,6 @@ Widget _buildEmergencyCard(BuildContext context) {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.red,
                   ),
                 ),
               ],
@@ -435,18 +431,22 @@ Widget _buildEmergencyCard(BuildContext context) {
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.phone, size: 20),
                   label: const Text('Call 911'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[700],
-                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.red,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Colors.red),
                     ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
                   ),
                   onPressed: () async {
                     const url = 'tel:911';
@@ -455,7 +455,6 @@ Widget _buildEmergencyCard(BuildContext context) {
                     }
                   },
                 ),
-                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.local_taxi, size: 20),
                   label: const Text('Uber Ambulance'),
@@ -465,9 +464,10 @@ Widget _buildEmergencyCard(BuildContext context) {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
                   ),
                   onPressed: () {
-                    // Implement Uber ambulance integration
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Opening Uber for ambulance request'),
