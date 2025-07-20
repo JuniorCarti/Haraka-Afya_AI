@@ -266,7 +266,7 @@ class _EmergencyServicesPageState extends State<EmergencyServicesPage> {
                   const SizedBox(height: 24),
                   // Updated Emergency Tip Card
                  Container(
-  width: double.infinity,
+   width: double.infinity,
   margin: const EdgeInsets.only(top: 16, bottom: 16), // Added margin to prevent overlapping
   padding: const EdgeInsets.all(16),
   decoration: BoxDecoration(
