@@ -214,7 +214,10 @@ class _EmergencyServicesPageState extends State<EmergencyServicesPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Emergency Services'),
-        backgroundColor: Colors.red[700],
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0C6D5B),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -261,54 +264,62 @@ class _EmergencyServicesPageState extends State<EmergencyServicesPage> {
                     );
                   }).toList(),
                   const SizedBox(height: 24),
-                  Card(
-                    color: Colors.orange[50],
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Emergency Tip',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            "If you're experiencing chest pain, difficulty breathing, or severe bleeding, call immediately. Don't wait!",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: const BorderSide(color: Colors.red),
-                              ),
-                              onPressed: _callEmergency,
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.emergency, size: 24, color: Colors.red),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'CALL EMERGENCY (911)',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Updated Emergency Tip Card
+                 Container(
+  width: double.infinity,
+  margin: const EdgeInsets.only(top: 16, bottom: 16), // Added margin to prevent overlapping
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: Colors.red[50], // Light red background as shown in your image
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(
+      color: Colors.red[100]!, // Light red border
+      width: 1,
+    ),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Emergency',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.red[700], // Dark red text
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        "If you're experiencing chest pain, difficulty breathing, or other severe symptoms, call 911 immediately.",
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.red[700], // Dark red text
+        ),
+      ),
+      const SizedBox(height: 12),
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            side: const BorderSide(color: Colors.red),
+          ),
+          onPressed: _callEmergency,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.emergency, size: 20),
+              SizedBox(width: 8),
+              Text('CALL EMERGENCY (911)'),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
                   if (_selectedFacilityLocation != null && _currentPosition != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
