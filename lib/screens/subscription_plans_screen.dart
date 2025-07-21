@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SubscriptionPlansScreen extends StatelessWidget {
   const SubscriptionPlansScreen({super.key});
@@ -6,132 +7,95 @@ class SubscriptionPlansScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Subscription Plans',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+      backgroundColor: Colors.white,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [Color(0xFFF3F8F7), Color(0xFFF9FCF5)],
           ),
         ),
-        backgroundColor: const Color(0xFF0C6D5B),
-        elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Choose Your Plan',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Unlock Premium Healthcare\nChoose the plan that works best for you',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Free Plan Card
-            _buildPlanCard(
-              title: 'Free',
-              description: 'Basic health tips and limited AI consultations',
-              features: const [
-                '✓ 5 AI consultations per month',
-                '✓ Basic health tips',
-                '✓ Symptom checker',
-                '✓ Find nearby hospitals',
-              ],
-              isCurrent: false,
-              isPopular: false,
-              price: 'Free',
-              buttonText: 'Current Plan',
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Premium Plan Card
-            _buildPlanCard(
-              title: 'Premium',
-              description: 'Unlimited AI consultations and advanced features',
-              features: const [
-                '✓ Unlimited AI consultations',
-                '✓ Personalized health insights',
-                '✓ Medication reminders',
-                '✓ Health history tracking',
-                '✓ Priority support',
-                '✓ Telemedicine consultations',
-              ],
-              isCurrent: true,
-              isPopular: true,
-              price: '\$7.99 per month',
-              buttonText: 'Upgrade Now',
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Family Plan Card
-            _buildPlanCard(
-              title: 'Family',
-              description: 'Perfect for families with up to 6 members',
-              features: const [
-                '✓ Everything in Premium',
-                '✓ Up to 6 family members',
-                '✓ Family health dashboard',
-                '✓ Shared medication tracking',
-                '✓ Emergency contacts',
-                '✓ Family health reports',
-              ],
-              isCurrent: false,
-              isPopular: false,
-              price: '\$12.99 per month',
-              buttonText: 'Select Plan',
-            ),
-            
-            const SizedBox(height: 32),
-            const Divider(height: 1),
-            const SizedBox(height: 24),
-            
-            // Payment Methods Section
-            const Text(
-              'Payment Methods',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildPaymentMethod('APP'),
-                _buildPaymentMethod('DD'),
-                _buildPaymentMethod('M-PESA'),
-                _buildPaymentMethod('Airtel Money'),
-                _buildPaymentMethod('VISA'),
-                _buildPaymentMethod('Mastercard'),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Choose Your Plan',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Unlock Premium Healthcare',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Choose the plan that works best for you',
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                ),
+                const SizedBox(height: 24),
+
+                // Free Plan
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _buildPlanCard(
+                    title: 'Free',
+                    price: '\$0.00',
+                    subPriceText: 'Forever',
+                    description: 'Basic health tips and limited AI consultations',
+                    features: [
+                      '5 AI consultations per month',
+                      'Basic health tips',
+                      'Symptom checker',
+                      'Find nearby hospitals',
+                    ],
+                    buttonColor: Colors.white,
+                    textColor: Colors.black,
+                    borderColor: Colors.grey.shade300,
+                    isPopular: false,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Premium Plan (FIXED: text now black for visibility)
+                _buildPlanCard(
+                  title: 'Premium',
+                  price: '\$7.99',
+                  description: 'Unlimited AI consultations and advanced features',
+                  features: [
+                    'Unlimited AI consultations',
+                    'Personalized health insights',
+                    'Medication reminders',
+                  ],
+                  buttonColor: const Color(0xFF16A249),
+                  textColor: Colors.black, // 👈 FIXED TEXT COLOR
+                  isPopular: true,
+                ),
+
+                const SizedBox(height: 16),
+
+                // Family Plan
+                _buildFamilyCard(),
+
+                const SizedBox(height: 24),
+                _buildPaymentMethods(),
+                const SizedBox(height: 24),
+                _buildInfoRow(Icons.lock, 'Secure payments powered by Stripe'),
               ],
             ),
-            
-            const SizedBox(height: 24),
-            _buildInfoRow(Icons.lock, 'Secure payments powered by Stripe'),
-            _buildInfoRow(Icons.credit_card, 'Support for Visa cards and mobile money'),
-            _buildInfoRow(Icons.cancel, 'Cancel anytime through customer portal'),
-            _buildInfoRow(Icons.money, '30-day money back guarantee'),
-          ],
+          ),
         ),
       ),
     );
@@ -139,150 +103,140 @@ class SubscriptionPlansScreen extends StatelessWidget {
 
   Widget _buildPlanCard({
     required String title,
+    required String price,
+    String? subPriceText,
     required String description,
     required List<String> features,
-    required bool isCurrent,
+    required Color buttonColor,
+    required Color textColor,
+    Color? borderColor,
     required bool isPopular,
-    required String price,
-    required String buttonText,
   }) {
     return Card(
-      elevation: 2,
+      elevation: 3,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        side: borderColor != null ? BorderSide(color: borderColor) : BorderSide.none,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          border: isCurrent 
-              ? Border.all(color: const Color(0xFF0C6D5B), width: 2)
-              : null,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isPopular) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(price, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+            if (subPriceText != null)
+              Text(subPriceText, style: TextStyle(color: textColor.withOpacity(0.7))),
+            if (isPopular)
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0C6D5B),
-                    borderRadius: BorderRadius.circular(4),
+                    color: const Color(0xFF16A249),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'MOST POPULAR',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.star, size: 16, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text('Most Popular', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+            Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+            const SizedBox(height: 4),
+            Text(description, style: TextStyle(color: textColor.withOpacity(0.7))),
+            const SizedBox(height: 12),
+            ...features.map((feature) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFF8FCF9),
                     ),
+                    child: const Icon(Icons.check, color: Color(0xFF17A249), size: 16),
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(feature, style: TextStyle(fontSize: 16, color: textColor))),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
+            )),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: buttonColor,
+                  foregroundColor: buttonColor == Colors.white ? textColor : Colors.white,
+                  side: borderColor != null ? BorderSide(color: borderColor) : BorderSide.none,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
+                onPressed: () {},
+                child: const Text('Choose Plan'),
               ),
-              const SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: features
-                    .map((feature) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
-                            feature,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ))
-                    .toList(),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                price,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isCurrent 
-                        ? Colors.grey[300]
-                        : const Color(0xFF0C6D5B),
-                    foregroundColor: isCurrent 
-                        ? Colors.black
-                        : Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    buttonText,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildPaymentMethod(String method) {
-    return Chip(
-      label: Text(
-        method,
-        style: const TextStyle(fontSize: 14),
-      ),
-      backgroundColor: Colors.grey[200],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  Widget _buildFamilyCard() {
+    return _buildPlanCard(
+      title: 'Family',
+      price: '\$14.99',
+      description: 'Perfect for families with up to 6 members',
+      features: [
+        'Everything in Premium',
+        'Up to 6 family members',
+        'Family health dashboard',
+        'Shared medication tracking',
+        'Emergency contacts'
+      ],
+      buttonColor: Colors.white,
+      textColor: Colors.black,
+      borderColor: Colors.grey.shade300,
+      isPopular: false,
+    );
+  }
+
+  Widget _buildPaymentMethods() {
+    final List<String> logos = [
+      'assets/mpesa.png',
+      'assets/airtel.png',
+      'assets/stripe.png',
+      'assets/paypal.png'
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Payment Methods', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: logos.map((logo) => Image.asset(logo, height: 40)).toList(),
+        )
+      ],
     );
   }
 
   Widget _buildInfoRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: Colors.grey),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, size: 20, color: Colors.black54),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: const TextStyle(color: Colors.black54))),
+      ],
     );
   }
 }
