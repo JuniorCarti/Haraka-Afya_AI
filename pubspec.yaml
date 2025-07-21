@@ -62,5 +62,9 @@ flutter:
     - assets/icons/google.png
     - assets/icons/facebook.png
     - assets/icons/twitter.png
+    - assets/mpesa.png
+    - assets/airtel.png
+    - assets/stripe.png
+    - assets/paypal.png
 
   
