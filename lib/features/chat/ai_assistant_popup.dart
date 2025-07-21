@@ -1,5 +1,5 @@
-// features/chat/ai_assistant_popup.dart
 import 'package:flutter/material.dart';
+import 'package:haraka_afya_ai/services/openai_service.dart';
 
 class AIAssistantPopup extends StatefulWidget {
   const AIAssistantPopup({super.key});
@@ -10,291 +10,273 @@ class AIAssistantPopup extends StatefulWidget {
 
 class _AIAssistantPopupState extends State<AIAssistantPopup> {
   final TextEditingController _messageController = TextEditingController();
-  final List<ChatMessage> _messages = [
-    ChatMessage(
-      text: "Hello! I'm your Haraka-Afya AI assistant. How can I help you today?",
-      isUser: false,
-      time: "Now",
-    ),
-  ];
-  bool _isMinimized = false;
-  final Color _whatsappGreen = const Color(0xFF25D366);
-  final Color _whatsappLightGreen = const Color(0xFFDCF8C6);
-  final Color _whatsappLightGray = const Color(0xFFECECEC);
+  final OpenAIService _openAIService = OpenAIService();
+  final List<ChatMessage> _messages = [];
+  bool _isLoading = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
+    final message = _messageController.text.trim();
+    if (message.isEmpty) return;
+
+    // Add user message
+    setState(() {
+      _messages.add(ChatMessage(
+        text: message,
+        isUser: true,
+        timestamp: DateTime.now(),
+      ));
+      _messageController.clear();
+      _isLoading = true;
+    });
+
+    _scrollToBottom();
+
+    try {
+      // Get AI response
+      final response = await _openAIService.sendMessage(message);
+      
+      // Add AI response
+      setState(() {
+        _messages.add(ChatMessage(
+          text: response,
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: 'Error: ${e.toString()}',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
+      });
+    } finally {
+      setState(() => _isLoading = false);
+      _scrollToBottom();
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        if (!_isMinimized)
-          Positioned(
-            right: 20,
-            bottom: 80,
-            child: Material(
-              borderRadius: BorderRadius.circular(16),
-              elevation: 8,
-              child: Container(
-                width: 350,
-                height: 500,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: _whatsappGreen, width: 1),
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF075E54),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  topRight: Radius.circular(8),
                 ),
-                child: Column(
-                  children: [
-                    // Header with WhatsApp-like styling
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _whatsappGreen,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.medical_services, color: Color(0xFF075E54)),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Haraka Afya AI',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(Icons.chat, color: _whatsappGreen),
+                        Text(
+                          'Online',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
                           ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'Haraka-Afya AI Support',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.minimize, color: Colors.white),
-                            onPressed: () => setState(() => _isMinimized = true),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    
-                    // Chat messages with WhatsApp-like bubbles
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        reverse: false,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+
+            // Chat messages
+            Expanded(
+              child: Container(
+                color: const Color(0xFFECE5DD),
+                child: _messages.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Ask me anything about health...',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(8),
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
-                          return _buildWhatsAppMessage(_messages[index]);
+                          return _buildMessageBubble(_messages[index]);
                         },
                       ),
-                    ),
-                    
-                    // Input area with WhatsApp-like styling
-                    Container(
-                      padding: const EdgeInsets.all(8),
+              ),
+            ),
+
+            // Input area
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
                       decoration: BoxDecoration(
-                        color: _whatsappLightGray,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(16),
-                          bottomRight: Radius.circular(16),
-                        ),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
                       child: Row(
                         children: [
+                          const SizedBox(width: 12),
                           Expanded(
                             child: TextField(
                               controller: _messageController,
-                              decoration: InputDecoration(
-                                hintText: 'Type your message...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(24),
-                                  borderSide: BorderSide.none,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                                ),
+                              decoration: const InputDecoration(
+                                hintText: 'Type a message...',
+                                border: InputBorder.none,
                               ),
+                              maxLines: null,
+                              onSubmitted: (_) => _sendMessage(),
                             ),
-                          const SizedBox(width: 8),
-                          CircleAvatar(
-                            backgroundColor: _whatsappGreen,
-                            child: IconButton(
-                              icon: const Icon(Icons.send, color: Colors.white),
-                              onPressed: _sendMessage,
-                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.emoji_emotions_outlined),
+                            onPressed: () {},
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        
-        // Minimized state with WhatsApp-like floating button
-        if (_isMinimized)
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: GestureDetector(
-              onTap: () => setState(() => _isMinimized = false),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _whatsappGreen,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.chat, color: Colors.white, size: 30),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildWhatsAppMessage(ChatMessage message) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: message.isUser 
-            ? MainAxisAlignment.end 
-            : MainAxisAlignment.start,
-        children: [
-          if (!message.isUser)
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _whatsappGreen,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.chat, color: Colors.white),
-            ),
-          if (!message.isUser) const SizedBox(width: 8),
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: message.isUser 
-                    ? _whatsappLightGreen
-                    : _whatsappLightGray,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(12),
-                  topRight: const Radius.circular(12),
-                  bottomLeft: Radius.circular(message.isUser ? 12 : 0),
-                  bottomRight: Radius.circular(message.isUser ? 0 : 12),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.text,
-                    style: const TextStyle(
-                      color: Colors.black,
-                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Text(
-                      message.time,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 10,
-                      ),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    backgroundColor: const Color(0xFF075E54),
+                    child: IconButton(
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.send, color: Colors.white),
+                      onPressed: _isLoading ? null : _sendMessage,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          if (message.isUser) const SizedBox(width: 8),
-          if (message.isUser)
-            const CircleAvatar(
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.person, color: Colors.white),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
-    setState(() {
-      _messages.add(ChatMessage(
-        text: _messageController.text,
-        isUser: true,
-        time: "Just now",
-      ));
-      
-      // Simulate AI response after 1 second
-      Future.delayed(const Duration(seconds: 1), () {
-        setState(() {
-          _messages.add(ChatMessage(
-            text: _getAIResponse(_messageController.text),
-            isUser: false,
-            time: "Now",
-          ));
-        });
-      });
-      
-      _messageController.clear();
-    });
-  }
-
-  String _getAIResponse(String message) {
-    message = message.toLowerCase();
-    
-    if (message.contains('hello') || message.contains('hi')) {
-      return "Hello! How can I assist you with your health today?";
-    } else if (message.contains('malaria')) {
-      return "Malaria is a serious disease. Common symptoms include fever, chills, and headache. Have you been experiencing any of these?";
-    } else if (message.contains('hospital') || message.contains('doctor')) {
-      return "I can help you find nearby hospitals. Would you like me to show hospitals in your area?";
-    } else if (message.contains('symptom')) {
-      return "Please describe your symptoms and I'll try to help. Remember, I'm not a substitute for professional medical advice.";
-    } else {
-      return "Thank you for your message. I'm here to help with health-related questions. Could you please provide more details?";
-    }
+  Widget _buildMessageBubble(ChatMessage message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: message.isUser ? const Color(0xFFDCF8C6) : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(8),
+            topRight: const Radius.circular(8),
+            bottomLeft: Radius.circular(message.isUser ? 8 : 0),
+            bottomRight: Radius.circular(message.isUser ? 0 : 8),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 1,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message.text,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 class ChatMessage {
   final String text;
   final bool isUser;
-  final String time;
+  final DateTime timestamp;
 
   ChatMessage({
     required this.text,
     required this.isUser,
-    required this.time,
+    required this.timestamp,
   });
 }
