@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
-class SubscriptionPlansScreen extends StatelessWidget {
+class SubscriptionPlansScreen extends StatefulWidget {
   const SubscriptionPlansScreen({super.key});
+
+  @override
+  State<SubscriptionPlansScreen> createState() => _SubscriptionPlansScreenState();
+}
+
+class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
+  String _selectedPlan = 'Premium'; // Default selected plan
+
+  void _selectPlan(String plan) {
+    setState(() {
+      _selectedPlan = plan;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,15 +73,19 @@ class SubscriptionPlansScreen extends StatelessWidget {
                       'Symptom checker',
                       'Find nearby hospitals',
                     ],
+                    cardColor: Colors.white,
                     buttonColor: Colors.white,
                     textColor: Colors.black,
-                    borderColor: Colors.grey.shade300,
+                    borderColor: _selectedPlan == 'Free' ? const Color(0xFF259A4F) : Colors.grey.shade300,
                     isPopular: false,
+                    buttonTextColor: Colors.black,
+                    selected: _selectedPlan == 'Free',
+                    onSelect: () => _selectPlan('Free'),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Premium Plan (FIXED: text now black for visibility)
+                // Premium Plan
                 _buildPlanCard(
                   title: 'Premium',
                   price: '\$7.99',
@@ -79,9 +95,14 @@ class SubscriptionPlansScreen extends StatelessWidget {
                     'Personalized health insights',
                     'Medication reminders',
                   ],
-                  buttonColor: const Color(0xFF16A249),
-                  textColor: Colors.black, // 👈 FIXED TEXT COLOR
+                  cardColor: Colors.white,
+                  buttonColor: const Color(0xFF259A4F),
+                  textColor: Colors.black,
+                  borderColor: _selectedPlan == 'Premium' ? const Color(0xFF259A4F) : Colors.grey.shade300,
                   isPopular: true,
+                  buttonTextColor: Colors.white,
+                  selected: _selectedPlan == 'Premium',
+                  onSelect: () => _selectPlan('Premium'),
                 ),
 
                 const SizedBox(height: 16),
@@ -107,82 +128,92 @@ class SubscriptionPlansScreen extends StatelessWidget {
     String? subPriceText,
     required String description,
     required List<String> features,
+    required Color cardColor,
     required Color buttonColor,
     required Color textColor,
+    required Color buttonTextColor,
     Color? borderColor,
     required bool isPopular,
+    required bool selected,
+    required VoidCallback onSelect,
   }) {
-    return Card(
-      elevation: 3,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: borderColor != null ? BorderSide(color: borderColor) : BorderSide.none,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(price, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
-            if (subPriceText != null)
-              Text(subPriceText, style: TextStyle(color: textColor.withOpacity(0.7))),
-            if (isPopular)
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF16A249),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.star, size: 16, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text('Most Popular', style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
-              ),
-            Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
-            const SizedBox(height: 4),
-            Text(description, style: TextStyle(color: textColor.withOpacity(0.7))),
-            const SizedBox(height: 12),
-            ...features.map((feature) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFF8FCF9),
+    return InkWell(
+      onTap: onSelect,
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        elevation: 4,
+        color: cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: borderColor ?? Colors.transparent, width: 2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              if (isPopular)
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF259A4F),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.check, color: Color(0xFF17A249), size: 16),
+                    child: const Text(
+                      'Most Popular',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(feature, style: TextStyle(fontSize: 16, color: textColor))),
-                ],
-              ),
-            )),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: buttonColor,
-                  foregroundColor: buttonColor == Colors.white ? textColor : Colors.white,
-                  side: borderColor != null ? BorderSide(color: borderColor) : BorderSide.none,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                onPressed: () {},
-                child: const Text('Choose Plan'),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(price, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                    if (subPriceText != null)
+                      Text(subPriceText, style: TextStyle(color: textColor.withOpacity(0.7))),
+                    Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+                    const SizedBox(height: 4),
+                    Text(description, style: TextStyle(color: textColor.withOpacity(0.7))),
+                    const SizedBox(height: 12),
+                    ...features.map((feature) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFFF8FCF9),
+                                ),
+                                child: const Icon(Icons.check, color: Color(0xFF259A4F), size: 16),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(feature, style: TextStyle(fontSize: 16, color: textColor))),
+                            ],
+                          ),
+                        )),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: buttonColor,
+                          foregroundColor: buttonTextColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: onSelect,
+                        child: Text('Choose Plan', style: TextStyle(color: buttonTextColor)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -200,10 +231,14 @@ class SubscriptionPlansScreen extends StatelessWidget {
         'Shared medication tracking',
         'Emergency contacts'
       ],
+      cardColor: Colors.white,
       buttonColor: Colors.white,
       textColor: Colors.black,
-      borderColor: Colors.grey.shade300,
+      borderColor: _selectedPlan == 'Family' ? const Color(0xFF259A4F) : Colors.grey.shade300,
       isPopular: false,
+      buttonTextColor: Colors.black,
+      selected: _selectedPlan == 'Family',
+      onSelect: () => _selectPlan('Family'),
     );
   }
 
