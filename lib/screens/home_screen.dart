@@ -44,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
+      backgroundColor: const Color(0xFFEDFCF5),
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
@@ -63,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF0C6D5B),
+      selectedItemColor: const Color(0xFF259450),
       unselectedItemColor: Colors.grey,
       onTap: (index) {
         setState(() => _currentIndex = index);

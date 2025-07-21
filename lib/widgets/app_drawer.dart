@@ -14,17 +14,32 @@ class AppDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            accountName: Text(user?.displayName ?? 'User'),
-            accountEmail: Text(user?.email ?? ''),
+            accountName: Text(
+              user?.displayName ?? 'User',
+              style: const TextStyle(
+                color: Colors.black,  // Black text for name
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            accountEmail: Text(
+              user?.email ?? '',
+              style: const TextStyle(
+                color: Colors.black,  // Black text for email
+              ),
+            ),
             currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
+              backgroundColor: const Color(0xFF259D55),
               child: Text(
                 user?.displayName?.substring(0, 1) ?? 'U',
-                style: const TextStyle(fontSize: 40),
+                style: const TextStyle(
+                  fontSize: 40,
+                  color: Colors.white,
+                ),
               ),
             ),
             decoration: const BoxDecoration(
-              color: Color(0xFF0C6D5B),
+              color: Color(0xFFEDFCF5),
             ),
           ),
           ListTile(
@@ -32,7 +47,7 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Profile Settings'),
             subtitle: const Text('Manage your account'),
             onTap: () {
-              Navigator.pop(context); // Close drawer
+              Navigator.pop(context);
               Navigator.pushNamed(context, '/profile');
             },
           ),
@@ -41,7 +56,7 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Subscription Plans'),
             subtitle: const Text('Upgrade your plan'),
             onTap: () {
-              Navigator.pop(context); // Close drawer
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SubscriptionPlansScreen()),
