@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/sign_in_page.dart';
@@ -15,6 +16,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await dotenv.load(fileName: ".env"); // Load OpenAI API key
   runApp(const HarakaAfyaApp());
 }
 
@@ -40,9 +42,7 @@ class HarakaAfyaApp extends StatelessWidget {
           unselectedItemColor: Colors.grey,
         ),
       ),
-      // Start with splash screen
       home: const SplashScreen(),
-      // Define all routes
       routes: {
         '/auth': (context) => const AuthWrapper(),
         '/signin': (context) => const SignInPage(),
@@ -56,7 +56,6 @@ class HarakaAfyaApp extends StatelessWidget {
   }
 }
 
-// Handles authentication state and routing
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -65,20 +64,12 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Show loading indicator while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
-        // If user is logged in, go to home page
-        if (snapshot.hasData) {
-          return const HomeScreen();
-        }
-        
-        // If not logged in, go to sign in page
-        return const SignInPage();
+        return snapshot.hasData ? const HomeScreen() : const SignInPage();
       },
     );
   }
