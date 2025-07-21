@@ -9,6 +9,7 @@ import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/features/emergency_services_page.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
+import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,18 +23,18 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController(initialPage: 0);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   String _getGreeting(String? displayName) {
     final hour = DateTime.now().hour;
     final name = displayName?.split(' ')[0] ?? 'there';
     return hour < 12 ? 'Good Morning, $name!'
          : hour < 17 ? 'Good Afternoon, $name!'
          : 'Good Evening, $name!';
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   @override
@@ -145,7 +146,7 @@ class HomeContent extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildHealthOverview(),
                 const SizedBox(height: 24),
-                _buildHealthArticlesSection(),
+                const HealthArticlesCarousel(), // Using the new widget
                 const SizedBox(height: 24),
                 _buildQuickActionsGrid(),
                 const SizedBox(height: 24),
@@ -176,76 +177,52 @@ class HomeContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _buildArticleCard(
-          title: 'Understanding Malaria',
-          description: 'Essential tips for protecting yourself and your family from malaria',
-          author: 'Dr. Sarah Wanjiku',
-          readTime: '5 min read • 2 days ago',
+        SizedBox(
+          height: 280, // Fixed height for the article carousel
+          child: PageView(
+            controller: PageController(viewportFraction: 0.9),
+            padEnds: false,
+            children: const [
+              _ArticleCard(
+                imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+                title: 'Understanding Malaria',
+                description: 'Essential tips for protecting yourself and your family from malaria',
+                author: 'Dr. Sarah Wanjiku',
+                readTime: '5 min read • 2 days ago',
+              ),
+              _ArticleCard(
+                imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+                title: 'Healthy Eating on a Budget',
+                description: 'How to maintain a nutritious diet without breaking the bank',
+                author: 'Nutritionist Mary Kibet',
+                readTime: '8 min read • 1 week ago',
+              ),
+              _ArticleCard(
+                imageUrl: 'https://images.unsplash.com/photo-1531058240698-8229fc56e539?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+                title: 'Managing Stress in Urban Kenya',
+                description: 'Practical strategies for mental wellness in busy city life',
+                author: 'Dr. James Mwanqi',
+                readTime: '6 min read • 3 days ago',
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        _buildArticleCard(
-          title: 'Healthy Eating on a Budget',
-          description: 'How to maintain a nutritious diet without breaking the bank',
-          author: 'Nutritionist Mary Kibet',
-          readTime: '8 min read • 1 week ago',
-        ),
-        const SizedBox(height: 16),
-        _buildArticleCard(
-          title: 'Managing Stress in Urban Kenya',
-          description: 'Practical strategies for mental wellness in busy city life',
-          author: 'Dr. James Mwanqi',
-          readTime: '6 min read • 3 days ago',
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (index) {
+            return Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: index == 0 ? const Color(0xFF259450) : Colors.grey[300],
+              ),
+            );
+          }),
         ),
       ],
-    );
-  }
-
-  Widget _buildArticleCard({
-    required String title,
-    required String description,
-    required String author,
-    required String readTime,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              author,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              readTime,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -255,7 +232,7 @@ class HomeContent extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      color: const Color(0xFFD8FBE5), // Light green background
+      color: const Color(0xFFD8FBE5),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -286,8 +263,8 @@ class HomeContent extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF279A51), // Green button color
-                  foregroundColor: Colors.white, // White text color
+                  backgroundColor: const Color(0xFF279A51),
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -738,6 +715,86 @@ class HomeContent extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ArticleCard extends StatelessWidget {
+  final String imageUrl;
+  final String title;
+  final String description;
+  final String author;
+  final String readTime;
+
+  const _ArticleCard({
+    required this.imageUrl,
+    required this.title,
+    required this.description,
+    required this.author,
+    required this.readTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Image.network(
+              imageUrl,
+              height: 120,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      author,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      readTime,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
