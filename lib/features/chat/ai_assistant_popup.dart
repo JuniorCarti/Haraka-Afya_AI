@@ -64,14 +64,14 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFF075E54),
+              color: const Color(0xFF269A51),
               shape: BoxShape.circle,
             ),
             child: Stack(
               children: [
                 const Center(
                   child: Icon(
-                    Icons.medical_services,
+                    Icons.chat_bubble_outline,
                     color: Colors.white,
                     size: 30,
                   ),
@@ -120,9 +120,9 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xFF075E54),
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: const Color(0xFF269A51),
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
                 ),
@@ -152,14 +152,14 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return ListTile(
-                      leading: const Icon(Icons.add, color: Color(0xFF075E54)),
+                      leading: const Icon(Icons.add, color: Color(0xFF269A51)),
                       title: const Text('Start New Chat'),
                       onTap: _startNewChat,
                     );
                   }
                   final chat = _chatSessions[index - 1];
                   return ListTile(
-                    leading: const Icon(Icons.medical_services, color: Color(0xFF075E54)),
+                    leading: const Icon(Icons.chat_bubble_outline, color: Color(0xFF269A51)),
                     title: Text(chat.title),
                     subtitle: Text(chat.lastMessage),
                     trailing: const Icon(Icons.chevron_right),
@@ -194,9 +194,9 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: const BoxDecoration(
-                color: Color(0xFF075E54),
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: const Color(0xFF269A51),
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
                 ),
@@ -205,7 +205,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                 children: [
                   const CircleAvatar(
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.medical_services, color: Color(0xFF075E54)),
+                    child: Icon(Icons.medical_services, color: Color(0xFF269A51)),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -247,8 +247,9 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                 child: _messages.isEmpty
                     ? const Center(
                         child: Text(
-                          'Ask me anything about health...',
+                          'Hey there! What health topic are you curious about today?',
                           style: TextStyle(color: Colors.grey),
+                          textAlign: TextAlign.center,
                         ),
                       )
                     : ListView.builder(
@@ -297,7 +298,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                   ),
                   const SizedBox(width: 8),
                   CircleAvatar(
-                    backgroundColor: const Color(0xFF075E54),
+                    backgroundColor: const Color(0xFF269A51),
                     child: IconButton(
                       icon: _isLoading
                           ? const SizedBox(
@@ -325,11 +326,8 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Main chat or chat list view
         if (!_isMinimized) 
           _showChatList ? _buildChatListView() : _buildMainChatView(),
-        
-        // Minimized floating button (always on top)
         if (_isMinimized) _buildMinimizedView(),
       ],
     );
