@@ -14,6 +14,12 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   final ScrollController _scrollController = ScrollController();
+  bool _isMinimized = false;
+  bool _showChatList = false;
+  final List<ChatSession> _chatSessions = [
+    ChatSession(id: '1', title: 'Current Chat', lastMessage: 'Just now'),
+    ChatSession(id: '2', title: 'Previous Consultation', lastMessage: 'Yesterday'),
+  ];
 
   @override
   void dispose() {
@@ -22,83 +28,177 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
     super.dispose();
   }
 
-  Future<void> _sendMessage() async {
-    final message = _messageController.text.trim();
-    if (message.isEmpty) return;
-
-    // Add user message
+  void _toggleMinimize() {
     setState(() {
-      _messages.add(ChatMessage(
-        text: message,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
-      _messageController.clear();
-      _isLoading = true;
-    });
-
-    _scrollToBottom();
-
-    try {
-      // Get AI response
-      final response = await _openAIService.sendMessage(message);
-      
-      // Add AI response
-      setState(() {
-        _messages.add(ChatMessage(
-          text: response,
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
-      });
-    } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(
-          text: 'Error: ${e.toString()}',
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
-      });
-    } finally {
-      setState(() => _isLoading = false);
-      _scrollToBottom();
-    }
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+      _isMinimized = !_isMinimized;
+      if (!_isMinimized) {
+        _showChatList = false;
       }
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void _showChatSelection() {
+    setState(() {
+      _showChatList = true;
+      _isMinimized = false;
+    });
+  }
+
+  void _startNewChat() {
+    setState(() {
+      _messages.clear();
+      _showChatList = false;
+    });
+  }
+
+  Widget _buildMinimizedView() {
+    return Positioned(
+      bottom: 20,
+      right: 20,
+      child: GestureDetector(
+        onTap: _showChatSelection,
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: const Color(0xFF075E54),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              children: [
+                const Center(
+                  child: Icon(
+                    Icons.medical_services,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+                if (_messages.isNotEmpty)
+                  Positioned(
+                    top: 5,
+                    right: 5,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Text(
+                        '1',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatListView() {
     return Dialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Container(
+      insetPadding: const EdgeInsets.all(20),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFF075E54),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    'Your Chats',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: _chatSessions.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return ListTile(
+                      leading: const Icon(Icons.add, color: Color(0xFF075E54)),
+                      title: const Text('Start New Chat'),
+                      onTap: _startNewChat,
+                    );
+                  }
+                  final chat = _chatSessions[index - 1];
+                  return ListTile(
+                    leading: const Icon(Icons.medical_services, color: Color(0xFF075E54)),
+                    title: Text(chat.title),
+                    subtitle: Text(chat.lastMessage),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      setState(() {
+                        _showChatList = false;
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainChatView() {
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      insetPadding: const EdgeInsets.all(20),
+      child: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.8,
           maxWidth: MediaQuery.of(context).size.width * 0.9,
         ),
         child: Column(
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF075E54),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF075E54),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
                 ),
               ),
               child: Row(
@@ -131,14 +231,16 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                     ),
                   ),
                   IconButton(
+                    icon: const Icon(Icons.minimize, color: Colors.white),
+                    onPressed: _toggleMinimize,
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
             ),
-
-            // Chat messages
             Expanded(
               child: Container(
                 color: const Color(0xFFECE5DD),
@@ -159,8 +261,6 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                       ),
               ),
             ),
-
-            // Input area
             Container(
               padding: const EdgeInsets.all(8),
               color: Colors.white,
@@ -221,6 +321,71 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Main chat or chat list view
+        if (!_isMinimized) 
+          _showChatList ? _buildChatListView() : _buildMainChatView(),
+        
+        // Minimized floating button (always on top)
+        if (_isMinimized) _buildMinimizedView(),
+      ],
+    );
+  }
+
+  Future<void> _sendMessage() async {
+    final message = _messageController.text.trim();
+    if (message.isEmpty) return;
+
+    setState(() {
+      _messages.add(ChatMessage(
+        text: message,
+        isUser: true,
+        timestamp: DateTime.now(),
+      ));
+      _messageController.clear();
+      _isLoading = true;
+    });
+
+    _scrollToBottom();
+
+    try {
+      final response = await _openAIService.sendMessage(message);
+      setState(() {
+        _messages.add(ChatMessage(
+          text: response,
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: 'Error: ${e.toString()}',
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
+      });
+    } finally {
+      setState(() => _isLoading = false);
+      _scrollToBottom();
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   Widget _buildMessageBubble(ChatMessage message) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -278,5 +443,17 @@ class ChatMessage {
     required this.text,
     required this.isUser,
     required this.timestamp,
+  });
+}
+
+class ChatSession {
+  final String id;
+  final String title;
+  final String lastMessage;
+
+  ChatSession({
+    required this.id,
+    required this.title,
+    required this.lastMessage,
   });
 }
