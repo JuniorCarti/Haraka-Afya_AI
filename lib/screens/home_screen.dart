@@ -8,6 +8,7 @@ import 'package:haraka_afya_ai/features/profile_page.dart';
 import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/features/emergency_services_page.dart';
+import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -153,7 +154,7 @@ class HomeContent extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildMedicationReminder(),
                 const SizedBox(height: 24),
-                _buildPremiumUpgrade(),
+                _buildPremiumUpgrade(context),
               ],
             ),
           ),
@@ -247,12 +248,13 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildPremiumUpgrade() {
+  Widget _buildPremiumUpgrade(BuildContext context) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
+      color: const Color(0xFFD8FBE5), // Light green background
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -274,8 +276,29 @@ class HomeContent extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
-                onPressed: () {},
-                child: const Text('Upgrade'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SubscriptionPlansScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF279A51), // Green button color
+                  foregroundColor: Colors.white, // White text color
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Upgrade',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -325,60 +348,60 @@ class HomeContent extends StatelessWidget {
   }
 
   Widget _buildAIAssistantCard(BuildContext context) {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF25D366), // WhatsApp green
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.chat, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Haraka-Afya Support',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Chat with our AI assistant anytime!',
-            style: TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_forward),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  barrierColor: Colors.transparent,
-                  builder: (context) => const AIAssistantPopup(),
-                );
-              },
-            ),
-          ),
-        ],
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-    ),
-  );
-}
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF25D366),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.chat, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Haraka-Afya Support',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Chat with our AI assistant anytime!',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierColor: Colors.transparent,
+                    builder: (context) => const AIAssistantPopup(),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildEmergencyCard(BuildContext context) {
     return Card(
