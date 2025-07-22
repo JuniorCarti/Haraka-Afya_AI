@@ -12,6 +12,7 @@ import 'screens/auth/sign_in_page.dart';
 import 'screens/home_screen.dart';
 import 'screens/community_screen.dart';
 import 'screens/create_post_screen.dart';
+import 'screens/privacy_security_screen.dart'; // Added import
 
 // Features
 import 'features/learn_page.dart';
@@ -94,6 +95,7 @@ class HarakaAfyaApp extends StatelessWidget {
       '/symptoms': (context) => const SymptomsPage(),
       '/hospitals': (context) => const HospitalsPage(),
       '/profile': (context) => const ProfilePage(),
+      '/privacy_security': (context) => const PrivacySecurityScreen(), // Added route
     };
   }
 }
