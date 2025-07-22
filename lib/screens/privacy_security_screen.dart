@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:haraka_afya_ai/widgets/LegalDocumentsScreen.dart';
+import 'package:haraka_afya_ai/widgets/legal_documents.dart';
 
 class PrivacySecurityScreen extends StatelessWidget {
   const PrivacySecurityScreen({super.key});
@@ -7,15 +9,13 @@ class PrivacySecurityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF3F7F8),
+      backgroundColor: const Color(0xFFF3F7F8),
       appBar: AppBar(
-        backgroundColor: Color(0xFFE6F6EC),
+        backgroundColor: const Color(0xFFE6F6EC),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/home');
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           children: const [
@@ -51,14 +51,34 @@ class PrivacySecurityScreen extends StatelessWidget {
             _buildSwitchTile(Icons.location_on, 'Location Tracking', 'Find nearby healthcare facilities', false),
             _buildSwitchTile(Icons.notifications, 'Push Notifications', 'Medication reminders and health tips', true),
             const SizedBox(height: 24),
-            _buildSupportCard(),
+            _buildSupportCard(context),
             const SizedBox(height: 24),
             const Text('Legal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildLegalItem('Privacy Policy'),
-            _buildLegalItem('Terms of Service'),
-            _buildLegalItem('Data Protection Notice'),
-            _buildLegalItem('Cookie Policy'),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Privacy Policy'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _navigateToDocumentScreen(context, 'Privacy Policy', LegalDocuments.privacyPolicy),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Terms of Service'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _navigateToDocumentScreen(context, 'Terms of Service', LegalDocuments.termsOfService),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Data Protection Notice'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _navigateToDocumentScreen(context, 'Data Protection Notice', LegalDocuments.dataProtectionNotice),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Cookie Policy'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _navigateToDocumentScreen(context, 'Cookie Policy', LegalDocuments.cookiePolicy),
+            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -133,7 +153,7 @@ class PrivacySecurityScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSupportCard() {
+  Widget _buildSupportCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -159,6 +179,7 @@ class PrivacySecurityScreen extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () {
               // TODO: implement email support logic
+              _launchEmailSupport(context);
             },
             icon: const Icon(Icons.mail),
             label: const Text('Email Support'),
@@ -176,14 +197,22 @@ class PrivacySecurityScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLegalItem(String title) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        // TODO: navigate to legal page
-      },
+  void _navigateToDocumentScreen(BuildContext context, String title, String content) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LegalDocumentsScreen(
+          documentType: title,
+          content: content,
+        ),
+      ),
+    );
+  }
+
+  void _launchEmailSupport(BuildContext context) {
+    // Implement email launching logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Opening email support...')),
     );
   }
 }
