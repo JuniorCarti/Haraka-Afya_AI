@@ -11,6 +11,7 @@ import 'package:haraka_afya_ai/features/emergency_services_page.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/widgets/circular_quick_actions.dart';
+import 'package:haraka_afya_ai/features/community/community_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,6 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final greeting = _getGreeting(user?.displayName);
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
@@ -139,7 +143,15 @@ class HomeContent extends StatelessWidget {
               const SizedBox(height: 16),
               _buildSymptomChecker(),
               const SizedBox(height: 16),
-              const HealthArticlesCarousel(),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CommunityScreen()),
+                  );
+                },
+                child: const HealthArticlesCarousel(),
+              ),
               const SizedBox(height: 16),
               GlovoStyleQuickActions(
                 onItemSelected: (index) {
