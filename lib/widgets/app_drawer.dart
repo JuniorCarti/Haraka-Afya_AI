@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
+import 'package:haraka_afya_ai/screens/privacy_security_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -10,6 +11,7 @@ class AppDrawer extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     
     return Drawer(
+      width: MediaQuery.of(context).size.width * 0.85,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -17,7 +19,7 @@ class AppDrawer extends StatelessWidget {
             accountName: Text(
               user?.displayName ?? 'User',
               style: const TextStyle(
-                color: Colors.black,  // Black text for name
+                color: Colors.black,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -25,37 +27,41 @@ class AppDrawer extends StatelessWidget {
             accountEmail: Text(
               user?.email ?? '',
               style: const TextStyle(
-                color: Colors.black,  // Black text for email
+                color: Colors.black87,
               ),
             ),
             currentAccountPicture: CircleAvatar(
-              backgroundColor: const Color(0xFF259D55),
-              child: Text(
-                user?.displayName?.substring(0, 1) ?? 'U',
-                style: const TextStyle(
-                  fontSize: 40,
-                  color: Colors.white,
-                ),
-              ),
+              backgroundColor: const Color(0xFF16A249), // Dark green
+              backgroundImage: user?.photoURL != null 
+                  ? NetworkImage(user!.photoURL!)
+                  : null,
+              child: user?.photoURL == null
+                  ? Text(
+                      user?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
             ),
             decoration: const BoxDecoration(
-              color: Color(0xFFEDFCF5),
+              color: Color(0xFFF0FDF4), // Light green
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profile Settings'),
-            subtitle: const Text('Manage your account'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/profile');
-            },
+          _buildDrawerItem(
+            context,
+            icon: Icons.person,
+            title: 'Profile Settings',
+            subtitle: 'Manage your account',
+            route: '/profile',
           ),
-          ListTile(
-            leading: const Icon(Icons.credit_card),
-            title: const Text('Subscription Plans'),
-            subtitle: const Text('Upgrade your plan'),
-            onTap: () {
+          _buildDrawerItem(
+            context,
+            icon: Icons.credit_card,
+            title: 'Subscription Plans',
+            subtitle: 'Upgrade your plan',
+            action: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
@@ -63,41 +69,85 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            subtitle: const Text('Manage alerts'),
-            onTap: () {},
+          _buildDrawerItem(
+            context,
+            icon: Icons.notifications,
+            title: 'Notifications',
+            subtitle: 'Manage alerts',
+            route: '/notifications',
           ),
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: const Text('Language Settings'),
-            subtitle: const Text('Swahili, English, Sheng'),
-            onTap: () {},
+          _buildDrawerItem(
+            context,
+            icon: Icons.language,
+            title: 'Language Settings',
+            subtitle: 'Swahili, English, Sheng',
+            route: '/language',
           ),
-          ListTile(
-            leading: const Icon(Icons.security),
-            title: const Text('Privacy & Security'),
-            subtitle: const Text('Your data protection'),
-            onTap: () {},
+          _buildDrawerItem(
+            context,
+            icon: Icons.security,
+            title: 'Privacy & Security',
+            subtitle: 'Your data protection',
+            action: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()),
+              );
+            },
           ),
-          ListTile(
-            leading: const Icon(Icons.help),
-            title: const Text('Help & Support'),
-            subtitle: const Text('Get assistance'),
-            onTap: () {},
+          _buildDrawerItem(
+            context,
+            icon: Icons.help,
+            title: 'Help & Support',
+            subtitle: 'Get assistance',
+            route: '/help',
           ),
-          const Divider(),
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: Colors.grey,
+          ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              FirebaseAuth.instance.signOut();
+            title: const Text(
+              'Sign Out', 
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () async {
+              await FirebaseAuth.instance.signOut();
+              if (!context.mounted) return;
               Navigator.pushReplacementNamed(context, '/signin');
             },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? route,
+    VoidCallback? action,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF16A249)), // Dark green
+      title: Text(title),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(fontSize: 12),
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        if (action != null) {
+          action();
+        } else if (route != null) {
+          Navigator.pushNamed(context, route);
+        }
+      },
     );
   }
 }
