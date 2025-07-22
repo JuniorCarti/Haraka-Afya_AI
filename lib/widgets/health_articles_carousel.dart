@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:haraka_afya_ai/models/post.dart';
+import 'package:haraka_afya_ai/repositories/post_repository.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HealthArticlesCarousel extends StatefulWidget {
   const HealthArticlesCarousel({super.key});
@@ -9,141 +13,164 @@ class HealthArticlesCarousel extends StatefulWidget {
 }
 
 class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
-  final PageController _pageController = PageController(viewportFraction: 0.9);
+  late PageController _pageController;
   int _currentPage = 0;
-  Timer? _timer;
-
-  final List<Map<String, String>> articles = [
-    {
-      'imageUrl': 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      'title': 'Understanding Malaria',
-      'description': 'Essential tips for protecting yourself and your family from malaria',
-      'author': 'Dr. Sarah Wanjiku',
-      'readTime': '5 min read • 2 days ago',
-    },
-    {
-      'imageUrl': 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      'title': 'Healthy Eating on a Budget',
-      'description': 'How to maintain a nutritious diet without breaking the bank',
-      'author': 'Nutritionist Mary Kibet',
-      'readTime': '8 min read • 1 week ago',
-    },
-    {
-      'imageUrl': 'https://images.unsplash.com/photo-1713947503867-3b27964f042b?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzV8fHN0cmVzc3xlbnwwfHwwfHx8MA%3D%3D',
-      'title': 'Managing Stress in Urban Kenya',
-      'description': 'Practical strategies for mental wellness in busy city life',
-      'author': 'Dr. James Mwangi',
-      'readTime': '6 min read • 3 days ago',
-    },
-  ];
+  Timer? _autoPlayTimer;
+  List<Post> _posts = [];
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
     _startAutoPlay();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _autoPlayTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
   void _startAutoPlay() {
-    _timer = Timer.periodic(const Duration(seconds: 6), (timer) {
-      if (_currentPage < articles.length - 1) {
-        _currentPage++;
-      } else {
-        _currentPage = 0;
-      }
-      if (_pageController.hasClients) {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
+      if (_posts.length <= 1) return; // No need to auto-play if only one post
+      
+      final nextPage = _currentPage + 1;
+      if (nextPage >= _posts.length) {
         _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
+          0,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutQuint,
+        );
+      } else {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutQuint,
         );
       }
     });
   }
 
+  void _handlePageChanged(int index) {
+    setState(() {
+      _currentPage = index;
+    });
+    // Restart timer when user manually swipes
+    _startAutoPlay();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.0),
-          child: Text(
-            'Health Articles',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+    final postRepo = Provider.of<PostRepository>(context);
+
+    return StreamBuilder<List<Post>>(
+      stream: postRepo.getPosts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingIndicator();
+        }
+
+        if (snapshot.hasError) {
+          return _buildErrorWidget(snapshot.error.toString());
+        }
+
+        final newPosts = snapshot.data ?? [];
+        if (newPosts.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        // Only update posts if they've actually changed
+        if (_posts.length != newPosts.length || 
+            (_posts.isNotEmpty && _posts[0].id != newPosts[0].id)) {
+          _posts = newPosts;
+          // Reset to first page when posts change
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_pageController.hasClients) {
+              _pageController.jumpToPage(0);
+            }
+          });
+          _startAutoPlay();
+        }
+
+        return _buildCarousel();
+      },
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return SizedBox(
+      height: 280,
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildErrorWidget(String error) {
+    return SizedBox(
+      height: 280,
+      child: Center(child: Text('Error loading posts: $error')),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return SizedBox(
+      height: 280,
+      child: Center(
+        child: Text(
+          'No posts available yet. Be the first to share!',
+          style: TextStyle(color: Colors.grey),
         ),
-        const SizedBox(height: 16),
+      ),
+    );
+  }
+
+  Widget _buildCarousel() {
+    return Column(
+      children: [
         SizedBox(
           height: 280,
           child: PageView.builder(
             controller: _pageController,
-            itemCount: articles.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
+            itemCount: _posts.length,
+            onPageChanged: _handlePageChanged,
             itemBuilder: (context, index) {
-              final article = articles[index];
+              final post = _posts[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: _ArticleCard(
-                  imageUrl: article['imageUrl']!,
-                  title: article['title']!,
-                  description: article['description']!,
-                  author: article['author']!,
-                  readTime: article['readTime']!,
-                ),
+                child: _PostCard(post: post),
               );
             },
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(articles.length, (index) {
-            return Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: index == _currentPage 
-                    ? const Color(0xFF259450) 
-                    : Colors.grey[300],
-              ),
-            );
-          }),
-        ),
+        if (_posts.length > 1) // Only show dots if there are multiple posts
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_posts.length, (index) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: index == _currentPage 
+                      ? const Color(0xFF259450)
+                      : Colors.grey[300],
+                ),
+              );
+            }),
+          ),
       ],
     );
   }
 }
 
-class _ArticleCard extends StatelessWidget {
-  final String imageUrl;
-  final String title;
-  final String description;
-  final String author;
-  final String readTime;
+class _PostCard extends StatelessWidget {
+  final Post post;
 
-  const _ArticleCard({
-    required this.imageUrl,
-    required this.title,
-    required this.description,
-    required this.author,
-    required this.readTime,
-  });
+  const _PostCard({required this.post});
 
   @override
   Widget build(BuildContext context) {
@@ -155,43 +182,14 @@ class _ArticleCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: SizedBox(
-              height: 120,
-              width: double.infinity,
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
+          if (post.mediaUrls.isNotEmpty) _buildPostImage(),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  post.title.isNotEmpty ? post.title : 'Community Post',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -199,7 +197,7 @@ class _ArticleCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  description,
+                  post.content,
                   style: const TextStyle(fontSize: 14),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -207,9 +205,14 @@ class _ArticleCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundImage: NetworkImage(post.authorImage),
+                    ),
+                    const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        author,
+                        post.authorName,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -219,7 +222,7 @@ class _ArticleCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      readTime,
+                      _formatTimestamp(post.timestamp),
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.grey,
@@ -233,5 +236,42 @@ class _ArticleCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildPostImage() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: SizedBox(
+        height: 120,
+        width: double.infinity,
+        child: CachedNetworkImage(
+          imageUrl: post.mediaUrls.first,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: Colors.grey[200],
+            child: const Center(
+              child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+    }
+    return 'Just now';
   }
 }

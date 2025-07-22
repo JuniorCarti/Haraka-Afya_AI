@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:haraka_afya_ai/repositories/post_repository.dart';
 import 'package:haraka_afya_ai/screens/community_screen.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
@@ -8,11 +10,9 @@ import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
 import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:haraka_afya_ai/features/emergency_services_page.dart';
-import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/widgets/circular_quick_actions.dart';
-
+import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,19 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  String _getGreeting(String? displayName) {
-    final hour = DateTime.now().hour;
-    final name = displayName?.split(' ')[0] ?? 'there';
-    return hour < 12 ? 'Good Morning, $name!'
-         : hour < 17 ? 'Good Afternoon, $name!'
-         : 'Good Evening, $name!';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final greeting = _getGreeting(user?.displayName);
-
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
@@ -110,6 +99,9 @@ class HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final greeting = _getGreeting(user?.displayName);
+
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
@@ -118,7 +110,7 @@ class HomeContent extends StatelessWidget {
           floating: true,
           snap: false,
           title: const Text(
-            'Health Education',
+            'Health Community',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -136,23 +128,15 @@ class HomeContent extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildGreetingSection(context),
+              _buildGreetingSection(context, greeting),
               const SizedBox(height: 16),
               _buildAIAssistantCard(context),
               const SizedBox(height: 16),
               _buildEmergencyCard(context),
               const SizedBox(height: 16),
               _buildSymptomChecker(),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CommunityScreen()),
-                  );
-                },
-                child: const HealthArticlesCarousel(),
-              ),
+              const SizedBox(height: 24),
+              _buildCommunitySection(context),
               const SizedBox(height: 16),
               GlovoStyleQuickActions(
                 onItemSelected: (index) {
@@ -174,10 +158,7 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildGreetingSection(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final greeting = _getGreeting(user?.displayName);
-
+  Widget _buildGreetingSection(BuildContext context, String greeting) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -196,6 +177,44 @@ class HomeContent extends StatelessWidget {
             color: Colors.black54,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildCommunitySection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Community Posts',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CommunityScreen(),
+                  ),
+                );
+              },
+              child: const Text(
+                'See All',
+                style: TextStyle(
+                  color: Color(0xFF259450),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const HealthArticlesCarousel(),
       ],
     );
   }
