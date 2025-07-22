@@ -68,5 +68,11 @@ flutter:
     - assets/stripe.png
     - assets/paypal.png
     - .env
+    - assets/pharmacy.png
+    - assets/hospital.png
+    - assets/symptoms.png
+    - assets/learn.png
+    - assets/alerts.png
+    - assets/settings.png
 
   
