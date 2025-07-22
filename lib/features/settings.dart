@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart';
+import 'package:haraka_afya_ai/screens/privacy_security_screen.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
+
+  void _navigateToPrivacySecurity(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PrivacySecurityScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,25 +44,19 @@ class SettingsPage extends StatelessWidget {
             title: 'Security Settings',
             subtitle: '2FA, biometric login & sessions',
             icon: Icons.security,
-            onTap: () {
-              // Navigate to security settings
-            },
+            onTap: () => _navigateToPrivacySecurity(context),
           ),
           _buildSettingsItem(
             title: 'Privacy & Data',
             subtitle: 'Data protection settings',
             icon: Icons.privacy_tip,
-            onTap: () {
-              // Navigate to privacy settings
-            },
+            onTap: () => _navigateToPrivacySecurity(context),
           ),
           _buildSettingsItem(
             title: 'Help & Support',
             subtitle: 'Get assistance',
             icon: Icons.help_center,
-            onTap: () {
-              // Navigate to help center
-            },
+            onTap: () => _navigateToPrivacySecurity(context),
           ),
           const Divider(),
           _buildSettingsItem(
