@@ -31,7 +31,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             currentAccountPicture: CircleAvatar(
-              backgroundColor: const Color(0xFF16A249), // Dark green
+              backgroundColor: const Color(0xFF16A249),
               backgroundImage: user?.photoURL != null 
                   ? NetworkImage(user!.photoURL!)
                   : null,
@@ -46,7 +46,7 @@ class AppDrawer extends StatelessWidget {
                   : null,
             ),
             decoration: const BoxDecoration(
-              color: Color(0xFFF0FDF4), // Light green
+              color: Color(0xFFF0FDF4),
             ),
           ),
           _buildDrawerItem(
@@ -92,7 +92,10 @@ class AppDrawer extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const PrivacySecurityScreen(),
+                  settings: const RouteSettings(name: '/privacy-security'),
+                ),
               );
             },
           ),
@@ -134,7 +137,7 @@ class AppDrawer extends StatelessWidget {
     VoidCallback? action,
   }) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF16A249)), // Dark green
+      leading: Icon(icon, color: const Color(0xFF16A249)),
       title: Text(title),
       subtitle: Text(
         subtitle,
