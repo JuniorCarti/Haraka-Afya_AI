@@ -163,7 +163,7 @@ class PrivacySecurityScreen extends StatelessWidget {
           CupertinoSwitch(
             value: enabled,
             onChanged: (val) {},
-            activeColor: const Color(0xFF16A249),
+            activeTrackColor: const Color(0xFF16A249),
           ),
         ],
       ),
