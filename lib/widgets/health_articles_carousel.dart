@@ -21,7 +21,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.9);
+    _pageController = PageController(viewportFraction: 0.97); // wider cards
     _startAutoPlay();
   }
 
@@ -35,21 +35,17 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
   void _startAutoPlay() {
     _autoPlayTimer?.cancel();
     _autoPlayTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
-      if (_posts.length <= 1) return; // No need to auto-play if only one post
-      
-      final nextPage = _currentPage + 1;
-      if (nextPage >= _posts.length) {
-        _pageController.animateToPage(
-          0,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOutQuint,
-        );
-      } else {
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOutQuint,
-        );
-      }
+      if (_posts.length <= 1 || !_pageController.hasClients) return;
+
+      final nextPage = (_currentPage + 1) % _posts.length;
+
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeInOutQuint,
+      );
+
+      _currentPage = nextPage; // update manually to avoid blinking bug
     });
   }
 
@@ -57,8 +53,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
     setState(() {
       _currentPage = index;
     });
-    // Restart timer when user manually swipes
-    _startAutoPlay();
+    _startAutoPlay(); // Restart timer when user swipes
   }
 
   @override
@@ -81,14 +76,13 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
           return _buildEmptyState();
         }
 
-        // Only update posts if they've actually changed
         if (_posts.length != newPosts.length || 
             (_posts.isNotEmpty && _posts[0].id != newPosts[0].id)) {
           _posts = newPosts;
-          // Reset to first page when posts change
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_pageController.hasClients) {
               _pageController.jumpToPage(0);
+              _currentPage = 0; // reset page index
             }
           });
           _startAutoPlay();
@@ -137,14 +131,14 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
             itemBuilder: (context, index) {
               final post = _posts[index];
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0), // tighter gap
                 child: _PostCard(post: post),
               );
             },
           ),
         ),
         const SizedBox(height: 12),
-        if (_posts.length > 1) // Only show dots if there are multiple posts
+        if (_posts.length > 1)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_posts.length, (index) {
@@ -155,7 +149,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: index == _currentPage 
+                  color: index == _currentPage
                       ? const Color(0xFF259450)
                       : Colors.grey[300],
                 ),
@@ -175,9 +169,9 @@ class _PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,7 +234,7 @@ class _PostCard extends StatelessWidget {
 
   Widget _buildPostImage() {
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
       child: SizedBox(
         height: 120,
         width: double.infinity,
@@ -263,15 +257,11 @@ class _PostCard extends StatelessWidget {
 
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
-    final difference = now.difference(timestamp);
+    final diff = now.difference(timestamp);
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
-    }
+    if (diff.inDays > 0) return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+    if (diff.inHours > 0) return '${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes} minute${diff.inMinutes > 1 ? 's' : ''} ago';
     return 'Just now';
   }
 }
