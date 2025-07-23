@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
@@ -21,7 +20,6 @@ import 'features/hospitals_page.dart';
 import 'features/profile_page.dart';
 
 // Models & Repositories
-import 'models/post.dart';
 import 'repositories/post_repository.dart';
 
 void main() async {
