@@ -4,6 +4,7 @@ import '../models/post.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
+  final String currentUserId;
   final Function(String) onLike;
   final Function(String) onComment;
   final Function(Post) onShare;
@@ -11,6 +12,7 @@ class PostCard extends StatelessWidget {
   const PostCard({
     super.key,
     required this.post,
+    required this.currentUserId,
     required this.onLike,
     required this.onComment,
     required this.onShare,
@@ -20,8 +22,9 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -30,6 +33,8 @@ class PostCard extends StatelessWidget {
             Text(post.content),
             if (post.mediaUrls.isNotEmpty) _buildMedia(),
             const SizedBox(height: 12),
+            _buildSummaryRow(),
+            const Divider(height: 24),
             _buildActions(),
           ],
         ),
@@ -45,18 +50,20 @@ class PostCard extends StatelessWidget {
           radius: 20,
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              post.authorName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              DateFormat('MMM d, y • h:mm a').format(post.timestamp),
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                post.authorName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                DateFormat('MMM d, y • h:mm a').format(post.timestamp),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -64,35 +71,79 @@ class PostCard extends StatelessWidget {
 
   Widget _buildMedia() {
     return Column(
-      children: post.mediaUrls.map((url) => Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Image.network(url),
-      )).toList(),
+      children: post.mediaUrls
+          .map(
+            (url) => Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(url),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildSummaryRow() {
+    final formattedComments = NumberFormat.compact().format(post.commentCount);
+    final formattedLikes = NumberFormat.compact().format(post.likeCount);
+
+    return Row(
+      children: [
+        const Text(
+          'Comments',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          formattedComments,
+          style: const TextStyle(color: Colors.grey, fontSize: 14),
+        ),
+        const SizedBox(width: 16),
+        const Text(
+          'Likes',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          formattedLikes,
+          style: const TextStyle(color: Colors.grey, fontSize: 14),
+        ),
+      ],
     );
   }
 
   Widget _buildActions() {
+    final isLiked = post.likedBy.contains(currentUserId);
+
     return Row(
       children: [
         IconButton(
           icon: Icon(
-            post.likedBy.contains('currentUserId') // Replace with actual user ID
-                ? Icons.favorite
-                : Icons.favorite_border,
-            color: post.likedBy.contains('currentUserId') ? Colors.red : null,
+            isLiked ? Icons.favorite : Icons.favorite_border,
+            color: isLiked ? Colors.red : Colors.grey,
           ),
           onPressed: () => onLike(post.id),
         ),
-        Text(post.likedBy.length.toString()),
+        const SizedBox(width: 4),
+        Text(
+          NumberFormat.compact().format(post.likeCount),
+          style: const TextStyle(fontSize: 13),
+        ),
         const SizedBox(width: 16),
         IconButton(
-          icon: const Icon(Icons.comment),
+          icon: const Icon(Icons.comment, color: Colors.grey),
           onPressed: () => onComment(post.id),
         ),
-        Text(post.commentCount.toString()),
+        const SizedBox(width: 4),
+        Text(
+          NumberFormat.compact().format(post.commentCount),
+          style: const TextStyle(fontSize: 13),
+        ),
         const Spacer(),
         IconButton(
-          icon: const Icon(Icons.share),
+          icon: const Icon(Icons.share, color: Colors.grey),
           onPressed: () => onShare(post),
         ),
       ],
