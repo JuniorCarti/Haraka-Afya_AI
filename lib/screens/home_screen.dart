@@ -6,7 +6,8 @@ import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
 import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
-import 'package:haraka_afya_ai/features/chat/ai_assistant_screen.dart'; // Updated import
+import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
+import 'package:haraka_afya_ai/features/chat/ai_assistant_screen.dart';  // Restored import
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/widgets/circular_quick_actions.dart';
@@ -132,7 +133,7 @@ class HomeContent extends StatelessWidget {
               const SizedBox(height: 16),
               _buildEmergencyCard(context),
               const SizedBox(height: 16),
-              _buildSymptomChecker(context), // Updated to pass context
+              _buildSymptomChecker(context),
               const SizedBox(height: 24),
               _buildCommunitySection(context),
               const SizedBox(height: 16),
@@ -225,11 +226,9 @@ class HomeContent extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AIAssistantScreen(),
-          ),
+        onTap: () => showDialog(
+          context: context,
+          builder: (context) => const AIAssistantPopup(), // Restored popup
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -413,7 +412,7 @@ class HomeContent extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AIAssistantScreen(startWithVoice: startWithVoice),
+        builder: (context) => AIAssistantScreen(),
       ),
     );
   }
