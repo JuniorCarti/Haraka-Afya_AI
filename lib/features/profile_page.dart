@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:haraka_afya_ai/features/overview_page.dart';
 import 'package:haraka_afya_ai/features/health_page.dart';
 import 'package:haraka_afya_ai/features/settings.dart';
-import 'package:haraka_afya_ai/screens/privacy_security_screen.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
