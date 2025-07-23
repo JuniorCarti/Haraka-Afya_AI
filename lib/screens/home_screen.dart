@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:haraka_afya_ai/repositories/post_repository.dart';
 import 'package:haraka_afya_ai/screens/community_screen.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
 import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
-import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
+import 'package:haraka_afya_ai/features/chat/ai_assistant_screen.dart'; // Updated import
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/widgets/circular_quick_actions.dart';
@@ -134,7 +132,7 @@ class HomeContent extends StatelessWidget {
               const SizedBox(height: 16),
               _buildEmergencyCard(context),
               const SizedBox(height: 16),
-              _buildSymptomChecker(),
+              _buildSymptomChecker(context), // Updated to pass context
               const SizedBox(height: 24),
               _buildCommunitySection(context),
               const SizedBox(height: 16),
@@ -227,9 +225,11 @@ class HomeContent extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => showDialog(
-          context: context,
-          builder: (context) => const AIAssistantPopup(),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AIAssistantScreen(),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -362,7 +362,7 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildSymptomChecker() {
+  Widget _buildSymptomChecker(BuildContext context) {
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(
@@ -386,10 +386,12 @@ class HomeContent extends StatelessWidget {
                 _buildSymptomButton(
                   icon: Icons.mic,
                   label: 'Speak',
+                  onPressed: () => _navigateToAIAssistant(context, true),
                 ),
                 _buildSymptomButton(
                   icon: Icons.keyboard,
                   label: 'Type',
+                  onPressed: () => _navigateToAIAssistant(context, false),
                 ),
               ],
             ),
@@ -407,9 +409,19 @@ class HomeContent extends StatelessWidget {
     );
   }
 
+  void _navigateToAIAssistant(BuildContext context, bool startWithVoice) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AIAssistantScreen(startWithVoice: startWithVoice),
+      ),
+    );
+  }
+
   Widget _buildSymptomButton({
     required IconData icon,
     required String label,
+    required VoidCallback onPressed,
   }) {
     return ElevatedButton.icon(
       icon: Icon(icon, size: 16),
@@ -420,7 +432,7 @@ class HomeContent extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
         ),
       ),
-      onPressed: () {},
+      onPressed: onPressed,
     );
   }
 
