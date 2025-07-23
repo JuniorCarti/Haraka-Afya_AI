@@ -25,6 +25,8 @@ dependencies:
   firebase_messaging: ^15.2.9
   badges: ^3.1.2
   cloud_functions: ^5.6.1
+  flutter_tts: ^3.8.4 # Or the latest version
+  speech_to_text: ^6.5.2  # Or the latest version
 
 
  
