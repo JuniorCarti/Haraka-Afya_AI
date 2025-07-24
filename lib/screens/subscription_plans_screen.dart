@@ -8,7 +8,7 @@ class SubscriptionPlansScreen extends StatefulWidget {
 }
 
 class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
-  String _selectedPlan = 'Premium'; // Default selected plan
+  String _selectedPlan = 'Premium';
 
   void _selectPlan(String plan) {
     setState(() {
@@ -24,103 +24,94 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [Color(0xFFF3F8F7), Color(0xFFF9FCF5)],
-            ),
-          ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Choose Your Plan',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Unlock Premium Healthcare',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Choose the plan that works best for you',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Free Plan
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: _buildPlanCard(
-                      title: 'Free',
-                      price: '\$0.00',
-                      subPriceText: 'Forever',
-                      description: 'Basic health tips and limited AI consultations',
-                      features: [
-                        '5 AI consultations per month',
-                        'Basic health tips',
-                        'Symptom checker',
-                        'Find nearby hospitals',
-                      ],
-                      cardColor: Colors.white,
-                      buttonColor: Colors.white,
-                      textColor: Colors.black,
-                      borderColor: _selectedPlan == 'Free' ? const Color(0xFF259A4F) : Colors.grey.shade300,
-                      isPopular: false,
-                      buttonTextColor: Colors.black,
-                      selected: _selectedPlan == 'Free',
-                      onSelect: () => _selectPlan('Free'),
+        backgroundColor: const Color(0xFFD8FBE5),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Choose Your Plan',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Unlock Premium Healthcare',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Choose the plan that works best for you',
+                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                ),
+                const SizedBox(height: 24),
 
-                  // Premium Plan
-                  _buildPlanCard(
-                    title: 'Premium',
-                    price: '\$7.99',
-                    description: 'Unlimited AI consultations and advanced features',
+                // Free Plan
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _buildPlanCard(
+                    title: 'Free',
+                    price: '\$0.00',
+                    subPriceText: 'Forever',
+                    description: 'Basic health tips and limited AI consultations',
                     features: [
-                      'Unlimited AI consultations',
-                      'Personalized health insights',
-                      'Medication reminders',
+                      '5 AI consultations per month',
+                      'Basic health tips',
+                      'Symptom checker',
+                      'Find nearby hospitals',
                     ],
                     cardColor: Colors.white,
-                    buttonColor: const Color(0xFF259A4F),
+                    buttonColor: Colors.white,
                     textColor: Colors.black,
-                    borderColor: _selectedPlan == 'Premium' ? const Color(0xFF259A4F) : Colors.grey.shade300,
-                    isPopular: true,
-                    buttonTextColor: Colors.white,
-                    selected: _selectedPlan == 'Premium',
-                    onSelect: () => _selectPlan('Premium'),
+                    borderColor: _selectedPlan == 'Free' ? const Color(0xFF259A4F) : Colors.grey.shade300,
+                    isPopular: false,
+                    buttonTextColor: Colors.black,
+                    selected: _selectedPlan == 'Free',
+                    onSelect: () => _selectPlan('Free'),
                   ),
+                ),
+                const SizedBox(height: 16),
 
-                  const SizedBox(height: 16),
+                // Premium Plan
+                _buildPlanCard(
+                  title: 'Premium',
+                  price: '\$7.99',
+                  description: 'Unlimited AI consultations and advanced features',
+                  features: [
+                    'Unlimited AI consultations',
+                    'Personalized health insights',
+                    'Medication reminders',
+                  ],
+                  cardColor: Colors.white,
+                  buttonColor: const Color(0xFF259A4F),
+                  textColor: Colors.black,
+                  borderColor: _selectedPlan == 'Premium' ? const Color(0xFF259A4F) : Colors.grey.shade300,
+                  isPopular: true,
+                  buttonTextColor: Colors.white,
+                  selected: _selectedPlan == 'Premium',
+                  onSelect: () => _selectPlan('Premium'),
+                ),
 
-                  // Family Plan
-                  _buildFamilyCard(),
+                const SizedBox(height: 16),
 
-                  const SizedBox(height: 24),
-                  _buildPaymentMethods(),
-                  const SizedBox(height: 24),
-                  _buildInfoRow(Icons.lock, 'Secure payments powered by Stripe'),
-                ],
-              ),
+                // Family Plan
+                _buildFamilyCard(),
+
+                const SizedBox(height: 24),
+                _buildPaymentMethods(),
+                const SizedBox(height: 24),
+                _buildInfoRow(Icons.lock, 'Secure payments powered by Stripe'),
+              ],
             ),
           ),
         ),
@@ -212,8 +203,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                         onPressed: onSelect,
-                        child: Text('Choose Plan', style: TextStyle(color: buttonTextColor))),
+                        child: Text('Choose Plan', style: TextStyle(color: buttonTextColor)),
                       ),
+                    ),
                     const SizedBox(height: 8),
                   ],
                 ),
