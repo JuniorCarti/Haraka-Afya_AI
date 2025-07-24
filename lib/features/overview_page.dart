@@ -59,7 +59,7 @@ class _OverviewPageState extends State<OverviewPage> {
 
     setState(() {
       _recentActivities =
-          activities.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+          activities.docs.map((doc) => doc.data()).toList();
     });
   }
 
