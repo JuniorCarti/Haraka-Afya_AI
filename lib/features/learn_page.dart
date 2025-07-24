@@ -6,6 +6,7 @@ class LearnPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEDFCF5),
       appBar: AppBar(
         title: const Text('Health Education'),
         centerTitle: true,
@@ -40,9 +41,7 @@ class LearnPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _buildCategoryItem('All Topics'),
-            _buildCategoryItem('Prevention'),
-            _buildCategoryItem('Nutrition'),
+            _buildHorizontalCategories(),
             const Divider(height: 40, thickness: 1),
 
             // Health Articles Section
@@ -81,7 +80,6 @@ class LearnPage extends StatelessWidget {
           ],
         ),
       ),
-      // Removed the bottomNavigationBar from here
     );
   }
 
@@ -103,20 +101,42 @@ class LearnPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+  Widget _buildHorizontalCategories() {
+    final categories = [
+      'All Topics',
+      'Prevention',
+      'Nutrition',
+      'Cancer',
+      'Breast Cancer',
+      'Cervical Cancer',
+      'Prostate Cancer',
+      'Esophageal Cancer',
+      'Colorectal Cancer',
+    ];
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.green.shade300),
             ),
-          ),
-        ],
+            child: Text(
+              categories[index],
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -151,10 +171,7 @@ class LearnPage extends StatelessWidget {
                 ),
                 if (isTrending)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.orange[50],
                       borderRadius: BorderRadius.circular(12),
