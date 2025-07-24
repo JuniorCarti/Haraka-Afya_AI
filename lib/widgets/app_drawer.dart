@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 import 'package:haraka_afya_ai/screens/privacy_security_screen.dart';
+// Don't link events yet — no import for EventsScreen
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -9,7 +10,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    
+
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.85,
       child: ListView(
@@ -32,7 +33,7 @@ class AppDrawer extends StatelessWidget {
             ),
             currentAccountPicture: CircleAvatar(
               backgroundColor: const Color(0xFF16A249),
-              backgroundImage: user?.photoURL != null 
+              backgroundImage: user?.photoURL != null
                   ? NetworkImage(user!.photoURL!)
                   : null,
               child: user?.photoURL == null
@@ -65,9 +66,18 @@ class AppDrawer extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SubscriptionPlansScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const SubscriptionPlansScreen(),
+                ),
               );
             },
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.event,
+            title: 'Upcoming Events',
+            subtitle: 'View community events',
+            // Not wired to navigation yet
           ),
           _buildDrawerItem(
             context,
@@ -114,7 +124,7 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text(
-              'Sign Out', 
+              'Sign Out',
               style: TextStyle(color: Colors.red),
             ),
             onTap: () async {
