@@ -24,7 +24,7 @@ class Post {
     required this.timestamp,
     this.likedBy = const [],
     this.commentCount = 0,
-    this.likeCount = 0,
+    this.likeCount = 0, String? imageUrl,
   });
 
   /// Creates a Post object from a Firestore document with null safety
