@@ -40,23 +40,21 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     const SizedBox(width: 8),
                     const Text(
                       'Choose Your Plan',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   'Unlock Premium Healthcare',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 const Text(
                   'Choose the plan that works best for you',
-                  style: TextStyle(fontSize: 16, color: Colors.black54),
+                  style: TextStyle(fontSize: 14, color: Colors.black54),
                 ),
                 const SizedBox(height: 24),
-
-                // Free Plan
                 Align(
                   alignment: Alignment.centerRight,
                   child: _buildPlanCard(
@@ -81,8 +79,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Premium Plan
                 _buildPlanCard(
                   title: 'Premium',
                   price: '\$7.99',
@@ -101,12 +97,8 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   selected: _selectedPlan == 'Premium',
                   onSelect: () => _selectPlan('Premium'),
                 ),
-
                 const SizedBox(height: 16),
-
-                // Family Plan
                 _buildFamilyCard(),
-
                 const SizedBox(height: 24),
                 _buildPaymentMethods(),
                 const SizedBox(height: 24),
@@ -159,7 +151,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     ),
                     child: const Text(
                       'Most Popular',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -168,12 +160,12 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(price, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                    Text(price, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                     if (subPriceText != null)
-                      Text(subPriceText, style: TextStyle(color: textColor.withOpacity(0.7))),
-                    Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+                      Text(subPriceText, style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.7))),
+                    Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
                     const SizedBox(height: 4),
-                    Text(description, style: TextStyle(color: textColor.withOpacity(0.7))),
+                    Text(description, style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.7))),
                     const SizedBox(height: 12),
                     ...features.map((feature) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -185,10 +177,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                                   shape: BoxShape.circle,
                                   color: Color(0xFFF8FCF9),
                                 ),
-                                child: const Icon(Icons.check, color: Color(0xFF259A4F), size: 16),
+                                child: const Icon(Icons.check, color: Color(0xFF259A4F), size: 14),
                               ),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(feature, style: TextStyle(fontSize: 16, color: textColor))),
+                              Expanded(child: Text(feature, style: TextStyle(fontSize: 14, color: textColor))),
                             ],
                           ),
                         )),
@@ -200,10 +192,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                           backgroundColor: buttonColor,
                           foregroundColor: buttonTextColor,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: onSelect,
-                        child: Text('Choose Plan', style: TextStyle(color: buttonTextColor)),
+                        child: Text('Choose Plan', style: TextStyle(fontSize: 14, color: buttonTextColor)),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -251,12 +243,12 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Payment Methods', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const Text('Payment Methods', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         Wrap(
           spacing: 16,
           runSpacing: 16,
-          children: logos.map((logo) => Image.asset(logo, height: 40)).toList(),
+          children: logos.map((logo) => Image.asset(logo, height: 32)).toList(),
         )
       ],
     );
@@ -266,9 +258,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 20, color: Colors.black54),
+        Icon(icon, size: 18, color: Colors.black54),
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(color: Colors.black54))),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.black54))),
       ],
     );
   }
