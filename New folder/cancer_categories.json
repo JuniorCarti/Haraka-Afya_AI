@@ -1,0 +1,64 @@
+{
+  "categories": [
+    {
+      "name": "Breast Cancer",
+      "symptoms": [
+        "Lump in the breast",
+        "Change in breast shape or size",
+        "Nipple discharge",
+        "Dimpling of the skin",
+        "Red or flaky skin on the breast"
+      ]
+    },
+    {
+      "name": "Cervical Cancer",
+      "symptoms": [
+        "Unusual vaginal bleeding",
+        "Pelvic pain",
+        "Pain during intercourse",
+        "Unusual vaginal discharge",
+        "Painful urination"
+      ]
+    },
+    {
+      "name": "Prostate Cancer",
+      "symptoms": [
+        "Frequent urination, especially at night",
+        "Weak urine stream",
+        "Blood in urine or semen",
+        "Pain in lower back or pelvis",
+        "Erectile dysfunction"
+      ]
+    },
+    {
+      "name": "Esophageal Cancer",
+      "symptoms": [
+        "Difficulty swallowing",
+        "Chest pain or burning",
+        "Weight loss",
+        "Persistent cough or hoarseness",
+        "Vomiting blood"
+      ]
+    },
+    {
+      "name": "Colorectal Cancer",
+      "symptoms": [
+        "Change in bowel habits",
+        "Blood in stool",
+        "Abdominal discomfort",
+        "Fatigue",
+        "Unexplained weight loss"
+      ]
+    },
+    {
+      "name": "Liver Cancer",
+      "symptoms": [
+        "Upper abdominal pain",
+        "Loss of appetite",
+        "Nausea and vomiting",
+        "Jaundice (yellowing of skin and eyes)",
+        "Swelling in the abdomen"
+      ]
+    }
+  ]
+}
