@@ -141,7 +141,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        ...doctors.map((doc) => _buildDoctorCard(doc)).toList(),
+        ...doctors.map((doc) => _buildDoctorCard(doc)),
       ],
     );
   }
