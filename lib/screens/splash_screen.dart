@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart';
@@ -13,91 +13,104 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  late final AnimationController _titleController;
+  late final AnimationController _subtitleController;
+  late final Animation<double> _titleAnimation;
+  late final Animation<double> _subtitleAnimation;
+
   @override
   void initState() {
     super.initState();
-    _checkAuthAndNavigation();
+
+    _titleController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _subtitleController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _titleAnimation = CurvedAnimation(
+      parent: _titleController,
+      curve: Curves.easeOutBack,
+    );
+
+    _subtitleAnimation = CurvedAnimation(
+      parent: _subtitleController,
+      curve: Curves.easeOut,
+    );
+
+    _startAnimations();
+    _navigateAfterDelay();
   }
 
-  Future<void> _checkAuthAndNavigation() async {
-    try {
-      // Add slight delay for splash screen visibility
-      await Future.delayed(const Duration(milliseconds: 1500));
+  Future<void> _startAnimations() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    _titleController.forward();
+    await Future.delayed(const Duration(milliseconds: 400));
+    _subtitleController.forward();
+  }
 
-      final prefs = await SharedPreferences.getInstance();
-      final isFirstLaunch = prefs.getBool('onboardingComplete') ?? false;
-      final user = FirebaseAuth.instance.currentUser;
+  Future<void> _navigateAfterDelay() async {
+    await Future.delayed(const Duration(seconds: 4));
 
-      if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstLaunch = prefs.getBool('onboardingComplete') ?? false;
+    final user = FirebaseAuth.instance.currentUser;
 
-      if (user != null) {
-        // User is authenticated - go to home
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const HomeScreen(),
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, a, __, c) => 
-              FadeTransition(opacity: a, child: c),
-          ),
-        );
-      } else if (isFirstLaunch) {
-        // Onboarding completed but not logged in
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const SignInPage(),
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, a, __, c) => 
-              FadeTransition(opacity: a, child: c),
-          ),
-        );
-      } else {
-        // First launch - show onboarding
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const OnboardingScreens(),
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, a, __, c) => 
-              FadeTransition(opacity: a, child: c),
-          ),
-        );
-        await prefs.setBool('onboardingComplete', true);
-      }
-    } catch (e) {
-      if (!mounted) return;
+    if (!mounted) return;
+
+    if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const SignInPage()),
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const HomeScreen(),
+          transitionDuration: const Duration(milliseconds: 500),
+          transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+        ),
       );
+    } else if (isFirstLaunch) {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const SignInPage(),
+          transitionDuration: const Duration(milliseconds: 500),
+          transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const OnboardingScreens(),
+          transitionDuration: const Duration(milliseconds: 500),
+          transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+        ),
+      );
+      await prefs.setBool('onboardingComplete', true);
     }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _subtitleController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0C6D5B), // Using your brand color
+      backgroundColor: const Color(0xFFEDFCF5),
       body: Stack(
         children: [
-          // Background elements
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.1,
-              child: SvgPicture.asset(
-                'assets/patterns/health_pattern.svg',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          
-          // Main content
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animated logo container
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 800),
                   curve: Curves.easeInOut,
@@ -115,62 +128,52 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                   child: Hero(
                     tag: 'app-logo',
-                    child: SvgPicture.asset(
-                      'assets/logo.svg',
-                      width: 120,
-                      height: 120,
-                      placeholderBuilder: (context) =>
-                          const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                    child: Lottie.asset(
+                      'assets/animations/splash.json',
+                      width: 150,
+                      height: 150,
+                      repeat: true,
+                      animate: true,
                     ),
                   ),
                 ),
                 const SizedBox(height: 30),
 
-                // App name with animation
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 800),
-                  builder: (_, value, child) => Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: child,
+                // Title animation
+                FadeTransition(
+                  opacity: _titleAnimation,
+                  child: SlideTransition(
+                    position: _titleAnimation.drive(
+                      Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero),
                     ),
-                  ),
-                  child: const Text(
-                    'Haraka-Afya',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
+                    child: const Text(
+                      'Haraka-Afya',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 10),
 
-                // Tagline with animation
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 1000),
-                  curve: Curves.easeOut,
-                  builder: (_, value, child) => Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: child,
+                // Subtitle animation
+                FadeTransition(
+                  opacity: _subtitleAnimation,
+                  child: SlideTransition(
+                    position: _subtitleAnimation.drive(
+                      Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero),
                     ),
-                  ),
-                  child: const Text(
-                    'Your AI Health Companion',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                    child: const Text(
+                      'Empowering Cancer Care',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
@@ -178,7 +181,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           ),
 
-          // Loading indicator at bottom
+          // Loading indicator
           Positioned(
             bottom: 40,
             left: 0,
@@ -190,7 +193,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.white.withOpacity(0.8),
+                    Colors.black.withOpacity(0.6),
                   ),
                 ),
               ),
