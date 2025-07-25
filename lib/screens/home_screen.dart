@@ -7,7 +7,8 @@ import 'package:haraka_afya_ai/features/symptoms_page.dart';
 import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
 import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
-import 'package:haraka_afya_ai/features/chat/ai_assistant_screen.dart';  // Restored import
+import 'package:haraka_afya_ai/features/chat/ai_assistant_screen.dart';
+import 'package:haraka_afya_ai/screens/medication_reminder_page.dart'; // Added import
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/widgets/circular_quick_actions.dart';
@@ -147,7 +148,7 @@ class HomeContent extends StatelessWidget {
               const SizedBox(height: 16),
               _buildHealthTools(),
               const SizedBox(height: 16),
-              _buildMedicationReminder(),
+              _buildMedicationReminder(context), // Updated to pass context
               const SizedBox(height: 16),
               _buildPremiumUpgrade(context),
             ]),
@@ -228,7 +229,7 @@ class HomeContent extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: () => showDialog(
           context: context,
-          builder: (context) => const AIAssistantPopup(), // Restored popup
+          builder: (context) => const AIAssistantPopup(),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -451,12 +452,19 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildMedicationReminder() {
+  Widget _buildMedicationReminder(BuildContext context) { // Updated to take context parameter
     return _buildSectionCard(
       title: 'Medication Reminder',
       description: 'Set reminders for your medications and never miss a dose.',
       icon: Icons.alarm,
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MedicationReminderPage(),
+          ),
+        );
+      },
     );
   }
 
