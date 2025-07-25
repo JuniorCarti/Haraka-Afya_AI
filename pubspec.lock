@@ -366,14 +366,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_braintree:
-    dependency: "direct main"
-    description:
-      name: flutter_braintree
-      sha256: "5568f2dd8e7c948efe8b4d47bb80092b036a6be58544ee518e4156e3e6c99fbf"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.1"
   flutter_cache_manager:
     dependency: transitive
     description:
