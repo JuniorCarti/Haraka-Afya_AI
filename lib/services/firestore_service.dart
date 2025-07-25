@@ -76,4 +76,119 @@ class FirestoreService {
 
     return snapshot.docs.map((doc) => doc.data()).toList();
   }
+
+  /// -----------------------------
+  /// MEDICATION REMINDERS
+  /// -----------------------------
+
+  Future<void> addMedication({
+    required String name,
+    required Timestamp time,
+  }) async {
+    final uid = currentUserId;
+    if (uid == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('medications')
+        .add({
+          'name': name,
+          'time': time,
+          'taken': false,
+          'createdAt': Timestamp.now(),
+        });
+  }
+
+  Future<void> updateMedication({
+    required String docId,
+    required String name,
+    required Timestamp time,
+  }) async {
+    final uid = currentUserId;
+    if (uid == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('medications')
+        .doc(docId)
+        .update({
+          'name': name,
+          'time': time,
+        });
+  }
+
+  Future<void> deleteMedication(String docId) async {
+    final uid = currentUserId;
+    if (uid == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('medications')
+        .doc(docId)
+        .delete();
+  }
+
+  Future<void> markMedicationAsTaken({
+    required String docId,
+  }) async {
+    final uid = currentUserId;
+    if (uid == null) return;
+
+    final takenAt = Timestamp.now();
+    final docRef = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('medications')
+        .doc(docId);
+
+    // Update taken status
+    await docRef.update({
+      'taken': true,
+      'takenTime': takenAt,
+    });
+
+    // Log to medication_history
+    final medData = await docRef.get();
+    final name = medData['name'];
+
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('medication_history')
+        .add({
+          'name': name,
+          'takenAt': takenAt,
+        });
+  }
+
+  Stream<QuerySnapshot> getMedicationsStream() {
+    final uid = currentUserId;
+    if (uid == null) {
+      return const Stream.empty();
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('medications')
+        .orderBy('time')
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getMedicationHistoryStream() {
+    final uid = currentUserId;
+    if (uid == null) {
+      return const Stream.empty();
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('medication_history')
+        .orderBy('takenAt', descending: true)
+        .snapshots();
+  }
 }
