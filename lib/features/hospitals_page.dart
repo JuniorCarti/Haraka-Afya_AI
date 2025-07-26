@@ -13,16 +13,15 @@ class _HospitalsPageState extends State<HospitalsPage> {
   String _selectedCategory = 'All';
   late GoogleMapController mapController;
 
-  final Map<String, List<String>> cancerSubcategories = {
-    'Cancer': [
-      'Breast Cancer',
-      'Cervical Cancer',
-      'Prostate Cancer',
-      'Lung Cancer',
-      'Colorectal Cancer',
-      'Leukemia'
-    ],
-  };
+  // Top 6 killer cancer diseases in Kenya
+  final List<String> cancerTypes = [
+    'Breast Cancer',
+    'Cervical Cancer',
+    'Prostate Cancer',
+    'Esophageal Cancer',
+    'Colorectal Cancer',
+    'Liver Cancer'
+  ];
 
   final List<Map<String, dynamic>> hospitals = [
     {
@@ -54,22 +53,90 @@ class _HospitalsPageState extends State<HospitalsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEDFCF5),
       appBar: AppBar(
-        title: const Text('Hospitals & Facilities'),
+        title: Column(
+          children: [
+            const Text('Healthcare Facilities'),
+            Text(
+              'Find quality care near you',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.black, // Changed from white70 to black
+                  ),
+            ),
+          ],
+        ),
         centerTitle: true,
+        backgroundColor: const Color(0xFF0C6D5B), // Keeping app bar color consistent
       ),
       body: Column(
         children: [
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildViewToggle('List View'),
-              _buildViewToggle('Map View'),
-            ],
+          const SizedBox(height: 16),
+          // View toggle card
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildViewToggle('List View', Icons.list),
+                  _buildViewToggle('Map View', Icons.map),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
-          _buildCategoryFilters(),
+          const SizedBox(height: 16),
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      hintText: 'Search Cancer Facilities, Hospitals and Doctors',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.filter_alt_outlined),
+                    onPressed: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Category filters
+          SizedBox(
+            height: 50,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildCategoryChip('All'),
+                _buildCategoryChip('General'),
+                ...cancerTypes.map((type) => _buildCategoryChip(type)).toList(),
+              ],
+            ),
+          ),
           const Divider(),
           Expanded(
             child: _selectedView == 'Map View' ? _buildMapView() : _buildListView(),
@@ -79,44 +146,46 @@ class _HospitalsPageState extends State<HospitalsPage> {
     );
   }
 
-  Widget _buildViewToggle(String title) {
-    return ChoiceChip(
-      label: Text(title),
-      selected: _selectedView == title,
-      onSelected: (_) => setState(() => _selectedView = title),
-      selectedColor: const Color(0xFF0C6D5B),
-      labelStyle: TextStyle(
-        color: _selectedView == title ? Colors.white : Colors.black,
+  Widget _buildViewToggle(String title, IconData icon) {
+    return Expanded(
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: _selectedView == title ? const Color(0xFF0C6D5B) : Colors.white,
+          foregroundColor: _selectedView == title ? Colors.white : Colors.black,
+          side: BorderSide(
+            color: _selectedView == title ? const Color(0xFF0C6D5B) : Colors.grey.shade300,
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        onPressed: () => setState(() => _selectedView = title),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 8),
+            Text(title),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCategoryFilters() {
-    List<String> allCategories = ['All', 'General', 'Maternity', 'Dental', ...cancerSubcategories['Cancer']!];
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: allCategories.length,
-        itemBuilder: (context, index) {
-          String category = allCategories[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: FilterChip(
-              label: Text(category),
-              selected: _selectedCategory == category,
-              onSelected: (bool selected) {
-                setState(() {
-                  _selectedCategory = selected ? category : 'All';
-                });
-              },
-              selectedColor: const Color(0xFF0C6D5B),
-              labelStyle: TextStyle(
-                color: _selectedCategory == category ? Colors.white : Colors.black,
-              ),
-            ),
-          );
+  Widget _buildCategoryChip(String category) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: ChoiceChip(
+        label: Text(category),
+        selected: _selectedCategory == category,
+        onSelected: (bool selected) {
+          setState(() {
+            _selectedCategory = selected ? category : 'All';
+          });
         },
+        selectedColor: const Color(0xFF0C6D5B),
+        backgroundColor: Colors.white,
+        labelStyle: TextStyle(
+          color: _selectedCategory == category ? Colors.white : Colors.black,
+        ),
       ),
     );
   }
@@ -130,6 +199,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
       padding: const EdgeInsets.all(16.0),
       children: [
         ...filteredHospitals.map((hospital) => Card(
+              elevation: 2,
               child: ListTile(
                 title: Text(hospital['name']),
                 subtitle: Text(hospital['type']),
@@ -163,6 +233,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
 
   Widget _buildDoctorCard(Map<String, dynamic> doc) {
     return Card(
+      elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
