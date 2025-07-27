@@ -26,6 +26,13 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController(initialPage: 0);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  void _navigateToPage(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    _pageController.jumpToPage(index);
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -59,10 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       type: BottomNavigationBarType.fixed,
       selectedItemColor: const Color(0xFF259450),
       unselectedItemColor: Colors.grey,
-      onTap: (index) {
-        setState(() => _currentIndex = index);
-        _pageController.jumpToPage(index);
-      },
+      onTap: _navigateToPage,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
@@ -205,21 +209,21 @@ class HomeContent extends StatelessWidget {
               label: 'Learn',
               bgColor: const Color(0xFFE3F2FD),
               iconColor: const Color(0xFF1976D2),
-              onTap: () => homeState?._pageController.jumpToPage(1),
+              onTap: () => homeState?._navigateToPage(1),
             ),
             _buildServiceItem(
               icon: Icons.medical_services,
               label: 'Symptoms',
               bgColor: const Color(0xFFE8F5E9),
               iconColor: const Color(0xFF388E3C),
-              onTap: () => homeState?._pageController.jumpToPage(2),
+              onTap: () => homeState?._navigateToPage(2),
             ),
             _buildServiceItem(
               icon: Icons.local_hospital,
               label: 'Cancer Facilities',
               bgColor: const Color(0xFFF3E5F5),
               iconColor: const Color(0xFF8E24AA),
-              onTap: () => homeState?._pageController.jumpToPage(3),
+              onTap: () => homeState?._navigateToPage(3),
             ),
             _buildServiceItem(
               icon: Icons.volunteer_activism,
@@ -271,7 +275,6 @@ class HomeContent extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildCommunitySection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
