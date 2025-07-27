@@ -471,71 +471,43 @@ class HomeContent extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            const Text(
-              'Hujambo! Tell me your symptoms',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildSymptomButton(
-                  icon: Icons.mic,
-                  label: 'Speak',
-                  onPressed: () => _navigateToAIAssistant(context, true),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+          homeState?._navigateToPage(2);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hujambo! Tell me your symptoms',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '🩺Get quick, private health insights based on your symptoms',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-                _buildSymptomButton(
-                  icon: Icons.keyboard,
-                  label: 'Type',
-                  onPressed: () => _navigateToAIAssistant(context, false),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Available in Swahili, English, Sheng, Luo, Kikuyu & Luhya',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey,
               ),
-            ),
-          ],
+              const Icon(Icons.chevron_right, size: 20),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  void _navigateToAIAssistant(BuildContext context, bool startWithVoice) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AIAssistantScreen(),
-      ),
-    );
-  }
-
-  Widget _buildSymptomButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return ElevatedButton.icon(
-      icon: Icon(icon, size: 16),
-      label: Text(label, style: const TextStyle(fontSize: 12)),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-      onPressed: onPressed,
     );
   }
 
