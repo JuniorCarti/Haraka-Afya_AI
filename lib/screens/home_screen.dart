@@ -11,7 +11,6 @@ import 'package:haraka_afya_ai/features/chat/ai_assistant_screen.dart';
 import 'package:haraka_afya_ai/screens/medication_reminder_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
-import 'package:haraka_afya_ai/widgets/circular_quick_actions.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,6 +24,15 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Colors for navigation items
+  final List<Color> _navItemColors = [
+    const Color(0xFFEDFCF5), // Home (default background)
+    const Color(0xFFE3F2FD), // Learn (blue)
+    const Color(0xFFE8F5E9), // Symptoms (green)
+    const Color(0xFFF3E5F5), // Hospitals (purple)
+    const Color(0xFFEDFCF5), // Profile (default background)
+  ];
 
   void _navigateToPage(int index) {
     setState(() {
@@ -44,10 +52,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
-      backgroundColor: const Color(0xFFEDFCF5),
+      backgroundColor: _navItemColors[_currentIndex],
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         children: const [
           HomeContent(),
           LearnPage(),
@@ -66,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       type: BottomNavigationBarType.fixed,
       selectedItemColor: const Color(0xFF259450),
       unselectedItemColor: Colors.grey,
+      backgroundColor: _navItemColors[_currentIndex],
       onTap: _navigateToPage,
       items: const [
         BottomNavigationBarItem(
@@ -143,12 +157,6 @@ class HomeContent extends StatelessWidget {
               _buildSymptomChecker(context),
               const SizedBox(height: 24),
               _buildCommunitySection(context),
-              const SizedBox(height: 16),
-              GlovoStyleQuickActions(
-                onItemSelected: (index) {
-                  debugPrint('Selected quick action: $index');
-                },
-              ),
               const SizedBox(height: 16),
               _buildHealthOverview(),
               const SizedBox(height: 16),
@@ -275,6 +283,7 @@ class HomeContent extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildCommunitySection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
