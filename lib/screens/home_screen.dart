@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomNavBar() {
     return Container(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+        border: Border(top: BorderSide(color: Colors.grey.shade300, width: 0.5)),
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -75,9 +75,12 @@ class _HomeScreenState extends State<HomeScreen> {
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
         elevation: 0,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
+        iconSize: 28,
         onTap: _navigateToPage,
-        selectedLabelStyle: const TextStyle(fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
         items: [
           _buildNavItem(
             icon: Icons.home_outlined,
@@ -116,16 +119,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return BottomNavigationBarItem(
       icon: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Icon(icon, size: 24),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        child: Icon(icon, size: 26),
       ),
       activeIcon: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFFEDFCF5), // Light green background
-          borderRadius: BorderRadius.circular(30),
+          color: const Color(0xFFEDFCF5),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Icon(activeIcon, size: 24, color: const Color(0xFF259450)),
+        child: Icon(
+          activeIcon,
+          size: 26,
+          color: const Color(0xFF259450),
+        ),
       ),
       label: label,
     );
