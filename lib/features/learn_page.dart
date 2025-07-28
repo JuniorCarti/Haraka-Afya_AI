@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../pages/article_detail_page.dart';
+import '../screens/medical_dictionary_page.dart'; // New import for dictionary page
 
 class LearnPage extends StatefulWidget {
   const LearnPage({super.key});
@@ -26,27 +27,56 @@ class _LearnPageState extends State<LearnPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Today's Health Tips",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('health_education')
-                  .doc('today_tips')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const CircularProgressIndicator();
-                }
-                final tips = List<String>.from(snapshot.data!.get('tips'));
-                return Column(
-                  children: tips.map((tip) => _buildHealthTipItem(tip)).toList(),
+            // Cancer Medical Dictionary Card
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MedicalDictionaryPage(),
+                  ),
                 );
               },
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Your Cancer Medical Dictionary',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '500+ cancer medical terms explained',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 20),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const Divider(height: 40, thickness: 1),
+            
+            const SizedBox(height: 24),
+            
             const Text(
               'Categories',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -122,24 +152,6 @@ class _LearnPageState extends State<LearnPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHealthTipItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        ],
       ),
     );
   }
