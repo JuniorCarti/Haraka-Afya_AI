@@ -25,15 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController(initialPage: 0);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Colors for navigation items
-  final List<Color> _navItemColors = [
-    const Color(0xFFEDFCF5), // Home (default background)
-    const Color(0xFFE3F2FD), // Learn (blue)
-    const Color(0xFFE8F5E9), // Symptoms (green)
-    const Color(0xFFF3E5F5), // Hospitals (purple)
-    const Color(0xFFEDFCF5), // Profile (default background)
-  ];
-
   void _navigateToPage(int index) {
     setState(() {
       _currentIndex = index;
@@ -52,7 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
-      backgroundColor: _navItemColors[_currentIndex],
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
@@ -74,40 +64,70 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBottomNavBar() {
-    return BottomNavigationBar(
-      currentIndex: _currentIndex,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF259450),
-      unselectedItemColor: Colors.grey,
-      backgroundColor: _navItemColors[_currentIndex],
-      onTap: _navigateToPage,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: 'Home',
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF259450),
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        onTap: _navigateToPage,
+        selectedLabelStyle: const TextStyle(fontSize: 12),
+        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        items: [
+          _buildNavItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: 'Home',
+          ),
+          _buildNavItem(
+            icon: Icons.school_outlined,
+            activeIcon: Icons.school,
+            label: 'Learn',
+          ),
+          _buildNavItem(
+            icon: Icons.medical_services_outlined,
+            activeIcon: Icons.medical_services,
+            label: 'Symptoms',
+          ),
+          _buildNavItem(
+            icon: Icons.local_hospital_outlined,
+            activeIcon: Icons.local_hospital,
+            label: 'Hospitals',
+          ),
+          _buildNavItem(
+            icon: Icons.person_outlined,
+            activeIcon: Icons.person,
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    return BottomNavigationBarItem(
+      icon: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Icon(icon, size: 24),
+      ),
+      activeIcon: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEDFCF5), // Light green background
+          borderRadius: BorderRadius.circular(30),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.school_outlined),
-          activeIcon: Icon(Icons.school),
-          label: 'Learn',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.medical_services_outlined),
-          activeIcon: Icon(Icons.medical_services),
-          label: 'Symptoms',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.local_hospital_outlined),
-          activeIcon: Icon(Icons.local_hospital),
-          label: 'Hospitals',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outlined),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
+        child: Icon(activeIcon, size: 24, color: const Color(0xFF259450)),
+      ),
+      label: label,
     );
   }
 }
@@ -302,35 +322,68 @@ class HomeContent extends StatelessWidget {
             ),
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Upcoming Events',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Image.network(
+                'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 120,
+                    color: Colors.grey[200],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Check to see upcoming events',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 120,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
                 ),
               ),
-              const Icon(Icons.chevron_right, size: 20),
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Upcoming Events',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Check out cancer awareness events near you',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 20),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
