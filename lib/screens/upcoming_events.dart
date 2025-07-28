@@ -27,7 +27,7 @@ class UpcomingEventsScreen extends StatelessWidget {
       drawer: const AppDrawer(),
       backgroundColor: const Color(0xFFEDFCF5),
       body: Padding(
-        padding: EdgeInsets.only(bottom: bottomPadding + 16), // Add extra space for buttons
+        padding: EdgeInsets.only(bottom: bottomPadding + 16),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -37,7 +37,7 @@ class UpcomingEventsScreen extends StatelessWidget {
               time: '8:00 AM - 12:00 PM',
               location: 'Uhuru Park, Nairobi',
               description: 'Join our 5km/10km run to raise funds for cancer research and support patients in need. All proceeds go to cancer treatment centers.',
-              color: const Color(0xFFE8F5E9),
+              color: const Color(0xFFE8F5E9), // Original card color
               imageUrl: 'https://plus.unsplash.com/premium_photo-1723619058127-5f2308556d1f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTd8fGNhbmNlciUyMGF3YXJlbmVzcyUyMHJ1bnxlbnwwfHwwfHx8MA%3D%3D',
               photographer: 'John Doe',
               hasSupportButton: true,
@@ -49,7 +49,7 @@ class UpcomingEventsScreen extends StatelessWidget {
               time: '9:00 AM - 4:00 PM Daily',
               location: 'Kenyatta National Hospital',
               description: 'Free breast, cervical, and prostate cancer screenings for all attendees. Early detection saves lives!',
-              color: const Color(0xFFE3F2FD),
+              color: const Color(0xFFE3F2FD), // Original card color
               imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
               photographer: 'Jane Smith',
             ),
@@ -60,7 +60,7 @@ class UpcomingEventsScreen extends StatelessWidget {
               time: '10:00 AM - 1:00 PM',
               location: 'Online (Zoom)',
               description: 'Learn about cancer-fighting foods and dietary strategies from leading nutritionists. Special focus on managing treatment side effects.',
-              color: const Color(0xFFF3E5F5),
+              color: const Color(0xFFF3E5F5), // Original card color
               imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1453&q=80',
               photographer: 'Mike Johnson',
             ),
@@ -71,7 +71,7 @@ class UpcomingEventsScreen extends StatelessWidget {
               time: '6:00 PM - 10:00 PM',
               location: 'Safari Park Hotel',
               description: 'An evening of celebration and fundraising with inspiring stories from survivors. Black tie event with auction.',
-              color: const Color(0xFFFFEBEE),
+              color: const Color(0xFFFFEBEE), // Original card color
               imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
               photographer: 'Sarah Williams',
               hasSupportButton: true,
@@ -196,8 +196,8 @@ class UpcomingEventsScreen extends StatelessWidget {
                               // Handle Support action
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD32F2F),
-                              foregroundColor: Colors.white,
+                              backgroundColor: const Color(0xFFD8FBE5), // New support button color
+                              foregroundColor: Colors.black, // Changed text color for better visibility
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -217,8 +217,8 @@ class UpcomingEventsScreen extends StatelessWidget {
                           // Handle Register action
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF259450),
-                          foregroundColor: Colors.white,
+                          backgroundColor: const Color(0xFFECFDF5), // New register button color
+                          foregroundColor: Colors.black, // Changed text color for better visibility
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
