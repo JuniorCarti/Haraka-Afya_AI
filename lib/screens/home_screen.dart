@@ -7,11 +7,11 @@ import 'package:haraka_afya_ai/features/symptoms_page.dart';
 import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
 import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
-import 'package:haraka_afya_ai/features/chat/ai_assistant_screen.dart';
 import 'package:haraka_afya_ai/screens/medication_reminder_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
+import 'package:haraka_afya_ai/screens/upcoming_events.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -156,6 +156,8 @@ class HomeContent extends StatelessWidget {
               const SizedBox(height: 16),
               _buildSymptomChecker(context),
               const SizedBox(height: 24),
+              _buildUpcomingEventsCard(context),
+              const SizedBox(height: 16),
               _buildCommunitySection(context),
               const SizedBox(height: 16),
               _buildHealthOverview(),
@@ -280,6 +282,56 @@ class HomeContent extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingEventsCard(BuildContext context) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const UpcomingEventsScreen(),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Upcoming Events',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Check to see upcoming events',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 20),
+            ],
+          ),
+        ),
       ),
     );
   }
