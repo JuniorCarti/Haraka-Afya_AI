@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 
 class UpcomingEventsScreen extends StatefulWidget {
@@ -88,16 +89,6 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
   }
 
   List<Widget> _buildFilteredEventCards() {
-    // In a real app, you would filter your actual data list here
-    // For this example, we'll just return all cards and implement the filter logic
-    
-    // This would be your actual filtering logic:
-    // final filteredEvents = allEvents.where((event) {
-    //   if (_selectedFilter == 'All') return true;
-    //   return event.type == _selectedFilter;
-    // }).toList();
-    
-    // For now, we'll just return all cards
     return [
       _buildEventCard(
         title: 'Annual Cancer Awareness Run',
@@ -106,8 +97,13 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
         location: 'Uhuru Park, Nairobi',
         description: 'Join our 5km/10km run to raise funds for cancer research and support patients in need. All proceeds go to cancer treatment centers.',
         color: const Color(0xFFE8F5E9),
-        imageUrl: 'https://plus.unsplash.com/premium_photo-1723619058127-5f2308556d1f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTd8fGNhbmNlciUyMGF3YXJlbmVzcyUyMHJ1bnxlbnwwfHwwfHx8MA%3D%3D',
-        photographer: 'John Doe',
+        imageUrls: [
+          'https://plus.unsplash.com/premium_photo-1723619058127-5f2308556d1f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NTd8fGNhbmNlciUyMGF3YXJlbmVzcyUyMHJ1bnxlbnwwfHwwfHx8MA%3D%3D',
+          'https://images.unsplash.com/photo-1543351611-58f69d7c1781?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80',
+          'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1517649763962-0c623066013b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+        ],
+        photographers: ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Williams'],
         hasSupportButton: true,
         eventType: 'Runs/Walks',
       ),
@@ -119,8 +115,13 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
         location: 'Kenyatta National Hospital',
         description: 'Free breast, cervical, and prostate cancer screenings for all attendees. Early detection saves lives!',
         color: const Color(0xFFE3F2FD),
-        imageUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-        photographer: 'Jane Smith',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1581595219315-a187dd40c322?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+        ],
+        photographers: ['Jane Smith', 'Alex Brown', 'Chris Wilson', 'Patricia Lee'],
         eventType: 'Screenings',
       ),
       const SizedBox(height: 16),
@@ -131,8 +132,13 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
         location: 'Online (Zoom)',
         description: 'Learn about cancer-fighting foods and dietary strategies from leading nutritionists. Special focus on managing treatment side effects.',
         color: const Color(0xFFF3E5F5),
-        imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1453&q=80',
-        photographer: 'Mike Johnson',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1490645935967-10de6ba17061?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1453&q=80',
+          'https://images.unsplash.com/photo-1547592180-85f173990554?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1490645935967-10de6ba17061?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1453&q=80',
+        ],
+        photographers: ['Mike Johnson', 'Taylor Swift', 'Emma Watson', 'Robert Downey'],
         eventType: 'Workshops',
       ),
       const SizedBox(height: 16),
@@ -143,8 +149,13 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
         location: 'Safari Park Hotel',
         description: 'An evening of celebration and fundraising with inspiring stories from survivors. Black tie event with auction.',
         color: const Color(0xFFFFEBEE),
-        imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
-        photographer: 'Sarah Williams',
+        imageUrls: [
+          'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1531058020387-3be344556be6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1531058020387-3be344556be6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+          'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1469&q=80',
+        ],
+        photographers: ['Sarah Williams', 'David Miller', 'Jennifer Lopez', 'Tom Hanks'],
         hasSupportButton: true,
         eventType: 'Fundraisers',
       ),
@@ -158,8 +169,8 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
     required String location,
     required String description,
     required Color color,
-    required String imageUrl,
-    required String photographer,
+    required List<String> imageUrls,
+    required List<String> photographers,
     required String eventType,
     bool hasSupportButton = false,
   }) {
@@ -185,30 +196,47 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(
-                    imageUrl,
+                  child: SizedBox(
                     height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        height: 150,
-                        color: Colors.grey[200],
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => Container(
+                    child: ImageSlideshow(
+                      width: double.infinity,
                       height: 150,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                      initialPage: 0,
+                      indicatorColor: Colors.blue,
+                      indicatorBackgroundColor: Colors.grey,
+                      indicatorRadius: 4,
+                      autoPlayInterval: 4000, // 4 seconds
+                      isLoop: true,
+                      children: imageUrls.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final url = entry.value;
+                        return Image.network(
+                          url,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 150,
+                              color: Colors.grey[200],
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 150,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
@@ -221,12 +249,17 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(
-                      'Photo by $photographer',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.white,
-                      ),
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: ValueNotifier<int>(0),
+                      builder: (context, currentIndex, child) {
+                        return Text(
+                          'Photo by ${photographers[currentIndex % photographers.length]}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -253,7 +286,7 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
+                          color: const Color(0xFFFFD6E7), // Light pink background
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
