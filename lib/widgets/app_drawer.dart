@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 import 'package:haraka_afya_ai/screens/privacy_security_screen.dart';
-// Don't link events yet — no import for EventsScreen
+import 'package:haraka_afya_ai/screens/upcoming_events.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -63,7 +63,7 @@ class AppDrawer extends StatelessWidget {
             title: 'Subscription Plans',
             subtitle: 'Upgrade your plan',
             action: () {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close the drawer first
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -77,7 +77,16 @@ class AppDrawer extends StatelessWidget {
             icon: Icons.event,
             title: 'Upcoming Events',
             subtitle: 'View community events',
-            // Not wired to navigation yet
+            action: () {
+              Navigator.pop(context); // Close the drawer first
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UpcomingEventsScreen(),
+                  settings: const RouteSettings(name: '/upcoming-events'),
+                ),
+              );
+            },
           ),
           _buildDrawerItem(
             context,
@@ -99,7 +108,7 @@ class AppDrawer extends StatelessWidget {
             title: 'Privacy & Security',
             subtitle: 'Your data protection',
             action: () {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close the drawer first
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -154,7 +163,7 @@ class AppDrawer extends StatelessWidget {
         style: const TextStyle(fontSize: 12),
       ),
       onTap: () {
-        Navigator.pop(context);
+        Navigator.pop(context); 
         if (action != null) {
           action();
         } else if (route != null) {
