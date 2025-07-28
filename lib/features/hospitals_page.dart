@@ -133,7 +133,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
               children: [
                 _buildCategoryChip('All'),
                 _buildCategoryChip('General'),
-                ...cancerTypes.map((type) => _buildCategoryChip(type)).toList(),
+                ...cancerTypes.map((type) => _buildCategoryChip(type)),
               ],
             ),
           ),
