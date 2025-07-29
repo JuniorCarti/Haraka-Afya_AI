@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../pages/article_detail_page.dart';
-import '../screens/medical_dictionary_page.dart'; // New import for dictionary page
+import '../screens/medical_dictionary_page.dart';
+import '../screens/educational_videos_page.dart'; // New import for videos page
 
 class LearnPage extends StatefulWidget {
   const LearnPage({super.key});
@@ -39,6 +40,7 @@ class _LearnPageState extends State<LearnPage> {
               },
               child: Card(
                 elevation: 2,
+                color: const Color(0xFFFFF0F5), // Light pink background
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -46,6 +48,8 @@ class _LearnPageState extends State<LearnPage> {
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
+                      Icon(Icons.menu_book, size: 30, color: Color(0xFFE75480)),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,6 +64,58 @@ class _LearnPageState extends State<LearnPage> {
                             const SizedBox(height: 4),
                             Text(
                               '500+ cancer medical terms explained',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Educational Videos Card
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EducationalVideosPage(),
+                  ),
+                );
+              },
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.play_circle_fill, size: 28, color: Color(0xFF4285F4)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Educational Video Library',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Watch and learn from expert discussions',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
