@@ -53,7 +53,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEDFCF5),
+      backgroundColor: const Color(0xFFEDFCF5), // Updated page background color
       appBar: AppBar(
         title: Column(
           children: [
@@ -61,13 +61,13 @@ class _HospitalsPageState extends State<HospitalsPage> {
             Text(
               'Find quality care near you',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.black, // Changed from white70 to black
+                    color: Colors.black,
                   ),
             ),
           ],
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF0C6D5B), // Keeping app bar color consistent
+        backgroundColor: const Color(0xFFEDF3F3), // Updated app bar color
       ),
       body: Column(
         children: [
