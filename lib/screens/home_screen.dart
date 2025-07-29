@@ -8,10 +8,12 @@ import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
 import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
 import 'package:haraka_afya_ai/screens/medication_reminder_page.dart';
+import 'package:haraka_afya_ai/screens/donation_page.dart'; // 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 import 'package:haraka_afya_ai/screens/upcoming_events.dart';
+import 'package:lottie/lottie.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -268,8 +270,11 @@ class HomeContent extends StatelessWidget {
               bgColor: const Color(0xFFFFEBEE),
               iconColor: const Color(0xFFD32F2F),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Donation feature coming soon!')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DonationPage(),
+                  ),
                 );
               },
             ),
@@ -446,38 +451,52 @@ class HomeContent extends StatelessWidget {
           context: context,
           builder: (context) => const AIAssistantPopup(),
         ),
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.all(12),
+          height: 100, // Fixed height
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF25D366),
-                  borderRadius: BorderRadius.circular(12),
+              SizedBox(
+                width: 60, // Smaller animation
+                height: 60, // Smaller animation
+                child: Lottie.asset(
+                  'assets/animations/chatbot.json',
+                  fit: BoxFit.contain,
                 ),
-                child: const Icon(Icons.chat, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Haraka-Afya Support',
+                    const Text(
+                      'Ellie Assistant',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF259450),
                       ),
                     ),
-                    Text(
-                      'Chat with our AI assistant anytime!',
-                      style: TextStyle(fontSize: 14),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Get instant health advice',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, size: 20),
+              IconButton(
+                icon: const Icon(Icons.chat, size: 20),
+                color: const Color(0xFF259450),
+                onPressed: () => showDialog(
+                  context: context,
+                  builder: (context) => const AIAssistantPopup(),
+                ),
+              ),
             ],
           ),
         ),
