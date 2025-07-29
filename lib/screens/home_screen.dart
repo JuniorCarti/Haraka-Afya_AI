@@ -334,7 +334,7 @@ class HomeContent extends StatelessWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.network(
-                'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80',
+                'https://t4.ftcdn.net/jpg/05/64/47/45/240_F_564474595_B2BrV5nZoyEAbfetpiRKMQeRWXf4KCbs.jpg',
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
