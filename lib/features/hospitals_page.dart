@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:share_plus/share_plus.dart';
 
 class HospitalsPage extends StatefulWidget {
   const HospitalsPage({super.key});
@@ -9,9 +10,10 @@ class HospitalsPage extends StatefulWidget {
 }
 
 class _HospitalsPageState extends State<HospitalsPage> {
-  late GoogleMapController mapController;
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
+  String _searchQuery = '';
+  final Set<String> _favoriteHospitals = {};
 
   final List<String> cancerTypes = [
     'All',
@@ -22,58 +24,43 @@ class _HospitalsPageState extends State<HospitalsPage> {
     'Skin',
   ];
 
-  final List<Map<String, dynamic>> facilities = [
-    {
-      'name': 'Hope Cancer Center',
-      'location': 'New York, NY',
-      'image': 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      'distance': '2.5 miles away',
-      'rating': 4.8,
-      'cancerTypes': ['Breast Cancer', 'Lung Cancer', 'Leukemia'],
-      'specialists': [
-        {
-          'name': 'Dr. Sarah Johnson',
-          'specialty': 'Medical Oncology',
-          'image': 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-          'experience': '12 years',
-          'rating': 4.9,
-        },
-        {
-          'name': 'Dr. Michael Chen',
-          'specialty': 'Radiation Oncology',
-          'image': 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1064&q=80',
-          'experience': '8 years',
-          'rating': 4.7,
-        },
-      ],
-      'equipment': ['MRI', 'CT Scan', 'PET Scan', 'Radiation Therapy'],
-    },
-    {
-      'name': 'Kenya Cancer Institute',
-      'location': 'Nairobi, Kenya',
-      'image': 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-      'distance': '5.2 miles away',
-      'rating': 4.5,
-      'cancerTypes': ['Breast Cancer', 'Cervical Cancer', 'Prostate Cancer'],
-      'specialists': [
-        {
-          'name': 'Dr. Emily Roberts',
-          'specialty': 'Surgical Oncology',
-          'image': 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
-          'experience': '10 years',
-          'rating': 4.8,
-        },
-        {
-          'name': 'Dr. James Wilson',
-          'specialty': 'Hematology',
-          'image': 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1064&q=80',
-          'experience': '15 years',
-          'rating': 5.0,
-        },
-      ],
-      'equipment': ['CT Scan', 'PET Scan', 'Mammography', 'Radiation Therapy'],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text.toLowerCase();
+    });
+  }
+
+  void _toggleFavorite(String hospitalId) {
+    setState(() {
+      if (_favoriteHospitals.contains(hospitalId)) {
+        _favoriteHospitals.remove(hospitalId);
+      } else {
+        _favoriteHospitals.add(hospitalId);
+      }
+    });
+  }
+
+  Future<void> _shareHospital(Map<String, dynamic> facility) async {
+    final String shareText = 
+        'Check out ${facility['name']} located at ${facility['location']}. '
+        'Specializes in: ${(facility['cancerTypes'] as List<dynamic>).join(', ')}. '
+        'Rating: ${facility['rating']}';
+
+    await Share.share(shareText);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +69,11 @@ class _HospitalsPageState extends State<HospitalsPage> {
       appBar: AppBar(
         title: const Text(
           'Browse Cancer Facilities',
-          style: TextStyle(color: Colors.black),
+          style: TextStyle(
+            fontSize: 18, // Consistent with HomeScreen app bar
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFFEDF3F3),
@@ -99,13 +90,13 @@ class _HospitalsPageState extends State<HospitalsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cancer Types Section with Green Outline Selection
+            // Cancer Types Section
             Padding(
               padding: const EdgeInsets.only(top: 16, left: 16),
               child: Text(
                 'Cancer Types',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 16, // Section titles at 16sp
                   fontWeight: FontWeight.bold,
                   color: Colors.grey[800],
                 ),
@@ -140,6 +131,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                         child: Text(
                           cancerTypes[index],
                           style: TextStyle(
+                            fontSize: 14, // Consistent button text size
                             color: isSelected ? const Color(0xFF0C6D5B) : Colors.grey[600],
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -160,6 +152,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                   filled: true,
                   fillColor: Colors.white,
                   hintText: 'Search by hospital name or location...',
+                  hintStyle: const TextStyle(fontSize: 14), // Consistent hint text
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -171,16 +164,71 @@ class _HospitalsPageState extends State<HospitalsPage> {
                     onPressed: () {},
                   ),
                 ),
+                style: const TextStyle(fontSize: 14), // Consistent input text
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
               ),
             ),
 
             // Facilities List
-            ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: facilities.length,
-              itemBuilder: (context, index) => _buildFacilityCard(facilities[index]),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('hospitals').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(fontSize: 14), // Consistent error text
+                  ));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text(
+                    'No hospitals found',
+                    style: const TextStyle(fontSize: 14), // Consistent empty state
+                  ));
+                }
+
+                var hospitals = snapshot.data!.docs.where((hospital) {
+                  if (_selectedCategory != 'All') {
+                    final cancerTypes = hospital['cancerTypes'] as List<dynamic>;
+                    if (!cancerTypes.any((type) => type.toString().contains(_selectedCategory))) {
+                      return false;
+                    }
+                  }
+
+                  if (_searchQuery.isNotEmpty) {
+                    final name = hospital['name'].toString().toLowerCase();
+                    final location = hospital['location'].toString().toLowerCase();
+                    if (!name.contains(_searchQuery) && !location.contains(_searchQuery)) {
+                      return false;
+                    }
+                  }
+
+                  return true;
+                }).toList();
+
+                if (hospitals.isEmpty) {
+                  return Center(child: Text(
+                    'No matching hospitals found',
+                    style: const TextStyle(fontSize: 14), // Consistent empty state
+                  ));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: hospitals.length,
+                  itemBuilder: (context, index) => _buildFacilityCard(hospitals[index]),
+                );
+              },
             ),
           ],
         ),
@@ -188,7 +236,10 @@ class _HospitalsPageState extends State<HospitalsPage> {
     );
   }
 
-  Widget _buildFacilityCard(Map<String, dynamic> facility) {
+  Widget _buildFacilityCard(DocumentSnapshot hospitalDoc) {
+    final facility = hospitalDoc.data() as Map<String, dynamic>;
+    final isFavorite = _favoriteHospitals.contains(hospitalDoc.id);
+    
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 20),
@@ -204,7 +255,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Image.network(
-                  facility['image'],
+                  facility['image'] ?? '',
                   height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -245,8 +296,11 @@ class _HospitalsPageState extends State<HospitalsPage> {
                       const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        facility['rating'].toString(),
-                        style: const TextStyle(color: Colors.white),
+                        facility['rating']?.toString() ?? '0.0',
+                        style: const TextStyle(
+                          fontSize: 14, // Consistent rating text
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
@@ -256,8 +310,11 @@ class _HospitalsPageState extends State<HospitalsPage> {
                 top: 10,
                 right: 10,
                 child: IconButton(
-                  icon: const Icon(Icons.favorite_border, color: Colors.white),
-                  onPressed: () {},
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? Colors.red : Colors.white,
+                  ),
+                  onPressed: () => _toggleFavorite(hospitalDoc.id),
                 ),
               ),
             ],
@@ -271,16 +328,16 @@ class _HospitalsPageState extends State<HospitalsPage> {
                   children: [
                     Expanded(
                       child: Text(
-                        facility['name'],
+                        facility['name'] ?? 'Unknown Hospital',
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 18, // Hospital name at 18sp (like greeting in HomeScreen)
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.share),
-                      onPressed: () {},
+                      onPressed: () => _shareHospital(facility),
                     ),
                   ],
                 ),
@@ -290,13 +347,19 @@ class _HospitalsPageState extends State<HospitalsPage> {
                     const Icon(Icons.location_on, size: 16, color: Colors.grey),
                     const SizedBox(width: 4),
                     Text(
-                      facility['location'],
-                      style: TextStyle(color: Colors.grey[600]),
+                      facility['location'] ?? 'Unknown Location',
+                      style: TextStyle(
+                        fontSize: 14, // Consistent secondary text
+                        color: Colors.grey[600],
+                      ),
                     ),
                     const Spacer(),
                     Text(
-                      facility['distance'],
-                      style: TextStyle(color: Colors.grey[600]),
+                      facility['distance'] ?? '',
+                      style: TextStyle(
+                        fontSize: 14, // Consistent secondary text
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),
@@ -305,17 +368,23 @@ class _HospitalsPageState extends State<HospitalsPage> {
                 // Cancer Types Treated
                 const Text(
                   'Cancer Types Treated:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16, // Section headers at 16sp
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: (facility['cancerTypes'] as List<String>).map((type) => Chip(
-                    label: Text(type),
+                  children: (facility['cancerTypes'] as List<dynamic>?)?.map((type) => Chip(
+                    label: Text(
+                      type.toString(),
+                      style: const TextStyle(fontSize: 12), // Chip text smaller
+                    ),
                     backgroundColor: const Color(0xFFE8F5E9),
                     labelStyle: const TextStyle(fontSize: 12),
-                  )).toList(),
+                  )).toList() ?? [const Chip(label: Text('No data available'))],
                 ),
                 const SizedBox(height: 16),
 
@@ -324,91 +393,134 @@ class _HospitalsPageState extends State<HospitalsPage> {
                   children: [
                     const Text(
                       'Specialists',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16, // Section headers at 16sp
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Spacer(),
                     TextButton(
                       onPressed: () {},
-                      child: const Text('View All'),
+                      child: const Text(
+                        'View All',
+                        style: TextStyle(
+                          fontSize: 14, // Consistent button text
+                          color: Color(0xFF259450),
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                ...(facility['specialists'] as List<Map<String, dynamic>>).map((specialist) => Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () {},
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundImage: NetworkImage(specialist['image']),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      specialist['name'],
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                    Text(specialist['specialty']),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.star, color: Colors.amber, size: 16),
-                                        Text(' ${specialist['rating']}'),
-                                        const SizedBox(width: 8),
-                                        Text('${specialist['experience']} exp'),
-                                      ],
-                                    ),
-                                  ],
+                ...(facility['specialists'] as List<dynamic>?)?.map((specialist) {
+                  final specData = specialist as Map<String, dynamic>;
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    color: const Color(0xFFD7FBE5),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {},
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundImage: NetworkImage(specData['image'] ?? ''),
                                 ),
-                              ),
-                              const Icon(Icons.arrow_forward_ios, size: 16),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0C6D5B),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        specData['name'] ?? 'Unknown Specialist',
+                                        style: const TextStyle(
+                                          fontSize: 16, // Name at 16sp
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        specData['specialty'] ?? '',
+                                        style: const TextStyle(fontSize: 14), // Secondary text
+                                      ),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.star, color: Colors.amber, size: 16),
+                                          Text(
+                                            ' ${specData['rating'] ?? '0.0'}',
+                                            style: const TextStyle(fontSize: 14), // Consistent
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '${specData['experience'] ?? ''} exp',
+                                            style: const TextStyle(fontSize: 14), // Consistent
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              onPressed: () {},
-                              child: const Text('Schedule an appointment'),
+                                const Icon(Icons.arrow_forward_ios, size: 16),
+                              ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF269A51),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                onPressed: () {},
+                                child: const Text(
+                                  'Schedule an appointment',
+                                  style: TextStyle(
+                                    fontSize: 14, // Button text consistent
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                )).toList(),
+                  );
+                }).toList() ?? [const Text(
+                  'No specialists available',
+                  style: TextStyle(fontSize: 14), // Consistent empty state
+                )],
 
                 // Equipment Section
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const Text(
-                      'Equipment',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      'Equipments Available',
+                      style: TextStyle(
+                        fontSize: 16, // Section headers at 16sp
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Spacer(),
                     TextButton(
                       onPressed: () {},
-                      child: const Text('View All'),
+                      child: const Text(
+                        'View All',
+                        style: TextStyle(
+                          fontSize: 14, // Consistent button text
+                          color: Color(0xFF259450),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -430,11 +542,14 @@ class _HospitalsPageState extends State<HospitalsPage> {
                                 child: Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children: (facility['equipment'] as List<String>).map((equip) => Chip(
-                                    label: Text(equip),
+                                  children: (facility['equipment'] as List<dynamic>?)?.map((equip) => Chip(
+                                    label: Text(
+                                      equip.toString(),
+                                      style: const TextStyle(fontSize: 12), // Chip text smaller
+                                    ),
                                     backgroundColor: const Color(0xFFE3F2FD),
                                     labelStyle: const TextStyle(fontSize: 12),
-                                  )).toList(),
+                                  )).toList() ?? [const Chip(label: Text('No data available'))],
                                 ),
                               ),
                               const Icon(Icons.arrow_forward_ios, size: 16),
