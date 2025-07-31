@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../pages/article_detail_page.dart';
 import '../screens/medical_dictionary_page.dart';
-import '../screens/educational_videos_page.dart'; // New import for videos page
+import '../screens/educational_videos_page.dart';
 
 class LearnPage extends StatefulWidget {
   const LearnPage({super.key});
@@ -19,7 +19,13 @@ class _LearnPageState extends State<LearnPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFEDFCF5),
       appBar: AppBar(
-        title: const Text('Health Education'),
+        title: const Text(
+          'Health Education',
+          style: TextStyle(
+            fontSize: 18, // Matches HomeScreen app bar
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -40,7 +46,7 @@ class _LearnPageState extends State<LearnPage> {
               },
               child: Card(
                 elevation: 2,
-                color: const Color(0xFFFFF0F5), // Light pink background
+                color: const Color(0xFFFFF0F5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -57,7 +63,7 @@ class _LearnPageState extends State<LearnPage> {
                             const Text(
                               'Your Cancer Medical Dictionary',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 18, // Matches HomeScreen greeting
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -65,7 +71,7 @@ class _LearnPageState extends State<LearnPage> {
                             Text(
                               '500+ cancer medical terms explained',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14, // Secondary text
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -109,7 +115,7 @@ class _LearnPageState extends State<LearnPage> {
                             const Text(
                               'Educational Video Library',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 18, // Consistent card title
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -117,7 +123,7 @@ class _LearnPageState extends State<LearnPage> {
                             Text(
                               'Watch and learn from expert discussions',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14, // Secondary text
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -133,9 +139,13 @@ class _LearnPageState extends State<LearnPage> {
             
             const SizedBox(height: 24),
             
+            // Categories Section
             const Text(
               'Categories',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16, // Section headers at 16sp
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             StreamBuilder<DocumentSnapshot>(
@@ -145,17 +155,23 @@ class _LearnPageState extends State<LearnPage> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const CircularProgressIndicator();
+                  return const Center(child: CircularProgressIndicator());
                 }
                 final categories =
                     List<String>.from(snapshot.data!.get('categories'));
                 return _buildHorizontalCategories(categories);
               },
             ),
+            
             const Divider(height: 40, thickness: 1),
+            
+            // Articles Section
             const Text(
               'Health Articles',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16, // Section headers at 16sp
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             StreamBuilder<QuerySnapshot>(
@@ -166,12 +182,24 @@ class _LearnPageState extends State<LearnPage> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const CircularProgressIndicator();
+                  return const Center(child: CircularProgressIndicator());
                 }
                 final articles = snapshot.data!.docs.where((doc) {
                   if (selectedCategory == 'All Topics') return true;
                   return doc['category'] == selectedCategory;
                 }).toList();
+
+                if (articles.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No articles found',
+                      style: TextStyle(
+                        fontSize: 14, // Consistent empty state
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  );
+                }
 
                 return Column(
                   children: articles.map((doc) {
@@ -236,8 +264,8 @@ class _LearnPageState extends State<LearnPage> {
               child: Text(
                 category,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 14, // Consistent with HomeScreen filter chips
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected ? Colors.green[800] : Colors.black,
                 ),
               ),
@@ -287,7 +315,7 @@ class _LearnPageState extends State<LearnPage> {
                       child: Text(
                         title,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 18, // Article title matches card titles
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -303,7 +331,7 @@ class _LearnPageState extends State<LearnPage> {
                           'Trending',
                           style: TextStyle(
                             color: Colors.orange,
-                            fontSize: 12,
+                            fontSize: 12, // Smaller for tags
                           ),
                         ),
                       ),
@@ -312,18 +340,29 @@ class _LearnPageState extends State<LearnPage> {
                 const SizedBox(height: 8),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  style: const TextStyle(
+                    fontSize: 14, // Secondary text
+                    color: Colors.black54,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(author,
-                        style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w500)),
-                    Text('$readTime • $date',
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.black54)),
+                    Text(
+                      author,
+                      style: const TextStyle(
+                        fontSize: 12, // Metadata smaller
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '$readTime • $date',
+                      style: const TextStyle(
+                        fontSize: 12, // Metadata smaller
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
               ],
