@@ -70,7 +70,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
         title: const Text(
           'Browse Cancer Facilities',
           style: TextStyle(
-            fontSize: 18, // Consistent with HomeScreen app bar
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
@@ -90,52 +90,57 @@ class _HospitalsPageState extends State<HospitalsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cancer Types Section
-            Padding(
-              padding: const EdgeInsets.only(top: 16, left: 16),
+            // Cancer Types Section with proper spacing
+            const Padding(
+              padding: EdgeInsets.only(top: 16.0, left: 16.0, bottom: 8.0),
               child: Text(
                 'Cancer Types',
                 style: TextStyle(
-                  fontSize: 16, // Section titles at 16sp
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+                  color: Colors.black,
                 ),
               ),
             ),
             SizedBox(
-              height: 50,
+              height: 60, // Increased height to prevent cutting
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 itemCount: cancerTypes.length,
                 itemBuilder: (context, index) {
                   bool isSelected = _selectedCategory == cancerTypes[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () {
+                  bool isAll = cancerTypes[index] == 'All';
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(right: 12.0), // Increased right margin
+                    child: ChoiceChip(
+                      label: Text(
+                        cancerTypes[index],
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isSelected ? const Color(0xFF0C6D5B) : Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      selected: isSelected,
+                      onSelected: (selected) {
                         setState(() {
                           _selectedCategory = cancerTypes[index];
                         });
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFE8F5E9) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF0C6D5B) : Colors.grey[300]!,
-                            width: 1.5,
-                          ),
+                      backgroundColor: Colors.white,
+                      selectedColor: const Color(0xFFA4D3A5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: const Color(0xFF0C6D5B),
+                          width: 1.5,
                         ),
-                        child: Text(
-                          cancerTypes[index],
-                          style: TextStyle(
-                            fontSize: 14, // Consistent button text size
-                            color: isSelected ? const Color(0xFF0C6D5B) : Colors.grey[600],
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0,
+                        vertical: 10.0,
                       ),
                     ),
                   );
@@ -143,28 +148,27 @@ class _HospitalsPageState extends State<HospitalsPage> {
               ),
             ),
 
-            // Search Bar
+            // Updated Search Bar with new background color and no filter icon
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: const Color(0xFFF1F5F4), // Updated background color
                   hintText: 'Search by hospital name or location...',
-                  hintStyle: const TextStyle(fontSize: 14), // Consistent hint text
+                  hintStyle: const TextStyle(fontSize: 14),
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.filter_alt_outlined),
-                    onPressed: () {},
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 14.0,
                   ),
                 ),
-                style: const TextStyle(fontSize: 14), // Consistent input text
+                style: const TextStyle(fontSize: 14),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value.toLowerCase();
@@ -173,26 +177,41 @@ class _HospitalsPageState extends State<HospitalsPage> {
               ),
             ),
 
-            // Facilities List
+            // Facilities List with proper spacing
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance.collection('hospitals').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text(
-                    'Error: ${snapshot.error}',
-                    style: const TextStyle(fontSize: 14), // Consistent error text
-                  ));
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  );
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text(
-                    'No hospitals found',
-                    style: const TextStyle(fontSize: 14), // Consistent empty state
-                  ));
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(
+                      child: Text(
+                        'No hospitals found',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  );
                 }
 
                 var hospitals = snapshot.data!.docs.where((hospital) {
@@ -215,18 +234,26 @@ class _HospitalsPageState extends State<HospitalsPage> {
                 }).toList();
 
                 if (hospitals.isEmpty) {
-                  return Center(child: Text(
-                    'No matching hospitals found',
-                    style: const TextStyle(fontSize: 14), // Consistent empty state
-                  ));
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(
+                      child: Text(
+                        'No matching hospitals found',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 24.0),
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: hospitals.length,
-                  itemBuilder: (context, index) => _buildFacilityCard(hospitals[index]),
+                  itemBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 20.0),
+                    child: _buildFacilityCard(hospitals[index]),
+                  ),
                 );
               },
             ),
@@ -242,7 +269,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
     
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -298,7 +325,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                       Text(
                         facility['rating']?.toString() ?? '0.0',
                         style: const TextStyle(
-                          fontSize: 14, // Consistent rating text
+                          fontSize: 14,
                           color: Colors.white,
                         ),
                       ),
@@ -320,7 +347,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -330,7 +357,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                       child: Text(
                         facility['name'] ?? 'Unknown Hospital',
                         style: const TextStyle(
-                          fontSize: 18, // Hospital name at 18sp (like greeting in HomeScreen)
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -341,23 +368,24 @@ class _HospitalsPageState extends State<HospitalsPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      facility['location'] ?? 'Unknown Location',
-                      style: TextStyle(
-                        fontSize: 14, // Consistent secondary text
-                        color: Colors.grey[600],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        facility['location'] ?? 'Unknown Location',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ),
-                    const Spacer(),
                     Text(
                       facility['distance'] ?? '',
                       style: TextStyle(
-                        fontSize: 14, // Consistent secondary text
+                        fontSize: 14,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -369,7 +397,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                 const Text(
                   'Cancer Types Treated:',
                   style: TextStyle(
-                    fontSize: 16, // Section headers at 16sp
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -380,7 +408,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                   children: (facility['cancerTypes'] as List<dynamic>?)?.map((type) => Chip(
                     label: Text(
                       type.toString(),
-                      style: const TextStyle(fontSize: 12), // Chip text smaller
+                      style: const TextStyle(fontSize: 12),
                     ),
                     backgroundColor: const Color(0xFFE8F5E9),
                     labelStyle: const TextStyle(fontSize: 12),
@@ -394,7 +422,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                     const Text(
                       'Specialists',
                       style: TextStyle(
-                        fontSize: 16, // Section headers at 16sp
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -404,7 +432,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                       child: const Text(
                         'View All',
                         style: TextStyle(
-                          fontSize: 14, // Consistent button text
+                          fontSize: 14,
                           color: Color(0xFF259450),
                         ),
                       ),
@@ -441,25 +469,25 @@ class _HospitalsPageState extends State<HospitalsPage> {
                                       Text(
                                         specData['name'] ?? 'Unknown Specialist',
                                         style: const TextStyle(
-                                          fontSize: 16, // Name at 16sp
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       Text(
                                         specData['specialty'] ?? '',
-                                        style: const TextStyle(fontSize: 14), // Secondary text
+                                        style: const TextStyle(fontSize: 14),
                                       ),
                                       Row(
                                         children: [
                                           const Icon(Icons.star, color: Colors.amber, size: 16),
                                           Text(
                                             ' ${specData['rating'] ?? '0.0'}',
-                                            style: const TextStyle(fontSize: 14), // Consistent
+                                            style: const TextStyle(fontSize: 14),
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
                                             '${specData['experience'] ?? ''} exp',
-                                            style: const TextStyle(fontSize: 14), // Consistent
+                                            style: const TextStyle(fontSize: 14),
                                           ),
                                         ],
                                       ),
@@ -484,7 +512,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                                 child: const Text(
                                   'Schedule an appointment',
                                   style: TextStyle(
-                                    fontSize: 14, // Button text consistent
+                                    fontSize: 14,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -497,7 +525,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                   );
                 }).toList() ?? [const Text(
                   'No specialists available',
-                  style: TextStyle(fontSize: 14), // Consistent empty state
+                  style: TextStyle(fontSize: 14),
                 )],
 
                 // Equipment Section
@@ -507,7 +535,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                     const Text(
                       'Equipments Available',
                       style: TextStyle(
-                        fontSize: 16, // Section headers at 16sp
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -517,7 +545,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                       child: const Text(
                         'View All',
                         style: TextStyle(
-                          fontSize: 14, // Consistent button text
+                          fontSize: 14,
                           color: Color(0xFF259450),
                         ),
                       ),
@@ -545,7 +573,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                                   children: (facility['equipment'] as List<dynamic>?)?.map((equip) => Chip(
                                     label: Text(
                                       equip.toString(),
-                                      style: const TextStyle(fontSize: 12), // Chip text smaller
+                                      style: const TextStyle(fontSize: 12),
                                     ),
                                     backgroundColor: const Color(0xFFE3F2FD),
                                     labelStyle: const TextStyle(fontSize: 12),
