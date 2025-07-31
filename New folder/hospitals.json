@@ -1,0 +1,184 @@
+{
+  "hospitals": [
+    {
+      "name": "Nairobi Cancer Center",
+      "location": "Nairobi",
+      "rating": 4.7,
+      "distance": "3.5 km",
+      "image": "https://example.com/nairobi_center.jpg",
+      "cancerTypes": ["Breast", "Lung", "Prostate"],
+      "specialists": [
+        {
+          "name": "Dr. Angela Mwangi",
+          "specialty": "Oncologist",
+          "image": "https://example.com/angela.jpg",
+          "rating": 4.9,
+          "experience": "10 yrs"
+        }
+      ],
+      "equipment": ["MRI Scanner", "Chemotherapy Machine", "Radiotherapy Unit"]
+    },
+    {
+      "name": "Eldoret Oncology Hospital",
+      "location": "Eldoret",
+      "rating": 4.5,
+      "distance": "1.2 km",
+      "image": "https://example.com/eldoret.jpg",
+      "cancerTypes": ["Leukemia", "Skin"],
+      "specialists": [
+        {
+          "name": "Dr. Joan Chebet",
+          "specialty": "Dermatologist",
+          "image": "https://example.com/joan.jpg",
+          "rating": 4.6,
+          "experience": "6 yrs"
+        }
+      ],
+      "equipment": ["CT Scanner", "Surgical Equipment"]
+    },
+    {
+      "name": "Coast Cancer Institute",
+      "location": "Mombasa",
+      "rating": 4.2,
+      "distance": "2.8 km",
+      "image": "https://example.com/coast.jpg",
+      "cancerTypes": ["Lung", "Skin"],
+      "specialists": [
+        {
+          "name": "Dr. Zainab Ali",
+          "specialty": "Pulmonologist",
+          "image": "https://example.com/zainab.jpg",
+          "rating": 4.3,
+          "experience": "9 yrs"
+        }
+      ],
+      "equipment": ["X-Ray Machine", "Radiotherapy Unit"]
+    },
+    {
+      "name": "Mount Kenya Medical Oncology",
+      "location": "Nyeri",
+      "rating": 4.0,
+      "distance": "5.1 km",
+      "image": "https://example.com/mtkenya.jpg",
+      "cancerTypes": ["Prostate", "Breast"],
+      "specialists": [
+        {
+          "name": "Dr. Kiplangat Ruto",
+          "specialty": "Urologist",
+          "image": "https://example.com/ruto.jpg",
+          "rating": 4.1,
+          "experience": "7 yrs"
+        }
+      ],
+      "equipment": ["Ultrasound", "Laser Surgery Tools"]
+    },
+    {
+      "name": "Western Cancer Hospital",
+      "location": "Kakamega",
+      "rating": 3.8,
+      "distance": "2.2 km",
+      "image": "https://example.com/western.jpg",
+      "cancerTypes": ["Leukemia"],
+      "specialists": [
+        {
+          "name": "Dr. Irene Auma",
+          "specialty": "Hematologist",
+          "image": "https://example.com/irene.jpg",
+          "rating": 4.0,
+          "experience": "5 yrs"
+        }
+      ],
+      "equipment": ["Blood Analyzer", "IV Infusion Pumps"]
+    },
+    {
+      "name": "Thika Oncology Center",
+      "location": "Thika",
+      "rating": 4.6,
+      "distance": "1.8 km",
+      "image": "https://example.com/thika.jpg",
+      "cancerTypes": ["Breast", "Lung", "Skin"],
+      "specialists": [
+        {
+          "name": "Dr. Peter Kariuki",
+          "specialty": "Radiologist",
+          "image": "https://example.com/peter.jpg",
+          "rating": 4.7,
+          "experience": "11 yrs"
+        }
+      ],
+      "equipment": ["PET Scanner", "CT Machine"]
+    },
+    {
+      "name": "Kisumu Cancer Care",
+      "location": "Kisumu",
+      "rating": 4.3,
+      "distance": "4.3 km",
+      "image": "https://example.com/kisumu.jpg",
+      "cancerTypes": ["Leukemia", "Skin"],
+      "specialists": [
+        {
+          "name": "Dr. Faith Oketch",
+          "specialty": "Oncologist",
+          "image": "https://example.com/faith.jpg",
+          "rating": 4.2,
+          "experience": "8 yrs"
+        }
+      ],
+      "equipment": ["Radiotherapy Unit", "Infusion Chairs"]
+    },
+    {
+      "name": "Garissa Oncology Clinic",
+      "location": "Garissa",
+      "rating": 3.5,
+      "distance": "7.4 km",
+      "image": "https://example.com/garissa.jpg",
+      "cancerTypes": ["Prostate", "Lung"],
+      "specialists": [
+        {
+          "name": "Dr. Ahmed Noor",
+          "specialty": "Pulmonologist",
+          "image": "https://example.com/ahmed.jpg",
+          "rating": 3.8,
+          "experience": "6 yrs"
+        }
+      ],
+      "equipment": ["X-Ray Machine", "CT Scanner"]
+    },
+    {
+      "name": "Meru Regional Cancer Center",
+      "location": "Meru",
+      "rating": 4.1,
+      "distance": "2.0 km",
+      "image": "https://example.com/meru.jpg",
+      "cancerTypes": ["Breast", "Skin"],
+      "specialists": [
+        {
+          "name": "Dr. Mercy Nkirote",
+          "specialty": "Dermatologist",
+          "image": "https://example.com/mercy.jpg",
+          "rating": 4.4,
+          "experience": "7 yrs"
+        }
+      ],
+      "equipment": ["Dermatoscope", "Laser Therapy Tools"]
+    },
+    {
+      "name": "Machakos Tumor Institute",
+      "location": "Machakos",
+      "rating": 3.9,
+      "distance": "3.0 km",
+      "image": "https://example.com/machakos.jpg",
+      "cancerTypes": ["Prostate", "Leukemia"],
+      "specialists": [
+        {
+          "name": "Dr. Kevin Mutua",
+          "specialty": "Oncologist",
+          "image": "https://example.com/kevin.jpg",
+          "rating": 3.9,
+          "experience": "5 yrs"
+        }
+      ],
+      "equipment": ["Chemotherapy Chair", "Blood Pressure Monitor"]
+    }
+  ]
+}
