@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/community_screen.dart';
+import 'package:haraka_afya_ai/screens/anonymous_chat_screen.dart'; // Added import
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
@@ -8,7 +9,7 @@ import 'package:haraka_afya_ai/features/hospitals_page.dart';
 import 'package:haraka_afya_ai/features/profile_page.dart';
 import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
 import 'package:haraka_afya_ai/screens/medication_reminder_page.dart';
-import 'package:haraka_afya_ai/screens/donation_page.dart'; // 
+import 'package:haraka_afya_ai/screens/donation_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
@@ -187,6 +188,8 @@ class HomeContent extends StatelessWidget {
               const SizedBox(height: 24),
               _buildUpcomingEventsCard(context),
               const SizedBox(height: 16),
+              _buildAnonymousChatCard(context),
+              const SizedBox(height: 16),
               _buildCommunitySection(context),
               const SizedBox(height: 16),
               _buildHealthOverview(),
@@ -314,6 +317,67 @@ class HomeContent extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAnonymousChatCard(BuildContext context) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AnonymousChatScreen(),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5E8FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.psychology_outlined, 
+                  color: Color(0xFF7B1FA2), size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Anonymous Support Space',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Share your thoughts and experiences anonymously with others',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -453,12 +517,12 @@ class HomeContent extends StatelessWidget {
         ),
         child: Container(
           padding: const EdgeInsets.all(12),
-          height: 100, // Fixed height
+          height: 100,
           child: Row(
             children: [
               SizedBox(
-                width: 60, // Smaller animation
-                height: 60, // Smaller animation
+                width: 60,
+                height: 60,
                 child: Lottie.asset(
                   'assets/animations/chatbot.json',
                   fit: BoxFit.contain,
