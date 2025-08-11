@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/community_screen.dart';
-import 'package:haraka_afya_ai/screens/anonymous_chat_screen.dart'; // Added import
+import 'package:haraka_afya_ai/screens/anonymous_chat_screen.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
@@ -157,21 +157,34 @@ class HomeContent extends StatelessWidget {
           pinned: true,
           floating: true,
           snap: false,
-          title: const Text(
-            'Health Community',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          title: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [
+                Color(0xFF259450), // Green
+                Color(0xFF1976D2), // Blue
+                Color(0xFF8E24AA), // Purple
+              ],
+              stops: [0.0, 0.5, 1.0],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ).createShader(bounds),
+            child: const Text(
+              'Haraka Afya',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.menu, color: Colors.black87),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
           backgroundColor: Colors.white,
           elevation: 1,
         ),
-        
+
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           sliver: SliverList(
@@ -348,8 +361,8 @@ class HomeContent extends StatelessWidget {
                   color: const Color(0xFFF5E8FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.psychology_outlined, 
-                  color: Color(0xFF7B1FA2), size: 28),
+                child: const Icon(Icons.psychology_outlined,
+                    color: Color(0xFF7B1FA2), size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -416,7 +429,7 @@ class HomeContent extends StatelessWidget {
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
+                            loadingProgress.expectedTotalBytes!
                             : null,
                       ),
                     ),
@@ -650,7 +663,7 @@ class HomeContent extends StatelessWidget {
         foregroundColor: color == Colors.red ? color : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: color == Colors.red 
+          side: color == Colors.red
               ? const BorderSide(color: Colors.red)
               : BorderSide.none,
         ),
@@ -851,7 +864,7 @@ class HomeContent extends StatelessWidget {
     final hour = DateTime.now().hour;
     final name = displayName?.split(' ')[0] ?? 'there';
     return hour < 12 ? 'Good Morning, $name!'
-         : hour < 17 ? 'Good Afternoon, $name!'
-         : 'Good Evening, $name!';
+        : hour < 17 ? 'Good Afternoon, $name!'
+        : 'Good Evening, $name!';
   }
 }
