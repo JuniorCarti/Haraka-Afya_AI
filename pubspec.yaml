@@ -90,6 +90,8 @@ flutter:
     - assets/learn.png
     - assets/alerts.png
     - assets/settings.png
+    - assets/chatbot.jpg
     - assets/animations/splash.json
     - assets/animations/chatbot.json
+    - assets/animations/message.json
   
