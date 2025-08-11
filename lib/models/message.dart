@@ -8,6 +8,7 @@ class AnonymousMessage {
   final int likes;
   final List<String> likedBy;
   final bool reported;
+  final String? senderName; // Added senderName field
 
   AnonymousMessage({
     required this.id,
@@ -17,6 +18,7 @@ class AnonymousMessage {
     this.likes = 0,
     this.likedBy = const [],
     this.reported = false,
+    this.senderName, // Added to constructor
   });
 
   factory AnonymousMessage.fromMap(Map<String, dynamic> map) {
@@ -28,6 +30,7 @@ class AnonymousMessage {
       likes: (map['likes'] as num?)?.toInt() ?? 0,
       likedBy: List<String>.from(map['likedBy'] ?? []),
       reported: map['reported'] ?? false,
+      senderName: map['senderName'], // Added to fromMap
     );
   }
 
@@ -40,6 +43,7 @@ class AnonymousMessage {
       'likes': likes,
       'likedBy': likedBy,
       'reported': reported,
+      'senderName': senderName, // Added to toMap
     };
   }
 }
