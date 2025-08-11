@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lottie/lottie.dart';
 import 'dart:io';
 import 'dart:convert';
 
@@ -91,7 +92,6 @@ class _SymptomsPageState extends State<SymptomsPage> {
   }
 
   Widget _buildInputArea() {
-    final hasText = _controller.text.trim().isNotEmpty;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -138,6 +138,70 @@ class _SymptomsPageState extends State<SymptomsPage> {
     );
   }
 
+  Widget _buildPremiumBanner() {
+    return Card(
+      color: const Color(0xFFD8FBE5), // Changed to #D8FBE5
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: Lottie.asset(
+                'assets/animations/chatbot.json',
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    "Premium Plan",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black, // Changed to black
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Harness the full power of AI with a Premium Plan",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.black, // Changed to black
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // action for upgrading
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF269A51), // Changed to #269A51
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text(
+                "Upgrade Now",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white, // Changed to white
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,6 +218,8 @@ class _SymptomsPageState extends State<SymptomsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildPremiumBanner(),
+            const SizedBox(height: 16),
             Card(
               color: const Color(0xFFEFF5F1),
               elevation: 0,
