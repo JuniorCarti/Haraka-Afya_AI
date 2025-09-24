@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:haraka_afya_ai/screens/auth/email_verification_screen.dart';
 import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart';
 import 'package:haraka_afya_ai/screens/home_screen.dart';
@@ -20,6 +21,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
   final _pageController = PageController();
   bool _isLoading = false;
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  final FacebookAuth _facebookAuth = FacebookAuth.instance;
 
   final Color _primaryColor = const Color(0xFF0C6D5B);
   final Color _backgroundColor = const Color(0xFFfcfcf5);
@@ -166,8 +168,8 @@ class _NameInputScreenState extends State<NameInputScreen> {
                 if (value.trim().length < 2) {
                   return 'Name must be at least 2 characters';
                 }
-                if (!RegExp(r'^[a-zA-Z ]+\$').hasMatch(value.trim())) {
-                  return 'Name can only contain letters';
+                if (!RegExp(r'^[a-zA-Z ]+$').hasMatch(value.trim())) {
+                  return 'Name can only contain letters and spaces';
                 }
                 return null;
               },
@@ -321,13 +323,51 @@ class _NameInputScreenState extends State<NameInputScreen> {
   }
 
   Future<void> _handleFacebookSignIn() async {
-    setState(() => _isLoading = true);
-    // Implement Facebook login logic
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Facebook sign-in not implemented')),
-    );
+    try {
+      setState(() => _isLoading = true);
+      
+      // Trigger Facebook login
+      final LoginResult result = await _facebookAuth.login();
+      
+      if (result.status == LoginStatus.success) {
+        // Get the access token
+        final AccessToken accessToken = result.accessToken!;
+        
+        // Create a credential from the access token
+        final OAuthCredential credential = 
+            FacebookAuthProvider.credential(accessToken.token);
+        
+        // Sign in to Firebase with the Facebook credential
+        final UserCredential userCredential = 
+            await FirebaseAuth.instance.signInWithCredential(credential);
+        
+        if (userCredential.user != null) {
+          final user = userCredential.user!;
+          // Update display name if not set
+          if (user.displayName == null || user.displayName!.isEmpty) {
+            // Get Facebook user data
+            final userData = await _facebookAuth.getUserData();
+            final fullName = userData['name'] ?? 'User';
+            await user.updateDisplayName(fullName);
+          }
+          
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        }
+      } else {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Facebook login cancelled')),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Facebook sign-in failed: $e')),
+      );
+    }
   }
 
   Future<void> _handleTwitterSignIn() async {
