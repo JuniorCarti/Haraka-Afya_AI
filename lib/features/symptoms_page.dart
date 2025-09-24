@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
@@ -46,6 +44,7 @@ class _SymptomsPageState extends State<SymptomsPage> {
       debugPrint('Error loading categories: $e');
     }
   }
+
 
   Future<void> _sendSymptom(String input) async {
     setState(() {
@@ -202,7 +201,7 @@ class _SymptomsPageState extends State<SymptomsPage> {
     );
   }
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFEDFCF5),
@@ -211,7 +210,25 @@ class _SymptomsPageState extends State<SymptomsPage> {
         foregroundColor: Colors.black87,
         elevation: 0,
         centerTitle: true,
-        title: const Text('AI Health Assistant', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF4285F4), // Blue
+              Color(0xFF34A853), // Green
+              Color(0xFFFBBC05), // Yellow
+              Color(0xFFEA4335), // Red
+            ],
+            stops: [0.0, 0.3, 0.6, 1.0],
+          ).createShader(bounds),
+          child: const Text(
+            'AI Health Assistant',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.white, // Will be overridden by gradient
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
