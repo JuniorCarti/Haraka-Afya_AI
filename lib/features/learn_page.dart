@@ -19,15 +19,29 @@ class _LearnPageState extends State<LearnPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFEDFCF5),
       appBar: AppBar(
-        title: const Text(
-          'Health Education',
-          style: TextStyle(
-            fontSize: 18, // Matches HomeScreen app bar
-            fontWeight: FontWeight.bold,
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF4285F4), // Blue
+              Color(0xFF34A853), // Green
+              Color(0xFFFBBC05), // Yellow
+              Color(0xFFEA4335), // Red
+            ],
+            stops: [0.0, 0.3, 0.6, 1.0],
+          ).createShader(bounds),
+          child: const Text(
+            'Health Education',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white, // This will be overridden by the gradient
+            ),
           ),
         ),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -63,7 +77,7 @@ class _LearnPageState extends State<LearnPage> {
                             const Text(
                               'Your Cancer Medical Dictionary',
                               style: TextStyle(
-                                fontSize: 18, // Matches HomeScreen greeting
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -71,7 +85,7 @@ class _LearnPageState extends State<LearnPage> {
                             Text(
                               '500+ cancer medical terms explained',
                               style: TextStyle(
-                                fontSize: 14, // Secondary text
+                                fontSize: 14,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -115,7 +129,7 @@ class _LearnPageState extends State<LearnPage> {
                             const Text(
                               'Educational Video Library',
                               style: TextStyle(
-                                fontSize: 18, // Consistent card title
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -123,7 +137,7 @@ class _LearnPageState extends State<LearnPage> {
                             Text(
                               'Watch and learn from expert discussions',
                               style: TextStyle(
-                                fontSize: 14, // Secondary text
+                                fontSize: 14,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -143,7 +157,7 @@ class _LearnPageState extends State<LearnPage> {
             const Text(
               'Categories',
               style: TextStyle(
-                fontSize: 16, // Section headers at 16sp
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -169,7 +183,7 @@ class _LearnPageState extends State<LearnPage> {
             const Text(
               'Health Articles',
               style: TextStyle(
-                fontSize: 16, // Section headers at 16sp
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -194,7 +208,7 @@ class _LearnPageState extends State<LearnPage> {
                     child: Text(
                       'No articles found',
                       style: TextStyle(
-                        fontSize: 14, // Consistent empty state
+                        fontSize: 14,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -264,7 +278,7 @@ class _LearnPageState extends State<LearnPage> {
               child: Text(
                 category,
                 style: TextStyle(
-                  fontSize: 14, // Consistent with HomeScreen filter chips
+                  fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected ? Colors.green[800] : Colors.black,
                 ),
@@ -315,7 +329,7 @@ class _LearnPageState extends State<LearnPage> {
                       child: Text(
                         title,
                         style: const TextStyle(
-                          fontSize: 18, // Article title matches card titles
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -331,7 +345,7 @@ class _LearnPageState extends State<LearnPage> {
                           'Trending',
                           style: TextStyle(
                             color: Colors.orange,
-                            fontSize: 12, // Smaller for tags
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -341,7 +355,7 @@ class _LearnPageState extends State<LearnPage> {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 14, // Secondary text
+                    fontSize: 14,
                     color: Colors.black54,
                   ),
                 ),
@@ -352,14 +366,14 @@ class _LearnPageState extends State<LearnPage> {
                     Text(
                       author,
                       style: const TextStyle(
-                        fontSize: 12, // Metadata smaller
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
                       '$readTime • $date',
                       style: const TextStyle(
-                        fontSize: 12, // Metadata smaller
+                        fontSize: 12,
                         color: Colors.black54,
                       ),
                     ),
