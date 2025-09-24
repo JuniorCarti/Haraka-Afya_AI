@@ -69,6 +69,15 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     _loadBackgroundPreference();
     _loadUsername();
     _loadLikedMessages();
+    // Initialize all replies as expanded by default
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _chatService.getMessages().first.then((messages) {
+        for (var message in messages) {
+          _expandedReplies[message.id] = true;
+        }
+        if (mounted) setState(() {});
+      });
+    });
   }
 
   Future<void> _loadBackgroundPreference() async {
@@ -100,7 +109,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         _anonymousUsername = savedUsername;
       });
     } else if (_user != null) {
-      final username = await _chatService.getOrCreateUsername(_user!.uid);
+      final username = await _chatService.getOrCreateUsername(_user.uid);
       setState(() {
         _anonymousUsername = username;
       });
@@ -115,7 +124,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     
     final likedMessages = await FirebaseFirestore.instance
         .collection('anonymous_messages')
-        .where('likedBy', arrayContains: _user!.uid)
+        .where('likedBy', arrayContains: _user.uid)
         .get();
     
     setState(() {
@@ -130,7 +139,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     if (_user != null) {
       await FirebaseFirestore.instance
           .collection('user_usernames')
-          .doc(_user!.uid)
+          .doc(_user.uid)
           .set({
             'username': username,
             'createdAt': FieldValue.serverTimestamp(),
@@ -138,24 +147,24 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     }
   }
 
- void _generateRandomUsername() {
-  if (_user != null) {
-    _chatService.getOrCreateUsername(_user!.uid).then((username) {
+  void _generateRandomUsername() {
+    if (_user != null) {
+      _chatService.getOrCreateUsername(_user.uid).then((username) {
+        setState(() {
+          _anonymousUsername = username;
+        });
+        _saveUsername(username);
+      });
+    } else {
+      final randomIndex = DateTime.now().millisecondsSinceEpoch % 
+          AnonymousChatService.randomUsernames.length;
+      final username = AnonymousChatService.randomUsernames[randomIndex];
       setState(() {
         _anonymousUsername = username;
       });
       _saveUsername(username);
-    });
-  } else {
-    final randomIndex = DateTime.now().millisecondsSinceEpoch % 
-        AnonymousChatService.randomUsernames.length;
-    final username = AnonymousChatService.randomUsernames[randomIndex];
-    setState(() {
-      _anonymousUsername = username;
-    });
-    _saveUsername(username);
+    }
   }
-}
 
   Future<void> _saveBackgroundPreference(bool isImage, String value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -234,6 +243,12 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   final messages = snapshot.data!;
+                  
+                  // Initialize expanded state for new messages
+                  for (var message in messages) {
+                    _expandedReplies.putIfAbsent(message.id, () => true);
+                  }
+                  
                   return ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(8),
@@ -398,13 +413,53 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
   }
 
   Widget _buildMessageWithReplies(AnonymousMessage message) {
-    _expandedReplies.putIfAbsent(message.id, () => false);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildMessageBubble(message),
-        if (_expandedReplies[message.id] == true)
+        // Replies section - now always visible but collapsible
+        _buildRepliesSection(message),
+      ],
+    );
+  }
+
+  Widget _buildRepliesSection(AnonymousMessage message) {
+    return Column(
+      children: [
+        // Collapse/expand button
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _expandedReplies[message.id] = !_expandedReplies[message.id]!;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              children: [
+                const SizedBox(width: 40),
+                Icon(
+                  _expandedReplies[message.id]! 
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: Colors.grey,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _expandedReplies[message.id]! ? 'Hide replies' : 'Show replies',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // Replies list
+        if (_expandedReplies[message.id]!)
           StreamBuilder<List<AnonymousMessage>>(
             stream: _chatService.getReplies(message.id),
             builder: (context, snapshot) {
@@ -413,7 +468,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               }
               final replies = snapshot.data!;
               return Container(
-                margin: const EdgeInsets.only(left: 40.0, top: 4),
+                margin: const EdgeInsets.only(left: 40.0),
                 decoration: BoxDecoration(
                   border: Border(
                     left: BorderSide(
@@ -423,13 +478,10 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                   ),
                 ),
                 child: Column(
-                  children: [
-                    for (final reply in replies)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0, bottom: 4),
-                        child: _buildMessageBubble(reply, isReply: true),
-                      ),
-                  ],
+                  children: replies.map((reply) => Padding(
+                    padding: const EdgeInsets.only(left: 8.0, bottom: 4),
+                    child: _buildMessageBubble(reply, isReply: true),
+                  )).toList(),
                 ),
               );
             },
@@ -443,7 +495,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         ? const Color(0xFFF1F5FF)
         : const Color(0xFFEAFBF1);
     final hasLiked = _likedMessages.contains(message.id) || 
-                    (_user != null && message.likedBy.contains(_user!.uid));
+                    (_user != null && message.likedBy.contains(_user.uid));
 
     final iconColor = _chatBackgroundImage != null 
         ? Colors.white 
@@ -532,7 +584,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                         if (hasLiked) {
                           // Unlike functionality can be added here
                         } else {
-                          _chatService.likeMessage(message.id, _user!.uid);
+                          _chatService.likeMessage(message.id, _user.uid);
                           setState(() {
                             _likedMessages.add(message.id);
                           });
@@ -555,18 +607,17 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                     icon: Icon(
                       Icons.reply,
                       size: 18,
-                      color: _expandedReplies[message.id] == true 
+                      color: _replyingToMessageId == message.id 
                           ? Colors.blue 
                           : iconColor,
                     ),
                     onPressed: () {
                       setState(() {
-                        _expandedReplies[message.id] = !_expandedReplies[message.id]!;
-                        if (_expandedReplies[message.id] == true) {
-                          _replyingToMessageId = message.id;
+                        _replyingToMessageId = _replyingToMessageId == message.id 
+                            ? null 
+                            : message.id;
+                        if (_replyingToMessageId != null) {
                           _replyController.clear();
-                        } else {
-                          _replyingToMessageId = null;
                         }
                       });
                     },
@@ -690,7 +741,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                     if (_messageController.text.trim().isNotEmpty && _user != null) {
                       _chatService.postMessage(
                         content: _messageController.text.trim(),
-                        userId: _user!.uid,
+                        userId: _user.uid,
                         senderName: _anonymousUsername,
                       );
                       _messageController.clear();
@@ -779,7 +830,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                       _chatService.postMessage(
                         content: _replyController.text.trim(),
                         parentId: _replyingToMessageId,
-                        userId: _user!.uid,
+                        userId: _user.uid,
                         senderName: _anonymousUsername,
                       );
                       _replyController.clear();
