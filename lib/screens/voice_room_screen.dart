@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:haraka_afya_ai/screens/voice_room/widgets/game_card.dart';
 import 'package:haraka_afya_ai/screens/voice_room/widgets/gift_card.dart';
 import 'package:haraka_afya_ai/screens/voice_room/widgets/member_options.dart';
+import 'package:haraka_afya_ai/screens/voice_room/widgets/background_selector.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/screens/voice_room/models/room_member.dart';
 import 'package:haraka_afya_ai/screens/voice_room/models/room_game.dart';
 import 'package:haraka_afya_ai/screens/voice_room/models/gift.dart';
 import 'package:haraka_afya_ai/screens/voice_room/models/chat_message.dart';
+import 'package:haraka_afya_ai/screens/voice_room/models/room_background.dart';
 import 'package:haraka_afya_ai/screens/voice_room/widgets/room_header.dart';
 import 'package:haraka_afya_ai/screens/voice_room/widgets/host_seat.dart';
 import 'package:haraka_afya_ai/screens/voice_room/widgets/member_seat.dart';
@@ -44,6 +46,10 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   final TextEditingController _chatController = TextEditingController();
   final List<ChatMessage> _chatMessages = [];
   bool _isMuted = false;
+  
+  // Background state
+  RoomBackground _currentBackground = RoomBackground.defaultBackgrounds.first;
+  final List<RoomBackground> _availableBackgrounds = RoomBackground.defaultBackgrounds;
 
   @override
   void initState() {
@@ -53,7 +59,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _initializeRoom() {
-    // Add admin
+    // Add admin (with level)
     _members.add(RoomMember(
       name: 'You',
       role: 'Host',
@@ -61,15 +67,16 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       avatar: '👑',
       points: 1200,
       isHost: true,
+      level: 12, // Example level
     ));
     
-    // Add some sample members
+    // Add some sample members (with levels)
     _members.addAll([
-      RoomMember(name: 'Alex', role: 'Speaker', isSpeaking: true, avatar: '😊', points: 800, isHost: false),
-      RoomMember(name: 'Sam', role: 'Speaker', isSpeaking: true, avatar: '🎤', points: 650, isHost: false),
-      RoomMember(name: 'Jordan', role: 'Listener', isSpeaking: false, avatar: '👂', points: 450, isHost: false),
-      RoomMember(name: 'Taylor', role: 'Listener', isSpeaking: false, avatar: '🌟', points: 300, isHost: false),
-      RoomMember(name: 'Casey', role: 'Listener', isSpeaking: false, avatar: '🎧', points: 200, isHost: false),
+      RoomMember(name: 'Alex', role: 'Speaker', isSpeaking: true, avatar: '😊', points: 800, isHost: false, level: 8),
+      RoomMember(name: 'Sam', role: 'Speaker', isSpeaking: true, avatar: '🎤', points: 650, isHost: false, level: 6),
+      RoomMember(name: 'Jordan', role: 'Listener', isSpeaking: false, avatar: '👂', points: 450, isHost: false, level: 4),
+      RoomMember(name: 'Taylor', role: 'Listener', isSpeaking: false, avatar: '🌟', points: 300, isHost: false, level: 3),
+      RoomMember(name: 'Casey', role: 'Listener', isSpeaking: false, avatar: '🎧', points: 200, isHost: false, level: 2),
     ]);
   }
 
@@ -79,6 +86,39 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       ChatMessage(user: 'Sam', message: 'Great to be here!', time: '1 min ago'),
       ChatMessage(user: 'Jordan', message: 'Thanks for the support 💚', time: 'Just now'),
     ]);
+  }
+
+  // Background change method
+  void _changeBackground(RoomBackground background) {
+    setState(() {
+      _currentBackground = background;
+    });
+    Navigator.pop(context); // Close the background selector
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Room background changed to ${background.name}'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  // Show background selector
+  void _showBackgroundMenu() {
+    final host = _members.firstWhere((member) => member.isHost && member.name == 'You');
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return BackgroundSelector(
+          backgrounds: _availableBackgrounds,
+          currentBackground: _currentBackground,
+          userLevel: host.level,
+          onBackgroundSelected: _changeBackground,
+          onClose: () => Navigator.pop(context),
+        );
+      },
+    );
   }
 
   void _sendChatMessage() {
@@ -340,8 +380,10 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final host = _members.firstWhere((member) => member.isHost && member.name == 'You');
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: _currentBackground.primaryColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: AppBar(
@@ -373,28 +415,48 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
         ),
       ),
       drawer: const AppDrawer(),
-      body: Column(
-        children: [
-          RoomHeader(members: _members),
-          
-          Expanded(
-            child: _buildRoomLayout(),
-          ),
-          
-          ChatSection(
-            chatMessages: _chatMessages,
-            chatController: _chatController,
-            onSendMessage: _sendChatMessage,
-          ),
-          
-          BottomControls(
-            isMuted: _isMuted,
-            onToggleMicrophone: _toggleMicrophone,
-            onShowGamesMenu: _showGamesMenu,
-            onShowGiftMenu: _showGiftMenu,
-            onLeaveRoom: _leaveRoom,
-          ),
-        ],
+      body: Container(
+        decoration: _currentBackground.imageUrl.isNotEmpty
+            ? BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(_currentBackground.imageUrl),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.3),
+                    BlendMode.darken,
+                  ),
+                ),
+              )
+            : null,
+        child: Column(
+          children: [
+            RoomHeader(
+              members: _members,
+              onBackgroundChange: _showBackgroundMenu,
+              hostLevel: host.level,
+            ),
+            
+            Expanded(
+              child: _buildRoomLayout(),
+            ),
+            
+            ChatSection(
+              chatMessages: _chatMessages,
+              chatController: _chatController,
+              onSendMessage: _sendChatMessage,
+            ),
+            
+            BottomControls(
+              isMuted: _isMuted,
+              onToggleMicrophone: _toggleMicrophone,
+              onShowGamesMenu: _showGamesMenu,
+              onShowGiftMenu: _showGiftMenu,
+              onShowBackgroundMenu: _showBackgroundMenu,
+              onLeaveRoom: _leaveRoom,
+              isHost: host.name == 'You',
+            ),
+          ],
+        ),
       ),
     );
   }
