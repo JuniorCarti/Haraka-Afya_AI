@@ -6,7 +6,9 @@ class BottomControls extends StatelessWidget {
   final VoidCallback onToggleMicrophone;
   final VoidCallback onShowGamesMenu;
   final VoidCallback onShowGiftMenu;
+  final VoidCallback onShowBackgroundMenu;
   final VoidCallback onLeaveRoom;
+  final bool isHost;
 
   const BottomControls({
     super.key,
@@ -14,7 +16,9 @@ class BottomControls extends StatelessWidget {
     required this.onToggleMicrophone,
     required this.onShowGamesMenu,
     required this.onShowGiftMenu,
+    required this.onShowBackgroundMenu,
     required this.onLeaveRoom,
+    required this.isHost,
   });
 
   @override
@@ -29,18 +33,33 @@ class BottomControls extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Games button
           ControlButton(
             icon: Icons.sports_esports_rounded,
             label: 'Games',
             onPressed: onShowGamesMenu,
           ),
           const SizedBox(width: 12),
+          
+          // Gift button
           ControlButton(
             icon: Icons.card_giftcard_rounded,
             label: 'Gifts',
             onPressed: onShowGiftMenu,
           ),
+          const SizedBox(width: 12),
+          
+          // Background button (only for host)
+          if (isHost)
+            ControlButton(
+              icon: Icons.wallpaper_rounded,
+              label: 'Background',
+              onPressed: onShowBackgroundMenu,
+            ),
+          
           const Spacer(),
+          
+          // Mic control
           Container(
             width: 50,
             height: 50,
@@ -67,6 +86,8 @@ class BottomControls extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          
+          // Leave room
           ControlButton(
             icon: Icons.logout_rounded,
             label: 'Leave',
