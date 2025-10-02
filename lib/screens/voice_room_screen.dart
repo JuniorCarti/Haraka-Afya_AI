@@ -637,3 +637,37 @@ const SizedBox(height: 4),
       },
     );
   }
+  Widget _buildGameCard(RoomGame game) {
+    return GestureDetector(
+      onTap: () => _startGame(game),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              game.color.withOpacity(0.3),
+              game.color.withOpacity(0.1),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: game.color.withOpacity(0.5)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(game.icon, color: game.color, size: 40),
+            const SizedBox(height: 8),
+            Text(
+              game.name,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
