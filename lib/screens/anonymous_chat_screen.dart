@@ -179,7 +179,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const VoiceRoomScreen(),
+        builder: (context) => VoiceRoomScreen(roomId: 'defaultRoomId'),
       ),
     );
   }
