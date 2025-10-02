@@ -456,3 +456,29 @@ Widget _buildAdminSeat() {
                 ),
               ),
 
+              child: const Icon(
+                Icons.person_add_alt_1,
+                color: Colors.white54,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Empty Seat',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 10,
+              ),
+            ),
+            Text(
+              '#$seatNumber',
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
