@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:haraka_afya_ai/models/message.dart';
 import 'package:haraka_afya_ai/services/anonymous_chat_service.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
+import 'package:haraka_afya_ai/screens/voice_room_screen.dart'; // Add this import
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -174,6 +175,204 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     );
   }
 
+  void _navigateToVoiceRoom() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const VoiceRoomScreen(),
+      ),
+    );
+  }
+
+  void _showLiveRooms() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Live Support Rooms',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // Live rooms list
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _buildLiveRoomCard(
+                      roomName: 'Mental Health Support',
+                      members: 8,
+                      isActive: true,
+                      topic: 'Daily check-in & support',
+                    ),
+                    _buildLiveRoomCard(
+                      roomName: 'Anxiety Relief',
+                      members: 5,
+                      isActive: true,
+                      topic: 'Coping strategies discussion',
+                    ),
+                    _buildLiveRoomCard(
+                      roomName: 'Mindfulness & Meditation',
+                      members: 12,
+                      isActive: true,
+                      topic: 'Guided meditation session',
+                    ),
+                    _buildLiveRoomCard(
+                      roomName: 'Stress Management',
+                      members: 6,
+                      isActive: true,
+                      topic: 'Work-life balance tips',
+                    ),
+                    _buildLiveRoomCard(
+                      roomName: 'Positive Vibes Only',
+                      members: 15,
+                      isActive: true,
+                      topic: 'Sharing positive experiences',
+                    ),
+                  ],
+                ),
+              ),
+              // Quick join button
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton(
+                  onPressed: _navigateToVoiceRoom,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF269A51),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.record_voice_over, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Create New Room',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLiveRoomCard({
+    required String roomName,
+    required int members,
+    required bool isActive,
+    required String topic,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      child: ListTile(
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD8FBE5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.record_voice_over, color: Color(0xFF269A51)),
+        ),
+        title: Text(
+          roomName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              topic,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isActive ? Colors.green : Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$members members • Live',
+                  style: TextStyle(
+                    color: isActive ? Colors.green : Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: ElevatedButton(
+          onPressed: _navigateToVoiceRoom,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF269A51),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          child: const Text(
+            'Join',
+            style: TextStyle(fontSize: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _messageController.dispose();
@@ -208,6 +407,12 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
           ),
           elevation: 2,
           actions: [
+            // Live Rooms Button
+            IconButton(
+              icon: const Icon(Icons.record_voice_over, color: Colors.black),
+              onPressed: _showLiveRooms,
+              tooltip: 'Join Live Rooms',
+            ),
             IconButton(
               icon: const Icon(Icons.info_outline, color: Colors.black),
               onPressed: _showPrivacyInfo,
@@ -232,6 +437,9 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         decoration: _buildBackgroundDecoration(),
         child: Column(
           children: [
+            // Quick Access Banner
+            _buildQuickAccessBanner(),
+            
             Expanded(
               child: StreamBuilder<List<AnonymousMessage>>(
                 stream: _chatService.getMessages(),
@@ -265,6 +473,74 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             _buildMessageInput(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF269A51), Color(0xFF34C759)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.record_voice_over, color: Colors.white, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Live Voice Rooms Available',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  'Join real-time support sessions with voice chat',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: _showLiveRooms,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF269A51),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            child: const Text(
+              'Join Now',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
