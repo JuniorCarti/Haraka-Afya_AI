@@ -217,3 +217,37 @@ Widget _buildAdminSeat() {
           ),
         ],
       ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Avatar with crown
+          Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    admin.avatar,
+                    style: const TextStyle(fontSize: 30),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -5,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.yellow,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.king_bed, size: 12, color: Colors.black),
+                ),
+              ),
+            ],
+          ),
