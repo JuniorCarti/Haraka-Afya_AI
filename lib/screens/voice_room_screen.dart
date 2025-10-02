@@ -564,3 +564,17 @@ Widget _buildControlButton({
               color: isDanger ? Colors.red : Colors.white,
               size: 20,
             ),
+const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isDanger ? Colors.red : Colors.white,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
