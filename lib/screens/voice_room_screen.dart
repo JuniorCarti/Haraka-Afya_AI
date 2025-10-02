@@ -854,3 +854,37 @@ const SizedBox(height: 4),
     Navigator.pop(context); // Close the gift menu
   }
 }
+// Data models
+class RoomMember {
+  final String name;
+  final String role;
+  final bool isSpeaking;
+  final String avatar;
+  final int points;
+
+  RoomMember({
+    required this.name,
+    required this.role,
+    required this.isSpeaking,
+    required this.avatar,
+    required this.points,
+  });
+}
+
+class RoomGame {
+  final String name;
+  final IconData icon;
+  final Color color;
+
+  RoomGame(this.name, this.icon, this.color);
+}
+
+class Gift {
+  final String name;
+  final String emoji;
+  final int cost;
+  final Color color;
+
+  Gift(this.name, this.emoji, this.cost, this.color);
+}
+
