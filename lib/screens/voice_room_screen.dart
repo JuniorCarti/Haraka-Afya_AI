@@ -7,17 +7,19 @@ class VoiceRoomScreen extends StatefulWidget {
   @override
   State<VoiceRoomScreen> createState() => _VoiceRoomScreenState();
 }
+
 class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   final List<RoomMember> _members = [];
   final List<RoomGame> _availableGames = [
-    RoomGame('Pool Billiard', Icons.sports, Colors.green),
+    RoomGame('Pool', Icons.sports, Colors.green),
     RoomGame('Sudoku', Icons.grid_4x4, Colors.blue),
-    RoomGame('Roll Dice', Icons.casino, Colors.orange),
+    RoomGame('Dice', Icons.casino, Colors.orange),
     RoomGame('Chess', Icons.extension, Colors.brown),
     RoomGame('Cards', Icons.style, Colors.red),
-    RoomGame('Word Game', Icons.text_fields, Colors.purple),
+    RoomGame('Words', Icons.text_fields, Colors.purple),
   ];
-final List<Gift> _availableGifts = [
+
+  final List<Gift> _availableGifts = [
     Gift('Rose', '🌹', 10, Colors.red),
     Gift('Crown', '👑', 100, Colors.yellow),
     Gift('Star', '⭐', 50, Colors.blue),
@@ -25,34 +27,51 @@ final List<Gift> _availableGifts = [
     Gift('Trophy', '🏆', 200, Colors.orange),
     Gift('Diamond', '💎', 500, Colors.cyan),
   ];
-@override
+
+  final TextEditingController _chatController = TextEditingController();
+  final List<ChatMessage> _chatMessages = [];
+  bool _isMuted = false;
+
+  @override
   void initState() {
     super.initState();
     _initializeRoom();
+    _initializeSampleChat();
   }
 
   void _initializeRoom() {
     // Add admin
     _members.add(RoomMember(
       name: 'You',
-      role: 'Admin',
+      role: 'Host',
       isSpeaking: true,
       avatar: '👑',
       points: 1200,
+      isHost: true,
     ));
+    
     // Add some sample members
     _members.addAll([
-      RoomMember(name: 'Alex', role: 'Speaker', isSpeaking: true, avatar: '😊', points: 800),
-      RoomMember(name: 'Sam', role: 'Speaker', isSpeaking: true, avatar: '🎤', points: 650),
-      RoomMember(name: 'Jordan', role: 'Listener', isSpeaking: false, avatar: '👂', points: 450),
-      RoomMember(name: 'Taylor', role: 'Listener', isSpeaking: false, avatar: '🌟', points: 300),
-      RoomMember(name: 'Casey', role: 'Listener', isSpeaking: false, avatar: '🎧', points: 200),
+      RoomMember(name: 'Alex', role: 'Speaker', isSpeaking: true, avatar: '😊', points: 800, isHost: false),
+      RoomMember(name: 'Sam', role: 'Speaker', isSpeaking: true, avatar: '🎤', points: 650, isHost: false),
+      RoomMember(name: 'Jordan', role: 'Listener', isSpeaking: false, avatar: '👂', points: 450, isHost: false),
+      RoomMember(name: 'Taylor', role: 'Listener', isSpeaking: false, avatar: '🌟', points: 300, isHost: false),
+      RoomMember(name: 'Casey', role: 'Listener', isSpeaking: false, avatar: '🎧', points: 200, isHost: false),
     ]);
   }
 
-@override
+  void _initializeSampleChat() {
+    _chatMessages.addAll([
+      ChatMessage(user: 'Alex', message: 'Hello everyone! 👋', time: '2 min ago'),
+      ChatMessage(user: 'Sam', message: 'Great to be here!', time: '1 min ago'),
+      ChatMessage(user: 'Jordan', message: 'Thanks for the support 💚', time: 'Just now'),
+    ]);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: AppBar(
@@ -60,85 +79,77 @@ final List<Gift> _availableGifts = [
             'Support Room',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Colors.white,
+              fontSize: 18,
             ),
           ),
           centerTitle: true,
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFD8FBE5), Color(0xFFE3F2FD)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
           ),
-          elevation: 2,
           actions: [
             IconButton(
-              icon: const Icon(Icons.people_alt, color: Colors.black),
+              icon: const Icon(Icons.people_alt_rounded, color: Colors.white54, size: 22),
               onPressed: _showRoomInfo,
             ),
             IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.black),
+              icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 22),
               onPressed: _showRoomOptions,
             ),
           ],
         ),
       ),
       drawer: const AppDrawer(),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1a2b3c), Color(0xFF0d1b2a)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Column(
+        children: [
+          // Room header
+          _buildRoomHeader(),
+          
+          // Main room layout
+          Expanded(
+            child: _buildRoomLayout(),
           ),
-        ),
-        child: Column(
-          children: [
-            // Room header with info
-            _buildRoomHeader(),
-            
-            // Main room layout with seats
-            Expanded(
-              child: _buildRoomLayout(),
-            ),
-            
-            // Bottom controls
-            _buildBottomControls(),
-          ],
-        ),
+          
+          // Chat section for listeners
+          _buildChatSection(),
+          
+          // Bottom controls
+          _buildBottomControls(),
+        ],
       ),
     );
   }
 
   Widget _buildRoomHeader() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+        gradient: LinearGradient(
+          colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
       ),
       child: Row(
         children: [
-          // Room status
+          // Live badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.red.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.green),
+              border: Border.all(color: Colors.red),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 8,
-                  height: 8,
+                  width: 6,
+                  height: 6,
                   decoration: const BoxDecoration(
-                    color: Colors.green,
+                    color: Colors.red,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -146,7 +157,7 @@ final List<Gift> _availableGifts = [
                 const Text(
                   'LIVE',
                   style: TextStyle(
-                    color: Colors.green,
+                    color: Colors.red,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -155,18 +166,18 @@ final List<Gift> _availableGifts = [
             ),
           ),
           const SizedBox(width: 12),
-          // Room members count
-          const Icon(Icons.people_outline, color: Colors.white54, size: 16),
+          // Members count
+          Icon(Icons.people_alt_rounded, color: Colors.white54, size: 16),
           const SizedBox(width: 4),
           Text(
             '${_members.length}/9',
             style: const TextStyle(color: Colors.white54, fontSize: 12),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           // Room topic
           Expanded(
             child: Text(
-              'Mental Health Support & Games',
+              'Mental Health Support • Games • Chat',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.8),
                 fontSize: 12,
@@ -184,10 +195,10 @@ final List<Gift> _availableGifts = [
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Admin seat at top
-          _buildAdminSeat(),
+          // Host seat at top (centered)
+          _buildHostSeat(),
           
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           
           // Member seats grid (3x3)
           Expanded(
@@ -197,109 +208,98 @@ final List<Gift> _availableGifts = [
       ),
     );
   }
-Widget _buildAdminSeat() {
-    final admin = _members.firstWhere((member) => member.role == 'Admin');
+
+  Widget _buildHostSeat() {
+    final host = _members.firstWhere((member) => member.isHost);
     return Container(
-      width: 120,
-      height: 140,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFffd700), Color(0xFFffed4e)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.yellow.withOpacity(0.3),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
+      width: 100,
+      height: 120,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Avatar with crown
-          Stack(
-            alignment: Alignment.topCenter,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
+          // Seat design with glow effect
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFD700), Color(0xFFFFEC8B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.yellow.withOpacity(0.4),
+                  blurRadius: 15,
+                  spreadRadius: 2,
                 ),
-                child: Center(
-                  child: Text(
-                    admin.avatar,
-                    style: const TextStyle(fontSize: 30),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Seat icon
+                const Icon(Icons.chair_rounded, color: Colors.white, size: 30),
+                
+                // User avatar
+                Positioned.fill(
+                  child: CircleAvatar(
+                    backgroundColor: Colors.transparent,
+                    child: Text(
+                      host.avatar,
+                      style: const TextStyle(fontSize: 24),
+                    ),
                   ),
                 ),
-              ),
-              Positioned(
-                top: -5,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.yellow,
-                    shape: BoxShape.circle,
+                
+                // Host crown
+                Positioned(
+                  top: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.yellow,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.workspace_premium_rounded, size: 12, color: Colors.black),
                   ),
-                  child: const Icon(Icons.king_bed, size: 12, color: Colors.black),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            admin.name,
+            host.name,
             style: const TextStyle(
-              color: Colors.black,
+              color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 12,
             ),
           ),
           Text(
-            admin.role,
+            host.role,
             style: TextStyle(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.white.withOpacity(0.6),
               fontSize: 10,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Points
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              '${admin.points} pts',
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
             ),
           ),
         ],
       ),
     );
   }
+
   Widget _buildMemberSeatsGrid() {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.8,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.9,
       ),
       itemCount: 9,
       itemBuilder: (context, index) {
-        if (index < _members.length - 1) { // -1 because admin is separate
-          final member = _members[index + 1]; // Skip admin
+        if (index < _members.length - 1) {
+          final member = _members[index + 1];
           return _buildMemberSeat(member);
         } else {
           return _buildEmptySeat(index - _members.length + 2);
@@ -307,186 +307,319 @@ Widget _buildAdminSeat() {
       },
     );
   }
+
   Widget _buildMemberSeat(RoomMember member) {
     return GestureDetector(
       onTap: () => _showMemberOptions(member),
       child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: member.isSpeaking
-                ? [const Color(0xFF4CAF50), const Color(0xFF45a049)]
-                : [Colors.grey.shade800, Colors.grey.shade600],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: member.isSpeaking
-                  ? Colors.green.withOpacity(0.3)
-                  : Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Speaking indicator
-            if (member.isSpeaking)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.2),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+            // Seat with user
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: member.isSpeaking
+                      ? [const Color(0xFF4CAF50), const Color(0xFF45a049)]
+                      : [Colors.grey.shade800, Colors.grey.shade600],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: member.isSpeaking
+                        ? Colors.green.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Speaking',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  // Avatar
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
+                  // Seat icon
+                  Icon(
+                    Icons.chair_rounded,
+                    color: Colors.white.withOpacity(0.3),
+                    size: 28,
+                  ),
+                  
+                  // User avatar
+                  Positioned.fill(
+                    child: CircleAvatar(
+                      backgroundColor: Colors.transparent,
                       child: Text(
                         member.avatar,
                         style: const TextStyle(fontSize: 20),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
                   
-                  // Name and role
-                  Text(
-                    member.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    member.role,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 10,
-                    ),
-                  ),
-                  
-                  // Points
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${member.points} pts',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
+                  // Speaking indicator
+                  if (member.isSpeaking)
+                    Positioned(
+                      bottom: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.mic_rounded, size: 8, color: Colors.white),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              member.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              member.role,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 9,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
   Widget _buildEmptySeat(int seatNumber) {
     return GestureDetector(
       onTap: _joinSeat,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.white.withOpacity(0.1),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-            width: 1,
+      child: Column(
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.05),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1.5,
+              ),
+            ),
+            child: Icon(
+              Icons.person_add_alt_1_rounded,
+              color: Colors.white.withOpacity(0.3),
+              size: 24,
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                ),
-              ),
-
-              child: const Icon(
-                Icons.person_add_alt_1,
-                color: Colors.white54,
-                size: 20,
-              ),
+          const SizedBox(height: 6),
+          Text(
+            'Seat #$seatNumber',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.4),
+              fontSize: 10,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Empty Seat',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 10,
-              ),
+          ),
+          Text(
+            'Join',
+            style: TextStyle(
+              color: Colors.green.withOpacity(0.8),
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
             ),
-            Text(
-              '#$seatNumber',
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 8,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _buildChatSection() {
+    return Container(
+      height: 150,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        border: Border(
+          top: BorderSide(color: Colors.white.withOpacity(0.1)),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Chat header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  'Room Chat',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${_chatMessages.length}',
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Chat messages
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              reverse: false,
+              itemCount: _chatMessages.length,
+              itemBuilder: (context, index) {
+                final message = _chatMessages[index];
+                return _buildChatMessage(message);
+              },
+            ),
+          ),
+          
+          // Chat input
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              border: Border(
+                top: BorderSide(color: Colors.white.withOpacity(0.1)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: TextField(
+                      controller: _chatController,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                        hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _sendChatMessage,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF4CAF50), Color(0xFF45a049)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatMessage(ChatMessage message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                message.user[0],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      message.user,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      message.time,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  message.message,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomControls() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withOpacity(0.8),
         border: Border(
           top: BorderSide(color: Colors.white.withOpacity(0.1)),
         ),
@@ -494,43 +627,52 @@ Widget _buildAdminSeat() {
       child: Row(
         children: [
           // Games button
-          Expanded(
-            child: _buildControlButton(
-              icon: Icons.sports_esports,
-              label: 'Games',
-              onPressed: _showGamesMenu,
-            ),
+          _buildControlButton(
+            icon: Icons.sports_esports_rounded,
+            label: 'Games',
+            onPressed: _showGamesMenu,
           ),
           const SizedBox(width: 12),
           
           // Gift button
-          Expanded(
-            child: _buildControlButton(
-              icon: Icons.card_giftcard,
-              label: 'Send Gift',
-              onPressed: _showGiftMenu,
-            ),
+          _buildControlButton(
+            icon: Icons.card_giftcard_rounded,
+            label: 'Gifts',
+            onPressed: _showGiftMenu,
           ),
-          const SizedBox(width: 12),
+          const Spacer(),
           
           // Mic control
           Container(
             width: 50,
             height: 50,
-            decoration: const BoxDecoration(
-              color: Colors.green,
+            decoration: BoxDecoration(
+              gradient: _isMuted 
+                  ? const LinearGradient(colors: [Colors.grey, Colors.grey])
+                  : const LinearGradient(colors: [Color(0xFF4CAF50), Color(0xFF45a049)]),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (_isMuted ? Colors.grey : Colors.green).withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
             child: IconButton(
-              icon: const Icon(Icons.mic, color: Colors.white),
+              icon: Icon(
+                _isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               onPressed: _toggleMicrophone,
             ),
           ),
-          const SizedBox(width: 12),
+          const Spacer(),
           
           // Leave room
           _buildControlButton(
-            icon: Icons.logout,
+            icon: Icons.logout_rounded,
             label: 'Leave',
             onPressed: _leaveRoom,
             isDanger: true,
@@ -539,7 +681,8 @@ Widget _buildAdminSeat() {
       ),
     );
   }
-Widget _buildControlButton({
+
+  Widget _buildControlButton({
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
@@ -548,12 +691,12 @@ Widget _buildControlButton({
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: isDanger ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDanger ? Colors.red : Colors.white.withOpacity(0.3),
+            color: isDanger ? Colors.red : Colors.white.withOpacity(0.2),
           ),
         ),
         child: Column(
@@ -564,12 +707,13 @@ Widget _buildControlButton({
               color: isDanger ? Colors.red : Colors.white,
               size: 20,
             ),
-const SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 color: isDanger ? Colors.red : Colors.white,
                 fontSize: 10,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -585,9 +729,9 @@ const SizedBox(height: 4),
       isScrollControlled: true,
       builder: (context) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
+          height: MediaQuery.of(context).size.height * 0.6,
           decoration: const BoxDecoration(
-            color: Color(0xFF1a2b3c),
+            color: Color(0xFF1A1A1A),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -609,7 +753,7 @@ const SizedBox(height: 4),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: const Icon(Icons.close_rounded, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -622,7 +766,7 @@ const SizedBox(height: 4),
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 1.5,
+                    childAspectRatio: 1.3,
                   ),
                   itemCount: _availableGames.length,
                   itemBuilder: (context, index) {
@@ -637,6 +781,7 @@ const SizedBox(height: 4),
       },
     );
   }
+
   Widget _buildGameCard(RoomGame game) {
     return GestureDetector(
       onTap: () => _startGame(game),
@@ -644,25 +789,25 @@ const SizedBox(height: 4),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              game.color.withOpacity(0.3),
+              game.color.withOpacity(0.2),
               game.color.withOpacity(0.1),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: game.color.withOpacity(0.5)),
+          border: Border.all(color: game.color.withOpacity(0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(game.icon, color: game.color, size: 40),
+            Icon(game.icon, color: game.color, size: 32),
             const SizedBox(height: 8),
             Text(
               game.name,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
             ),
@@ -671,6 +816,7 @@ const SizedBox(height: 4),
       ),
     );
   }
+
   void _showGiftMenu() {
     showModalBottomSheet(
       context: context,
@@ -680,7 +826,7 @@ const SizedBox(height: 4),
         return Container(
           height: MediaQuery.of(context).size.height * 0.7,
           decoration: const BoxDecoration(
-            color: Color(0xFF1a2b3c),
+            color: Color(0xFF1A1A1A),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -702,7 +848,7 @@ const SizedBox(height: 4),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: const Icon(Icons.close_rounded, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -720,7 +866,7 @@ const SizedBox(height: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.emoji_events, color: Colors.yellow, size: 16),
+                    const Icon(Icons.emoji_events_rounded, color: Colors.yellow, size: 16),
                     const SizedBox(width: 8),
                     const Text(
                       'Your Points: ',
@@ -760,29 +906,30 @@ const SizedBox(height: 4),
       },
     );
   }
+
   Widget _buildGiftCard(Gift gift) {
     return GestureDetector(
-      onTap: () => _sendGift(gift),
+      onTap: () => _sendGiftToRoom(gift),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: gift.color.withOpacity(0.3)),
+          border: Border.all(color: gift.color.withOpacity(0.2)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               gift.emoji,
-              style: const TextStyle(fontSize: 30),
+              style: const TextStyle(fontSize: 28),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               gift.name,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 4),
@@ -807,7 +954,177 @@ const SizedBox(height: 4),
     );
   }
 
-  // Placeholder methods for functionality
+  void _showMemberOptions(RoomMember member) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Member info
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.white.withOpacity(0.1),
+                      child: Text(member.avatar, style: const TextStyle(fontSize: 20)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            member.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            member.role,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${member.points} pts',
+                        style: const TextStyle(
+                          color: Colors.yellow,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                // Action buttons
+                _buildMemberActionButton(
+                  icon: Icons.card_giftcard_rounded,
+                  label: 'Send Gift',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showGiftMenuForUser(member);
+                  },
+                ),
+                _buildMemberActionButton(
+                  icon: Icons.person_remove_rounded,
+                  label: 'Remove from Room',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeMember(member);
+                  },
+                  isDanger: true,
+                ),
+                _buildMemberActionButton(
+                  icon: Icons.volume_off_rounded,
+                  label: 'Mute User',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _muteMember(member);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMemberActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isDanger = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDanger ? Colors.red : Colors.white,
+        size: 20,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isDanger ? Colors.red : Colors.white,
+          fontSize: 14,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  // Updated functionality methods
+  void _sendChatMessage() {
+    if (_chatController.text.trim().isNotEmpty) {
+      setState(() {
+        _chatMessages.add(ChatMessage(
+          user: 'You',
+          message: _chatController.text.trim(),
+          time: 'Just now',
+        ));
+        _chatController.clear();
+      });
+    }
+  }
+
+  void _toggleMicrophone() {
+    setState(() {
+      _isMuted = !_isMuted;
+    });
+  }
+
+  void _showGiftMenuForUser(RoomMember member) {
+    // This would show a specialized gift menu for the specific user
+    _showGiftMenu(); // For now, use the same gift menu
+  }
+
+  void _removeMember(RoomMember member) {
+    // TODO: Implement remove member functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Removed ${member.name} from room'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _muteMember(RoomMember member) {
+    // TODO: Implement mute member functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${member.name} has been muted'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
+
+  // Placeholder methods
   void _showRoomInfo() {
     // TODO: Implement room info dialog
   }
@@ -816,16 +1133,8 @@ const SizedBox(height: 4),
     // TODO: Implement room options menu
   }
 
-  void _showMemberOptions(RoomMember member) {
-    // TODO: Implement member options menu
-  }
-
   void _joinSeat() {
     // TODO: Implement join seat functionality
-  }
-
-  void _toggleMicrophone() {
-    // TODO: Implement microphone toggle
   }
 
   void _leaveRoom() {
@@ -840,10 +1149,10 @@ const SizedBox(height: 4),
         backgroundColor: Colors.green,
       ),
     );
-    Navigator.pop(context); // Close the games menu
+    Navigator.pop(context);
   }
 
-  void _sendGift(Gift gift) {
+  void _sendGiftToRoom(Gift gift) {
     // TODO: Implement gift sending functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -851,9 +1160,10 @@ const SizedBox(height: 4),
         backgroundColor: Colors.pink,
       ),
     );
-    Navigator.pop(context); // Close the gift menu
+    Navigator.pop(context);
   }
 }
+
 // Data models
 class RoomMember {
   final String name;
@@ -861,6 +1171,7 @@ class RoomMember {
   final bool isSpeaking;
   final String avatar;
   final int points;
+  final bool isHost;
 
   RoomMember({
     required this.name,
@@ -868,6 +1179,7 @@ class RoomMember {
     required this.isSpeaking,
     required this.avatar,
     required this.points,
+    required this.isHost,
   });
 }
 
@@ -888,3 +1200,14 @@ class Gift {
   Gift(this.name, this.emoji, this.cost, this.color);
 }
 
+class ChatMessage {
+  final String user;
+  final String message;
+  final String time;
+
+  ChatMessage({
+    required this.user,
+    required this.message,
+    required this.time,
+  });
+}
