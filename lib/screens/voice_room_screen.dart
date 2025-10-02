@@ -307,3 +307,24 @@ Widget _buildAdminSeat() {
       },
     );
   }
+  Widget _buildMemberSeat(RoomMember member) {
+    return GestureDetector(
+      onTap: () => _showMemberOptions(member),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: member.isSpeaking
+                ? [const Color(0xFF4CAF50), const Color(0xFF45a049)]
+                : [Colors.grey.shade800, Colors.grey.shade600],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: member.isSpeaking
+                  ? Colors.green.withOpacity(0.3)
+                  : Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
