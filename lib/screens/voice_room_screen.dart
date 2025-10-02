@@ -288,3 +288,22 @@ Widget _buildAdminSeat() {
       ),
     );
   }
+  Widget _buildMemberSeatsGrid() {
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: 9,
+      itemBuilder: (context, index) {
+        if (index < _members.length - 1) { // -1 because admin is separate
+          final member = _members[index + 1]; // Skip admin
+          return _buildMemberSeat(member);
+        } else {
+          return _buildEmptySeat(index - _members.length + 2);
+        }
+      },
+    );
+  }
