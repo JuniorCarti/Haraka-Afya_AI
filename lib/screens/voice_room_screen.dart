@@ -760,3 +760,49 @@ const SizedBox(height: 4),
       },
     );
   }
+  Widget _buildGiftCard(Gift gift) {
+    return GestureDetector(
+      onTap: () => _sendGift(gift),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: gift.color.withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              gift.emoji,
+              style: const TextStyle(fontSize: 30),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              gift.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: gift.color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${gift.cost} pts',
+                style: TextStyle(
+                  color: gift.color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
