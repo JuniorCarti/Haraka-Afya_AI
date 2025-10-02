@@ -482,3 +482,23 @@ Widget _buildAdminSeat() {
       ),
     );
   }
+  Widget _buildBottomControls() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        border: Border(
+          top: BorderSide(color: Colors.white.withOpacity(0.1)),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Games button
+          Expanded(
+            child: _buildControlButton(
+              icon: Icons.sports_esports,
+              label: 'Games',
+              onPressed: _showGamesMenu,
+            ),
+          ),
+          const SizedBox(width: 12),
