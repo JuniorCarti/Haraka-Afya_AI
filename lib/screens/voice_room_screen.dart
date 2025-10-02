@@ -17,3 +17,11 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
     RoomGame('Cards', Icons.style, Colors.red),
     RoomGame('Word Game', Icons.text_fields, Colors.purple),
   ];
+final List<Gift> _availableGifts = [
+    Gift('Rose', '🌹', 10, Colors.red),
+    Gift('Crown', '👑', 100, Colors.yellow),
+    Gift('Star', '⭐', 50, Colors.blue),
+    Gift('Heart', '💖', 20, Colors.pink),
+    Gift('Trophy', '🏆', 200, Colors.orange),
+    Gift('Diamond', '💎', 500, Colors.cyan),
+  ];
