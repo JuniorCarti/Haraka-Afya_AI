@@ -175,3 +175,25 @@ final List<Gift> _availableGifts = [
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoomLayout() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Admin seat at top
+          _buildAdminSeat(),
+          
+          const SizedBox(height: 20),
+          
+          // Member seats grid (3x3)
+          Expanded(
+            child: _buildMemberSeatsGrid(),
+          ),
+        ],
+      ),
+    );
+  }
