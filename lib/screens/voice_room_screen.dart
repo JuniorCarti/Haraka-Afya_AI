@@ -50,3 +50,16 @@ final List<Gift> _availableGifts = [
     ]);
   }
 
+@override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: AppBar(
+          title: const Text(
+            'Support Room',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
