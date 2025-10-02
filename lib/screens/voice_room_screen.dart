@@ -737,3 +737,26 @@ const SizedBox(height: 4),
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: _availableGifts.length,
+                  itemBuilder: (context, index) {
+                    final gift = _availableGifts[index];
+                    return _buildGiftCard(gift);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
