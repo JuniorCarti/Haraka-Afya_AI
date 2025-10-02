@@ -28,8 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _hasLiveRooms = true; // Simulating live rooms availability
-  int _liveRoomsCount = 3; // Simulating number of live rooms
+  final bool _hasLiveRooms = true; // Simulating live rooms availability
+  final int _liveRoomsCount = 3; // Simulating number of live rooms
 
   void _navigateToPage(int index) {
     setState(() {
@@ -460,7 +460,7 @@ class HomeContent extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const VoiceRoomScreen(),
+                              builder: (context) => VoiceRoomScreen(roomId: 'exampleRoomId'),
                             ),
                           );
                         },
