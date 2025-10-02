@@ -19,9 +19,49 @@ class RoomBackground {
     required this.secondaryColor,
   });
 
+  // Convert to Map for Firebase
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'imageUrl': imageUrl,
+      'requiredLevel': requiredLevel,
+      'isPremium': isPremium,
+      'primaryColor': primaryColor.value,
+      'secondaryColor': secondaryColor.value,
+    };
+  }
+
+  // Create from Firebase document
+  factory RoomBackground.fromMap(Map<String, dynamic> data) {
+    return RoomBackground(
+      id: data['id'] ?? 'default',
+      name: data['name'] ?? 'Default',
+      imageUrl: data['imageUrl'] ?? '',
+      requiredLevel: data['requiredLevel'] ?? 1,
+      isPremium: data['isPremium'] ?? false,
+      primaryColor: Color(data['primaryColor'] ?? 0xFF0A0A0A),
+      secondaryColor: Color(data['secondaryColor'] ?? 0xFF1A1A1A),
+    );
+  }
+
   // Check if background is unlocked for user level
   bool isUnlocked(int userLevel) {
     return userLevel >= requiredLevel;
+  }
+
+  // Get display name with premium indicator
+  String get displayName {
+    return isPremium ? '$name ⭐' : name;
+  }
+
+  // Get gradient for background
+  Gradient get gradient {
+    return LinearGradient(
+      colors: [primaryColor, secondaryColor],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
   }
 
   // Default backgrounds
@@ -94,4 +134,61 @@ class RoomBackground {
       secondaryColor: const Color(0xFF6A00F4),
     ),
   ];
+
+  // Find background by ID
+  static RoomBackground getById(String id) {
+    return defaultBackgrounds.firstWhere(
+      (bg) => bg.id == id,
+      orElse: () => defaultBackgrounds.first,
+    );
+  }
+
+  // Get unlocked backgrounds for user level
+  static List<RoomBackground> getUnlockedBackgrounds(int userLevel) {
+    return defaultBackgrounds.where((bg) => bg.isUnlocked(userLevel)).toList();
+  }
+
+  // Get locked backgrounds for user level
+  static List<RoomBackground> getLockedBackgrounds(int userLevel) {
+    return defaultBackgrounds.where((bg) => !bg.isUnlocked(userLevel)).toList();
+  }
+
+  // Get next background to unlock
+  static RoomBackground? getNextBackgroundToUnlock(int userLevel) {
+    final locked = getLockedBackgrounds(userLevel);
+    if (locked.isEmpty) return null;
+    
+    return locked.reduce((a, b) => 
+      a.requiredLevel < b.requiredLevel ? a : b
+    );
+  }
+
+  // Get progress to next background
+  static double getUnlockProgress(int userLevel) {
+    final nextBg = getNextBackgroundToUnlock(userLevel);
+    if (nextBg == null) return 1.0; // All unlocked
+    
+    final currentMaxLevel = getUnlockedBackgrounds(userLevel)
+        .map((bg) => bg.requiredLevel)
+        .fold(0, (max, level) => level > max ? level : max);
+    
+    final progress = (userLevel - currentMaxLevel) / 
+                    (nextBg.requiredLevel - currentMaxLevel);
+    
+    return progress.clamp(0.0, 1.0);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is RoomBackground && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() {
+    return 'RoomBackground(id: $id, name: $name, requiredLevel: $requiredLevel, isPremium: $isPremium)';
+  }
 }

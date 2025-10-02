@@ -162,7 +162,7 @@ class ChatSection extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      message.time,
+                      message.formattedTime,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.4),
                         fontSize: 9,
