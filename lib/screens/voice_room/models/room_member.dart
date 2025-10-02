@@ -5,6 +5,7 @@ class RoomMember {
   final String avatar;
   final int points;
   final bool isHost;
+  final int level; // Added level field
 
   RoomMember({
     required this.name,
@@ -13,5 +14,11 @@ class RoomMember {
     required this.avatar,
     required this.points,
     required this.isHost,
+    required this.level, // Added level field
   });
+
+  // Calculate level based on points (example: 100 points per level)
+  int calculateLevel() {
+    return (points / 100).floor() + 1;
+  }
 }
