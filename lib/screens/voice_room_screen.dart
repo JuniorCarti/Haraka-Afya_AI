@@ -86,3 +86,30 @@ final List<Gift> _availableGifts = [
           ],
         ),
       ),
+      drawer: const AppDrawer(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF1a2b3c), Color(0xFF0d1b2a)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
+          children: [
+            // Room header with info
+            _buildRoomHeader(),
+            
+            // Main room layout with seats
+            Expanded(
+              child: _buildRoomLayout(),
+            ),
+            
+            // Bottom controls
+            _buildBottomControls(),
+          ],
+        ),
+      ),
+    );
+  }
+
