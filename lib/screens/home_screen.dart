@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/community_screen.dart';
 import 'package:haraka_afya_ai/screens/anonymous_chat_screen.dart';
+import 'package:haraka_afya_ai/screens/voice_room_screen.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
@@ -27,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _hasLiveRooms = true; // Simulating live rooms availability
+  int _liveRoomsCount = 3; // Simulating number of live rooms
 
   void _navigateToPage(int index) {
     setState(() {
@@ -335,6 +338,10 @@ class HomeContent extends StatelessWidget {
   }
 
   Widget _buildAnonymousChatCard(BuildContext context) {
+    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+    final hasLiveRooms = homeState?._hasLiveRooms ?? false;
+    final liveRoomsCount = homeState?._liveRoomsCount ?? 0;
+
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(
@@ -352,42 +359,130 @@ class HomeContent extends StatelessWidget {
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5E8FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.psychology_outlined,
-                    color: Color(0xFF7B1FA2), size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Anonymous Support Space',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  // Icon with live rooms badge
+                  Stack(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5E8FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.psychology_outlined,
+                            color: Color(0xFF7B1FA2), size: 28),
                       ),
+                      if (hasLiveRooms)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '$liveRoomsCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Anonymous Support Space',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Share your thoughts and experiences anonymously with others',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Share your thoughts and experiences anonymously with others',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              // Live rooms notification
+              if (hasLiveRooms)
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF4CAF50), width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '$liveRoomsCount live support ${liveRoomsCount == 1 ? 'room' : 'rooms'} available now!',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF2E7D32),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const VoiceRoomScreen(),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          backgroundColor: const Color(0xFF4CAF50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Join Now',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
