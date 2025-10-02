@@ -197,3 +197,23 @@ final List<Gift> _availableGifts = [
       ),
     );
   }
+Widget _buildAdminSeat() {
+    final admin = _members.firstWhere((member) => member.role == 'Admin');
+    return Container(
+      width: 120,
+      height: 140,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFffd700), Color(0xFFffed4e)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.yellow.withOpacity(0.3),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
