@@ -593,3 +593,47 @@ const SizedBox(height: 4),
               topRight: Radius.circular(20),
             ),
           ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Choose a Game',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.5,
+                  ),
+                  itemCount: _availableGames.length,
+                  itemBuilder: (context, index) {
+                    final game = _availableGames[index];
+                    return _buildGameCard(game);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
