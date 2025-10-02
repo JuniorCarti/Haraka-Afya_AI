@@ -25,3 +25,28 @@ final List<Gift> _availableGifts = [
     Gift('Trophy', '🏆', 200, Colors.orange),
     Gift('Diamond', '💎', 500, Colors.cyan),
   ];
+@override
+  void initState() {
+    super.initState();
+    _initializeRoom();
+  }
+
+  void _initializeRoom() {
+    // Add admin
+    _members.add(RoomMember(
+      name: 'You',
+      role: 'Admin',
+      isSpeaking: true,
+      avatar: '👑',
+      points: 1200,
+    ));
+    // Add some sample members
+    _members.addAll([
+      RoomMember(name: 'Alex', role: 'Speaker', isSpeaking: true, avatar: '😊', points: 800),
+      RoomMember(name: 'Sam', role: 'Speaker', isSpeaking: true, avatar: '🎤', points: 650),
+      RoomMember(name: 'Jordan', role: 'Listener', isSpeaking: false, avatar: '👂', points: 450),
+      RoomMember(name: 'Taylor', role: 'Listener', isSpeaking: false, avatar: '🌟', points: 300),
+      RoomMember(name: 'Casey', role: 'Listener', isSpeaking: false, avatar: '🎧', points: 200),
+    ]);
+  }
+
