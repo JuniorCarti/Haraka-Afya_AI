@@ -154,3 +154,24 @@ final List<Gift> _availableGifts = [
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          // Room members count
+          const Icon(Icons.people_outline, color: Colors.white54, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            '${_members.length}/9',
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(width: 16),
+          // Room topic
+          Expanded(
+            child: Text(
+              'Mental Health Support & Games',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
