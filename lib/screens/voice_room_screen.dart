@@ -113,3 +113,44 @@ final List<Gift> _availableGifts = [
     );
   }
 
+  Widget _buildRoomHeader() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Room status
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.green),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'LIVE',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
