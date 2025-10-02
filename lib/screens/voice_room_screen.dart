@@ -251,3 +251,40 @@ Widget _buildAdminSeat() {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Text(
+            admin.name,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            admin.role,
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.7),
+              fontSize: 10,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Points
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${admin.points} pts',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
