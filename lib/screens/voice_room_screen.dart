@@ -708,3 +708,32 @@ const SizedBox(height: 4),
                   ],
                 ),
               ),
+              // User points
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.yellow.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.yellow),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.emoji_events, color: Colors.yellow, size: 16),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Your Points: ',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                    Text(
+                      '1200',
+                      style: const TextStyle(
+                        color: Colors.yellow,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
