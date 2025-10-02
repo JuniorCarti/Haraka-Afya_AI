@@ -63,3 +63,26 @@ final List<Gift> _availableGifts = [
               color: Colors.black,
             ),
           ),
+          centerTitle: true,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFD8FBE5), Color(0xFFE3F2FD)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          elevation: 2,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.people_alt, color: Colors.black),
+              onPressed: _showRoomInfo,
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.black),
+              onPressed: _showRoomOptions,
+            ),
+          ],
+        ),
+      ),
