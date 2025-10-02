@@ -539,3 +539,28 @@ Widget _buildAdminSeat() {
       ),
     );
   }
+Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    bool isDanger = false,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isDanger ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDanger ? Colors.red : Colors.white.withOpacity(0.3),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isDanger ? Colors.red : Colors.white,
+              size: 20,
+            ),
