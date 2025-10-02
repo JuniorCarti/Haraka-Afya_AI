@@ -806,3 +806,51 @@ const SizedBox(height: 4),
       ),
     );
   }
+
+  // Placeholder methods for functionality
+  void _showRoomInfo() {
+    // TODO: Implement room info dialog
+  }
+
+  void _showRoomOptions() {
+    // TODO: Implement room options menu
+  }
+
+  void _showMemberOptions(RoomMember member) {
+    // TODO: Implement member options menu
+  }
+
+  void _joinSeat() {
+    // TODO: Implement join seat functionality
+  }
+
+  void _toggleMicrophone() {
+    // TODO: Implement microphone toggle
+  }
+
+  void _leaveRoom() {
+    // TODO: Implement leave room functionality
+  }
+
+  void _startGame(RoomGame game) {
+    // TODO: Implement game start functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Starting ${game.name}...'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.pop(context); // Close the games menu
+  }
+
+  void _sendGift(Gift gift) {
+    // TODO: Implement gift sending functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Sent ${gift.emoji} ${gift.name} to the room!'),
+        backgroundColor: Colors.pink,
+      ),
+    );
+    Navigator.pop(context); // Close the gift menu
+  }
+}
