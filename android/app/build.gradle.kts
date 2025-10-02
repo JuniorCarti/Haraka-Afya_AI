@@ -1,10 +1,7 @@
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
     id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     id("kotlin-android")
-    // Flutter plugin must be applied after Android & Kotlin plugins
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -16,7 +13,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true // ✅ Correct Kotlin DSL syntax 
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -33,8 +30,17 @@ android {
 
     buildTypes {
         release {
-            // Temporary: using debug signing config so release builds can run
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
@@ -44,15 +50,13 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // ✅ This is critical
-    // Firebase BoM ensures all Firebase libraries use compatible versions
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
-
-    // Firebase core services
     implementation("com.google.firebase:firebase-analytics")
-
-    // OPTIONAL: Uncomment below as needed
-    // implementation("com.google.firebase:firebase-auth")
-    // implementation("com.google.firebase:firebase-firestore")
-    // implementation("com.google.firebase:firebase-messaging")
+    
+    // ✅ Add the latest Stripe Android SDK
+    implementation("com.stripe:stripe-android:20.37.4")
+    
+    // ✅ Add these if you're using Google Pay or Wallet integrations
+    implementation("com.google.android.gms:play-services-wallet:19.3.0")
 }
