@@ -502,3 +502,40 @@ Widget _buildAdminSeat() {
             ),
           ),
           const SizedBox(width: 12),
+          
+          // Gift button
+          Expanded(
+            child: _buildControlButton(
+              icon: Icons.card_giftcard,
+              label: 'Send Gift',
+              onPressed: _showGiftMenu,
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Mic control
+          Container(
+            width: 50,
+            height: 50,
+            decoration: const BoxDecoration(
+              color: Colors.green,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.mic, color: Colors.white),
+              onPressed: _toggleMicrophone,
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Leave room
+          _buildControlButton(
+            icon: Icons.logout,
+            label: 'Leave',
+            onPressed: _leaveRoom,
+            isDanger: true,
+          ),
+        ],
+      ),
+    );
+  }
