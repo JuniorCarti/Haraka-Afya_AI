@@ -25,6 +25,7 @@ dependencies:
   firebase_messaging: ^15.2.9
   badges: ^3.1.2
   cloud_functions: ^5.6.1
+  
   flutter_tts: ^3.8.4 # 
   device_calendar: ^4.3.3
   permission_handler: ^11.0.0
@@ -61,6 +62,7 @@ dependencies:
   # Icons
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.6.0
+  emoji_picker_flutter: ^1.0.0
 
 dev_dependencies:
   flutter_test:
