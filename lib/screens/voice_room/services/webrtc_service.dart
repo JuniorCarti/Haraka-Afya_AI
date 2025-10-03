@@ -126,3 +126,29 @@ class WebRTCService {
         callback(userId, isMuted);
       }
     });
+    _socket.on('pong', (data) {
+      print('🏓 Server pong: ${data['timestamp']}');
+    });
+  }
+
+  Future<void> joinRoom(String roomId, String userId, String username) async {
+    try {
+      print('🚀 Joining room: $roomId as $username ($userId)');
+      await _getUserMedia();
+      _socket.emit('join-room', {
+        'roomId': roomId,
+        'userId': userId,
+        'username': username
+      });
+    } catch (e) {
+      print('❌ Error joining room: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> leaveRoom(String roomId, String userId) async {
+    print('🚪 Leaving room: $roomId');
+    _socket.emit('leave-room', {'roomId': roomId, 'userId': userId});
+    await _cleanup();
+  }
+
