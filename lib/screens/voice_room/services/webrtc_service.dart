@@ -15,27 +15,29 @@ class WebRTCService {
   List<Function(String, String)> onUserJoined = [];
   List<Function(String, String)> onUserLeft = [];
   List<Function(String, bool)> onUserAudioChanged = [];
-  // Server configuration for local development
+
+  // Server configuration
   static const String _signalingServer = 'http://localhost:3000';
+
+  bool get isConnected => _socket.connected;
 
   Future<void> initialize() async {
     try {
       print('🔄 Initializing WebRTC service...');
       
-      // Initialize socket connection
       _socket = IO.io(_signalingServer, <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': true,
       });
+
       _setupSocketListeners();
-      
-      // Wait for connection
       await _waitForConnection();
-      print('✅ WebRTC service initialized');
+      print('WebRTC service initialized');
       
     } catch (e) {
-      print('❌ Error initializing WebRTC: $e');
+      print('Error initializing WebRTC: $e');
       _onError('Failed to initialize WebRTC: $e');
+      rethrow;
     }
   }
 
@@ -48,24 +50,17 @@ class WebRTCService {
     });
 
     _socket.once('connect_error', (error) {
-      print('❌ Connection error: $error');
       completer.completeError(error);
     });
-    // Timeout after 10 seconds
+
     return completer.future.timeout(const Duration(seconds: 10));
   }
 
   void _setupSocketListeners() {
-    _socket.on('connect', (_) {
-      print('✅ Connected to signaling server');
-    });
-
-    _socket.on('disconnect', (_) {
-      print('❌ Disconnected from signaling server');
-    });
+    _socket.on('connect', (_) => print('Connected to signaling server'));
+    _socket.on('disconnect', (_) => print('Disconnected from signaling server'));
 
     _socket.on('connect_error', (error) {
-      print('❌ Connection error: $error');
       _onError('Connection failed: $error');
     });
 
@@ -88,10 +83,10 @@ class WebRTCService {
       }
       _onUserLeft(userId);
     });
+
     _socket.on('room-users', (data) {
       final users = List.from(data['users']);
-      print('📊 Room users: $users');
-      // Handle existing users in room
+      print('Existing room users: ${users.length}');
       for (final user in users) {
         _onUserJoined(user['id']);
       }
@@ -100,14 +95,12 @@ class WebRTCService {
     _socket.on('offer', (data) async {
       final offer = data['offer'];
       final userId = data['userId'];
-      print('📞 Received offer from $userId');
       await _onOffer(offer, userId);
     });
 
     _socket.on('answer', (data) async {
       final answer = data['answer'];
       final userId = data['userId'];
-      print('📨 Received answer from $userId');
       await _onAnswer(answer, userId);
     });
 
@@ -121,19 +114,15 @@ class WebRTCService {
       final userId = data['userId'];
       final isMuted = data['isMuted'];
       final username = data['username'];
-      print('🎤 User audio changed: $username - muted: $isMuted');
       for (final callback in onUserAudioChanged) {
         callback(userId, isMuted);
       }
-    });
-    _socket.on('pong', (data) {
-      print('🏓 Server pong: ${data['timestamp']}');
     });
   }
 
   Future<void> joinRoom(String roomId, String userId, String username) async {
     try {
-      print('🚀 Joining room: $roomId as $username ($userId)');
+      print('Joining room: $roomId as $username ($userId)');
       await _getUserMedia();
       _socket.emit('join-room', {
         'roomId': roomId,
@@ -141,7 +130,7 @@ class WebRTCService {
         'username': username
       });
     } catch (e) {
-      print('❌ Error joining room: $e');
+      print('Error joining room: $e');
       rethrow;
     }
   }
@@ -152,49 +141,38 @@ class WebRTCService {
     await _cleanup();
   }
 
-Future<void> _getUserMedia() async {
+  Future<void> _getUserMedia() async {
     try {
-      print('🎤 Requesting microphone access...');
-      
       final mediaConstraints = <String, dynamic>{
         'audio': {
           'echoCancellation': true,
           'noiseSuppression': true,
           'autoGainControl': true,
-          'channelCount': 1,
-          'sampleRate': 48000,
-          'sampleSize': 16,
         },
         'video': false,
       };
 
       _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-      print('✅ Got local audio stream');
+      print('Got local audio stream');
       
     } catch (e) {
-      print('❌ Error getting user media: $e');
+      print('Error getting user media: $e');
       _onError('Failed to access microphone: $e');
       rethrow;
     }
   }
 
   Future<void> _onUserJoined(String remoteUserId) async {
-    if (_localStream == null) {
-      print('❌ No local stream available for connection');
-      return;
-    }
+    if (_localStream == null) return;
 
     try {
-      print('🔗 Connecting to user: $remoteUserId');
       final peerConnection = await _createPeerConnection();
       _peerConnections[remoteUserId] = peerConnection;
 
-      // Add local stream to connection
       _localStream!.getTracks().forEach((track) {
         peerConnection.addTrack(track, _localStream!);
       });
 
-      // Create and send offer
       final offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       
@@ -202,10 +180,9 @@ Future<void> _getUserMedia() async {
         'offer': offer.toMap(),
         'targetUserId': remoteUserId,
       });
-      print('📞 Sent offer to $remoteUserId');
       
     } catch (e) {
-      print('❌ Error creating peer connection: $e');
+      print('Error creating peer connection: $e');
       _onError('Failed to connect to user: $e');
     }
   }
@@ -214,11 +191,9 @@ Future<void> _getUserMedia() async {
     if (_localStream == null) return;
 
     try {
-      print('📞 Processing offer from $remoteUserId');
       final peerConnection = await _createPeerConnection();
       _peerConnections[remoteUserId] = peerConnection;
 
-      // Add local stream to connection
       _localStream!.getTracks().forEach((track) {
         peerConnection.addTrack(track, _localStream!);
       });
@@ -226,6 +201,7 @@ Future<void> _getUserMedia() async {
       await peerConnection.setRemoteDescription(
         RTCSessionDescription(offerData['sdp'], offerData['type']),
       );
+
       final answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
       
@@ -234,28 +210,22 @@ Future<void> _getUserMedia() async {
         'targetUserId': remoteUserId,
       });
       
-      print('📨 Sent answer to $remoteUserId');
-      
     } catch (e) {
-      print('❌ Error processing offer: $e');
+      print('Error processing offer: $e');
       _onError('Failed to process offer: $e');
     }
   }
+
   Future<void> _onAnswer(dynamic answerData, String remoteUserId) async {
     final peerConnection = _peerConnections[remoteUserId];
-    if (peerConnection == null) {
-      print('❌ No peer connection for user: $remoteUserId');
-      return;
-    }
+    if (peerConnection == null) return;
 
     try {
       await peerConnection.setRemoteDescription(
         RTCSessionDescription(answerData['sdp'], answerData['type']),
       );
-      print('✅ Set remote description for $remoteUserId');
     } catch (e) {
-      print('❌ Error setting remote description: $e');
-      _onError('Failed to set remote description: $e');
+      print('Error setting remote description: $e');
     }
   }
 
@@ -270,12 +240,11 @@ Future<void> _getUserMedia() async {
         candidateData['sdpMLineIndex'],
       ));
     } catch (e) {
-      print('❌ Error adding ICE candidate: $e');
+      print('Error adding ICE candidate: $e');
     }
   }
 
   void _onUserLeft(String remoteUserId) {
-    print('👤 User left, cleaning up: $remoteUserId');
     _peerConnections.remove(remoteUserId)?.close();
     
     final stream = _remoteStreams.remove(remoteUserId);
@@ -296,7 +265,6 @@ Future<void> _getUserMedia() async {
 
     final peerConnection = await createPeerConnection(configuration);
 
-    // Set up event listeners
     peerConnection.onIceCandidate = (candidate) {
       _socket.emit('ice-candidate', {
         'candidate': candidate.toMap(),
@@ -308,7 +276,6 @@ Future<void> _getUserMedia() async {
       final userId = _getUserIdByConnection(peerConnection);
       if (userId != null) {
         _remoteStreams[userId] = stream;
-        print('🎧 Added remote stream from user: $userId');
         for (final callback in onAddRemoteStream) {
           callback(stream);
         }
@@ -317,13 +284,7 @@ Future<void> _getUserMedia() async {
 
     peerConnection.onRemoveStream = (stream) {
       final userId = _getUserIdByConnection(peerConnection);
-      if (userId != null) {
-        _onUserLeft(userId);
-      }
-    };
-
-    peerConnection.onIceConnectionState = (state) {
-      print('🧊 ICE connection state: $state');
+      if (userId != null) _onUserLeft(userId);
     };
 
     return peerConnection;
@@ -340,7 +301,6 @@ Future<void> _getUserMedia() async {
   }
 
   void _onError(String message) {
-    print('❌ WebRTC Error: $message');
     for (final callback in onError) {
       callback(message);
     }
@@ -354,13 +314,10 @@ Future<void> _getUserMedia() async {
         track.enabled = !mute;
       }
       
-      // Notify other users
       _socket.emit('toggle-audio', {
         'isMuted': mute,
         'userId': _socket.id,
       });
-      
-      print('🎤 ${mute ? 'Muted' : 'Unmuted'} microphone');
     }
   }
 
@@ -371,8 +328,6 @@ Future<void> _getUserMedia() async {
   }
 
   Future<void> _cleanup() async {
-    print('🧹 Cleaning up WebRTC resources...');
-    
     for (final connection in _peerConnections.values) {
       await connection.close();
     }
@@ -385,7 +340,6 @@ Future<void> _getUserMedia() async {
 
     _remoteStreams.clear();
     _socket.disconnect();
-    print('✅ WebRTC cleanup complete');
   }
 
   List<MediaStream> get remoteStreams => _remoteStreams.values.toList();
