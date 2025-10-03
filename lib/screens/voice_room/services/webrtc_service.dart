@@ -226,3 +226,18 @@ Future<void> _getUserMedia() async {
       await peerConnection.setRemoteDescription(
         RTCSessionDescription(offerData['sdp'], offerData['type']),
       );
+      final answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      
+      _socket.emit('answer', {
+        'answer': answer.toMap(),
+        'targetUserId': remoteUserId,
+      });
+      
+      print('📨 Sent answer to $remoteUserId');
+      
+    } catch (e) {
+      print('❌ Error processing offer: $e');
+      _onError('Failed to process offer: $e');
+    }
+  }
