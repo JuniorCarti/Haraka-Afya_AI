@@ -152,3 +152,53 @@ class WebRTCService {
     await _cleanup();
   }
 
+Future<void> _getUserMedia() async {
+    try {
+      print('🎤 Requesting microphone access...');
+      
+      final mediaConstraints = <String, dynamic>{
+        'audio': {
+          'echoCancellation': true,
+          'noiseSuppression': true,
+          'autoGainControl': true,
+          'channelCount': 1,
+          'sampleRate': 48000,
+          'sampleSize': 16,
+        },
+        'video': false,
+      };
+
+      _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+      print('✅ Got local audio stream');
+      
+    } catch (e) {
+      print('❌ Error getting user media: $e');
+      _onError('Failed to access microphone: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _onUserJoined(String remoteUserId) async {
+    if (_localStream == null) {
+      print('❌ No local stream available for connection');
+      return;
+    }
+
+    try {
+      print('🔗 Connecting to user: $remoteUserId');
+      final peerConnection = await _createPeerConnection();
+      _peerConnections[remoteUserId] = peerConnection;
+
+      // Add local stream to connection
+      _localStream!.getTracks().forEach((track) {
+        peerConnection.addTrack(track, _localStream!);
+      });
+
+      // Create and send offer
+      final offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      
+      _socket.emit('offer', {
+        'offer': offer.toMap(),
+        'targetUserId': remoteUserId,
+      });
