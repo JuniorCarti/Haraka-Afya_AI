@@ -8,3 +8,10 @@ class WebRTCService {
   final Map<String, MediaStream> _remoteStreams = {};
   MediaStream? _localStream;
   
+  // Event callbacks
+  List<Function(MediaStream)> onAddRemoteStream = [];
+  List<Function(MediaStream)> onRemoveRemoteStream = [];
+  List<Function(String)> onError = [];
+  List<Function(String, String)> onUserJoined = [];
+  List<Function(String, String)> onUserLeft = [];
+  List<Function(String, bool)> onUserAudioChanged = [];
