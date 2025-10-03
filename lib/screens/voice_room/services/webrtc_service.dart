@@ -27,3 +27,27 @@ class WebRTCService {
         'transports': ['websocket'],
         'autoConnect': true,
       });
+      _setupSocketListeners();
+      
+      // Wait for connection
+      await _waitForConnection();
+      print('✅ WebRTC service initialized');
+      
+    } catch (e) {
+      print('❌ Error initializing WebRTC: $e');
+      _onError('Failed to initialize WebRTC: $e');
+    }
+  }
+
+  Future<void> _waitForConnection() async {
+    final completer = Completer();
+    
+    _socket.once('connect', (_) {
+      print('🔗 Connected to signaling server');
+      completer.complete();
+    });
+
+    _socket.once('connect_error', (error) {
+      print('❌ Connection error: $error');
+      completer.completeError(error);
+    });
