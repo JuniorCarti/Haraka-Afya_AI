@@ -241,3 +241,157 @@ Future<void> _getUserMedia() async {
       _onError('Failed to process offer: $e');
     }
   }
+  Future<void> _onAnswer(dynamic answerData, String remoteUserId) async {
+    final peerConnection = _peerConnections[remoteUserId];
+    if (peerConnection == null) {
+      print('❌ No peer connection for user: $remoteUserId');
+      return;
+    }
+
+    try {
+      await peerConnection.setRemoteDescription(
+        RTCSessionDescription(answerData['sdp'], answerData['type']),
+      );
+      print('✅ Set remote description for $remoteUserId');
+    } catch (e) {
+      print('❌ Error setting remote description: $e');
+      _onError('Failed to set remote description: $e');
+    }
+  }
+
+  Future<void> _onIceCandidate(dynamic candidateData, String remoteUserId) async {
+    final peerConnection = _peerConnections[remoteUserId];
+    if (peerConnection == null) return;
+
+    try {
+      await peerConnection.addCandidate(RTCIceCandidate(
+        candidateData['candidate'],
+        candidateData['sdpMid'],
+        candidateData['sdpMLineIndex'],
+      ));
+    } catch (e) {
+      print('❌ Error adding ICE candidate: $e');
+    }
+  }
+
+  void _onUserLeft(String remoteUserId) {
+    print('👤 User left, cleaning up: $remoteUserId');
+    _peerConnections.remove(remoteUserId)?.close();
+    
+    final stream = _remoteStreams.remove(remoteUserId);
+    if (stream != null) {
+      for (final callback in onRemoveRemoteStream) {
+        callback(stream);
+      }
+    }
+  }
+
+  Future<RTCPeerConnection> _createPeerConnection() async {
+    final configuration = <String, dynamic>{
+      'iceServers': [
+        {'urls': 'stun:stun.l.google.com:19302'},
+        {'urls': 'stun:stun1.l.google.com:19302'},
+      ],
+    };
+
+    final peerConnection = await createPeerConnection(configuration);
+
+    // Set up event listeners
+    peerConnection.onIceCandidate = (candidate) {
+      _socket.emit('ice-candidate', {
+        'candidate': candidate.toMap(),
+        'targetUserId': _getUserIdByConnection(peerConnection),
+      });
+    };
+
+    peerConnection.onAddStream = (stream) {
+      final userId = _getUserIdByConnection(peerConnection);
+      if (userId != null) {
+        _remoteStreams[userId] = stream;
+        print('🎧 Added remote stream from user: $userId');
+        for (final callback in onAddRemoteStream) {
+          callback(stream);
+        }
+      }
+    };
+
+    peerConnection.onRemoveStream = (stream) {
+      final userId = _getUserIdByConnection(peerConnection);
+      if (userId != null) {
+        _onUserLeft(userId);
+      }
+    };
+
+    peerConnection.onIceConnectionState = (state) {
+      print('🧊 ICE connection state: $state');
+    };
+
+    return peerConnection;
+  }
+
+  String? _getUserIdByConnection(RTCPeerConnection connection) {
+    try {
+      return _peerConnections.entries
+          .firstWhere((entry) => entry.value == connection)
+          .key;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  void _onError(String message) {
+    print('❌ WebRTC Error: $message');
+    for (final callback in onError) {
+      callback(message);
+    }
+  }
+
+  // Audio control methods
+  Future<void> toggleMicrophone(bool mute) async {
+    if (_localStream != null) {
+      final audioTracks = _localStream!.getAudioTracks();
+      for (final track in audioTracks) {
+        track.enabled = !mute;
+      }
+      
+      // Notify other users
+      _socket.emit('toggle-audio', {
+        'isMuted': mute,
+        'userId': _socket.id,
+      });
+      
+      print('🎤 ${mute ? 'Muted' : 'Unmuted'} microphone');
+    }
+  }
+
+  bool get isMicrophoneMuted {
+    if (_localStream == null) return true;
+    final audioTracks = _localStream!.getAudioTracks();
+    return audioTracks.isEmpty || !audioTracks.first.enabled!;
+  }
+
+  Future<void> _cleanup() async {
+    print('🧹 Cleaning up WebRTC resources...');
+    
+    for (final connection in _peerConnections.values) {
+      await connection.close();
+    }
+    _peerConnections.clear();
+
+    if (_localStream != null) {
+      _localStream!.getTracks().forEach((track) => track.stop());
+      _localStream = null;
+    }
+
+    _remoteStreams.clear();
+    _socket.disconnect();
+    print('✅ WebRTC cleanup complete');
+  }
+
+  List<MediaStream> get remoteStreams => _remoteStreams.values.toList();
+  MediaStream? get localStream => _localStream;
+
+  void dispose() {
+    _cleanup();
+  }
+}
