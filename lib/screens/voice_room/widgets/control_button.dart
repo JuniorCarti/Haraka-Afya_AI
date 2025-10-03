@@ -5,6 +5,7 @@ class ControlButton extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
   final bool isDanger;
+  final bool isActive;
 
   const ControlButton({
     super.key,
@@ -12,6 +13,7 @@ class ControlButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.isDanger = false,
+    this.isActive = false,
   });
 
   @override
@@ -19,27 +21,29 @@ class ControlButton extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isDanger ? Colors.red.withOpacity(0.2) : Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDanger ? Colors.red : Colors.white.withOpacity(0.2),
-          ),
-        ),
+        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Icon only - no background container
             Icon(
               icon,
-              color: isDanger ? Colors.red : Colors.white,
-              size: 20,
+              color: isDanger 
+                  ? Colors.red 
+                  : isActive 
+                    ? Colors.blue 
+                    : Colors.white,
+              size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isDanger ? Colors.red : Colors.white,
+                color: isDanger 
+                    ? Colors.red 
+                    : isActive 
+                      ? Colors.blue 
+                      : Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
