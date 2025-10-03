@@ -56,12 +56,20 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   String _currentUserId = '';
   String _currentUsername = 'Loading...';
   int _currentUserLevel = 1;
-  bool _isHost = false;
+  UserRole _currentUserRole = UserRole.user;
   bool _isMuted = false;
+  
+  // Room state
+  String _roomName = 'Support Room';
+  String _roomDescription = 'A safe space for support and conversation';
+  String _welcomeMessage = 'Welcome to our support room! Feel free to share and connect.';
   
   // Background state
   RoomBackground _currentBackground = RoomBackground.defaultBackgrounds.first;
   final List<RoomBackground> _availableBackgrounds = RoomBackground.defaultBackgrounds;
+
+  // Track if user is in room for chat behavior
+  bool _isInRoom = true;
 
   @override
   void initState() {
@@ -78,47 +86,90 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
         // Get or create random username
         _currentUsername = await _roomService.getOrCreateUsername(_currentUserId);
         
-        // Check if user is host (first user to join becomes host)
-        _isHost = await _roomService.isRoomHost(widget.roomId, _currentUserId);
+        // Get user achievements and level
+        final achievements = await _roomService.getUserAchievements(_currentUserId);
+        _currentUserLevel = achievements['level'] ?? 1;
         
-        // Create room member with random username
+        // Check if user is host (first user to join becomes host)
+        final isHost = await _roomService.isRoomHost(widget.roomId, _currentUserId);
+        _currentUserRole = isHost ? UserRole.admin : UserRole.user;
+        
+        // Get room information
+        final roomInfo = await _roomService.getRoomInfo(widget.roomId);
+        _roomName = roomInfo['name'] ?? 'Support Room';
+        _roomDescription = roomInfo['description'] ?? 'A safe space for support and conversation';
+        _welcomeMessage = roomInfo['welcomeMessage'] ?? 'Welcome to our support room!';
+
+        // Get message color based on role and level
+        final messageColor = await _roomService.getUserMessageColor(_currentUserId, _currentUserRole);
+
+        // Create room member
         final member = RoomMember(
           id: _currentUserId,
-          name: _currentUsername,
-          role: _isHost ? 'Host' : 'Listener',
-          isSpeaking: _isHost, // Host starts speaking by default
-          avatar: _isHost ? '👑' : '😊',
-          points: 1200, // This would come from user profile in real app
-          isHost: _isHost,
+          userId: _currentUserId,
+          username: _currentUsername,
+          role: isHost ? MemberRole.admin : MemberRole.listener,
+          isSpeaking: isHost, // Host starts speaking by default
+          avatar: isHost ? '👑' : '😊',
+          points: achievements['points'] ?? 0,
           level: _currentUserLevel,
           joinedAt: DateTime.now(),
-          userId: _currentUserId,
+          lastActive: DateTime.now(),
+          isMuted: false,
+          isHandRaised: false,
+          achievements: List<String>.from(achievements['badges'] ?? []),
+          title: achievements['title'] ?? 'Newcomer',
+          messageColor: messageColor,
+          totalMessages: achievements['totalMessages'] ?? 0,
+          roomsJoined: achievements['roomsJoined'] ?? 1,
+          sessionId: 'current',
         );
 
         // Join room in Firebase
         await _roomService.createOrJoinRoom(widget.roomId, member);
         
-        setState(() {});
+        setState(() {
+          _isInRoom = true;
+        });
       } else {
         // Handle case where user is not authenticated
         _currentUsername = 'Guest';
+        _currentUserId = 'guest_${DateTime.now().millisecondsSinceEpoch}';
+        setState(() {
+          _isInRoom = true;
+        });
       }
     } catch (e) {
       print('Error initializing room: $e');
       // Fallback to guest mode
       _currentUsername = 'Guest';
       _currentUserId = 'guest_${DateTime.now().millisecondsSinceEpoch}';
+      setState(() {
+        _isInRoom = true;
+      });
     }
   }
 
-  void _sendChatMessage() {
-    if (_chatController.text.trim().isNotEmpty) {
+  void _sendChatMessage(ChatMessage message) {
+    if (_isInRoom) {
+      _roomService.sendChatMessage(widget.roomId, message);
+    }
+  }
+
+  void _sendUserChatMessage() {
+    if (_chatController.text.trim().isNotEmpty && _isInRoom) {
       final message = ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        user: _currentUsername,
+        id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+        roomId: widget.roomId,
         userId: _currentUserId,
-        message: _chatController.text.trim(),
+        username: _currentUsername,
+        text: _chatController.text.trim(),
         timestamp: DateTime.now(),
+        userRole: _currentUserRole,
+        userLevel: _currentUserLevel,
+        messageColor: '', // Will be calculated by service
+        isWelcomeMessage: false,
+        sessionId: 'current',
       );
       
       _roomService.sendChatMessage(widget.roomId, message);
@@ -127,6 +178,8 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _toggleMicrophone() async {
+    if (!_isInRoom) return;
+    
     setState(() {
       _isMuted = !_isMuted;
     });
@@ -140,8 +193,13 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _changeBackground(RoomBackground background) async {
+    if (!_isInRoom) return;
+    
     try {
       await _roomService.updateRoomBackground(widget.roomId, background);
+      setState(() {
+        _currentBackground = background;
+      });
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -159,7 +217,43 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
     }
   }
 
+  void _updateRoomInfo({String? name, String? description, String? welcomeMessage}) async {
+    if (!_isInRoom) return;
+    
+    try {
+      await _roomService.updateRoomInfo(
+        roomId: widget.roomId,
+        name: name,
+        description: description,
+        welcomeMessage: welcomeMessage,
+      );
+      
+      if (name != null) _roomName = name;
+      if (description != null) _roomDescription = description;
+      if (welcomeMessage != null) _welcomeMessage = welcomeMessage;
+      
+      setState(() {});
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Room information updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update room info: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _showBackgroundMenu() {
+    if (!_isInRoom) return;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -176,16 +270,34 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
     );
   }
 
+  void _showRoomInfoEdit() {
+    if (!_isInRoom) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => RoomInfoEditDialog(
+        roomName: _roomName,
+        roomDescription: _roomDescription,
+        welcomeMessage: _welcomeMessage,
+        isHost: _currentUserRole == UserRole.admin,
+        onSave: _updateRoomInfo,
+      ),
+    );
+  }
+
   void _showGiftMenuForUser(RoomMember member) {
+    if (!_isInRoom) return;
     _showGiftMenu();
   }
 
   void _removeMember(RoomMember member) async {
+    if (!_isInRoom) return;
+    
     try {
-      await _roomService.leaveRoom(widget.roomId, member.id);
+      await _roomService.leaveRoom(widget.roomId, member.id, member.username);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Removed ${member.name} from room'),
+          content: Text('Removed ${member.username} from room'),
           backgroundColor: Colors.red,
         ),
       );
@@ -200,11 +312,13 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _muteMember(RoomMember member) async {
+    if (!_isInRoom) return;
+    
     try {
       await _roomService.updateSpeakingStatus(widget.roomId, member.id, false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${member.name} has been muted'),
+          content: Text('${member.username} has been muted'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -218,31 +332,100 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
     }
   }
 
-  // Placeholder methods
-  void _showRoomInfo() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Room Information'),
-        content: const Text('This is a support room for mental health discussions. Be kind and respectful to all members.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+  void _promoteToSpeaker(RoomMember member) async {
+    if (!_isInRoom) return;
+    
+    try {
+      await _roomService.updateMemberRole(widget.roomId, member.id, MemberRole.speaker);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Promoted ${member.username} to Speaker'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to promote member: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void _showRoomOptions() {
-    // TODO: Implement room options menu
+  void _promoteToModerator(RoomMember member) async {
+    if (!_isInRoom) return;
+    
+    try {
+      await _roomService.updateMemberRole(widget.roomId, member.id, MemberRole.moderator);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Promoted ${member.username} to Moderator'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to promote member: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _demoteToListener(RoomMember member) async {
+    if (!_isInRoom) return;
+    
+    try {
+      await _roomService.updateMemberRole(widget.roomId, member.id, MemberRole.listener);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Demoted ${member.username} to Listener'),
+          backgroundColor: Colors.grey,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to demote member: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _transferHostRole(RoomMember member) async {
+    if (!_isInRoom) return;
+    
+    try {
+      await _roomService.transferHostRole(widget.roomId, member.userId);
+      setState(() {
+        _currentUserRole = UserRole.moderator; // Current user becomes moderator
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Transferred host role to ${member.username}'),
+          backgroundColor: Colors.yellow,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to transfer host role: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _joinSeat() async {
+    if (!_isInRoom) return;
+    
     // When joining a seat, user becomes a speaker
     try {
       await _roomService.updateSpeakingStatus(widget.roomId, _currentUserId, true);
+      await _roomService.updateMemberRole(widget.roomId, _currentUserId, MemberRole.speaker);
       setState(() {
         _isMuted = false;
       });
@@ -257,8 +440,15 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _leaveRoom() async {
+    if (!_isInRoom) return;
+    
     try {
-      await _roomService.leaveRoom(widget.roomId, _currentUserId);
+      setState(() {
+        _isInRoom = false;
+      });
+      
+      await _roomService.leaveRoom(widget.roomId, _currentUserId, _currentUsername);
+      
       if (mounted) {
         Navigator.pop(context);
       }
@@ -269,10 +459,16 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
           backgroundColor: Colors.red,
         ),
       );
+      // Revert state if leaving failed
+      setState(() {
+        _isInRoom = true;
+      });
     }
   }
 
   void _startGame(RoomGame game) {
+    if (!_isInRoom) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Starting ${game.name}...'),
@@ -283,6 +479,8 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _sendGiftToRoom(Gift gift) {
+    if (!_isInRoom) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Sent ${gift.emoji} ${gift.name} to the room!'),
@@ -293,6 +491,8 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _showGamesMenu() {
+    if (!_isInRoom) return;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -356,6 +556,8 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _showGiftMenu() {
+    if (!_isInRoom) return;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -410,7 +612,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
                       style: TextStyle(color: Colors.white, fontSize: 14),
                     ),
                     Text(
-                      '1200',
+                      '1200', // This would come from user profile
                       style: const TextStyle(
                         color: Colors.yellow,
                         fontSize: 16,
@@ -448,8 +650,13 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   }
 
   void _showMemberOptions(RoomMember member) {
+    if (!_isInRoom) return;
+    
     // Don't show options for yourself
     if (member.userId == _currentUserId) return;
+
+    final isCurrentUserHost = _currentUserRole == UserRole.admin;
+    final isCurrentUserModerator = _currentUserRole == UserRole.moderator || isCurrentUserHost;
 
     showModalBottomSheet(
       context: context,
@@ -457,6 +664,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       builder: (context) {
         return MemberOptions(
           member: member,
+          isCurrentUserHost: isCurrentUserHost,
           onSendGift: () {
             Navigator.pop(context);
             _showGiftMenuForUser(member);
@@ -469,9 +677,54 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
             Navigator.pop(context);
             _muteMember(member);
           },
+          onPromoteToSpeaker: isCurrentUserHost ? () {
+            Navigator.pop(context);
+            _promoteToSpeaker(member);
+          } : () {},
+          onPromoteToModerator: () {
+            if (isCurrentUserHost) {
+              Navigator.pop(context);
+              _promoteToModerator(member);
+            }
+          },
+          onDemoteToListener: (isCurrentUserHost || isCurrentUserModerator) ? () {
+            Navigator.pop(context);
+            _demoteToListener(member);
+          } : () {},
+          onTransferHost: isCurrentUserHost ? () {
+            Navigator.pop(context);
+            _transferHostRole(member);
+          } : () {},
         );
       },
     );
+  }
+
+  // Add host switching functionality
+  void _switchHostToSpeaker() async {
+    if (!_isInRoom || _currentUserRole != UserRole.admin) return;
+    
+    try {
+      await _roomService.switchHostToSpeaker(widget.roomId, _currentUserId);
+      setState(() {
+        _currentUserRole = UserRole.moderator;
+        _isMuted = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Switched to speaker seat successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to switch to speaker: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -481,9 +734,9 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: AppBar(
-          title: const Text(
-            'Support Room',
-            style: TextStyle(
+          title: Text(
+            _isInRoom ? 'Support Room' : 'Left Room',
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.white,
               fontSize: 18,
@@ -496,86 +749,145 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
             onPressed: _leaveRoom,
           ),
-          actions: [
+          actions: _isInRoom ? [
             IconButton(
-              icon: const Icon(Icons.people_alt_rounded, color: Colors.white54, size: 22),
-              onPressed: _showRoomInfo,
+              icon: const Icon(Icons.info_outline_rounded, color: Colors.white54, size: 22),
+              onPressed: _showRoomInfoEdit,
             ),
-            IconButton(
-              icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 22),
-              onPressed: _showRoomOptions,
-            ),
-          ],
+          ] : null,
         ),
       ),
       drawer: const AppDrawer(),
-      body: StreamBuilder<RoomBackground>(
-        stream: _roomService.getRoomBackgroundStream(widget.roomId),
-        builder: (context, backgroundSnapshot) {
-          final currentBackground = backgroundSnapshot.data ?? _currentBackground;
-          _currentBackground = currentBackground;
+      body: SafeArea(
+        child: StreamBuilder<RoomBackground>(
+          stream: _roomService.getRoomBackgroundStream(widget.roomId),
+          builder: (context, backgroundSnapshot) {
+            final currentBackground = backgroundSnapshot.data ?? _currentBackground;
+            _currentBackground = currentBackground;
 
-          return Container(
-            decoration: currentBackground.imageUrl.isNotEmpty
-                ? BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(currentBackground.imageUrl),
-                      fit: BoxFit.cover,
-                      colorFilter: ColorFilter.mode(
-                        Colors.black.withOpacity(0.3),
-                        BlendMode.darken,
+            return Container(
+              decoration: currentBackground.imageUrl.isNotEmpty
+                  ? BoxDecoration(
+                      image: DecorationImage(
+                        image: NetworkImage(currentBackground.imageUrl),
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withOpacity(0.3),
+                          BlendMode.darken,
+                        ),
+                      ),
+                    )
+                  : null,
+              child: Stack(
+                children: [
+                  // Main content area - seats take full screen
+                  Positioned.fill(
+                    child: _isInRoom ? _buildMainContent() : _buildLeftRoomState(),
+                  ),
+                  
+                  // Chat Section - overlays at bottom without covering seats
+                  Positioned(
+                    bottom: 80, // Position above bottom controls
+                    left: 0,
+                    right: 0,
+                    child: StreamBuilder<List<ChatMessage>>(
+                      stream: _roomService.getChatMessagesStream(widget.roomId),
+                      builder: (context, messagesSnapshot) {
+                        final messages = messagesSnapshot.data ?? [];
+                        return ChatSection(
+                          chatMessages: messages,
+                          chatController: _chatController,
+                          onSendMessage: _sendChatMessage,
+                          isAdmin: _currentUserRole == UserRole.admin,
+                          onRoomInfoUpdate: (newName) {
+                            _updateRoomInfo(name: newName);
+                          },
+                          currentRoomId: widget.roomId,
+                          currentUserId: _currentUserId,
+                          currentUsername: _currentUsername,
+                          currentUserRole: _currentUserRole,
+                          currentUserLevel: _currentUserLevel,
+                          onSwitchToSpeaker: _currentUserRole == UserRole.admin ? _switchHostToSpeaker : null,
+                        );
+                      },
+                    ),
+                  ),
+                  
+                  // Bottom Controls - fixed at bottom
+                  if (_isInRoom)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: BottomControls(
+                        isMuted: _isMuted,
+                        onToggleMicrophone: _toggleMicrophone,
+                        onShowGamesMenu: _showGamesMenu,
+                        onShowGiftMenu: _showGiftMenu,
+                        onShowBackgroundMenu: _showBackgroundMenu,
+                        onLeaveRoom: _leaveRoom,
+                        isHost: _currentUserRole == UserRole.admin,
                       ),
                     ),
-                  )
-                : null,
-            child: Column(
-              children: [
-                // Room Header with real-time members
-                StreamBuilder<List<RoomMember>>(
-                  stream: _roomService.getRoomMembersStream(widget.roomId),
-                  builder: (context, membersSnapshot) {
-                    final members = membersSnapshot.data ?? [];
-                    return RoomHeader(
-                      members: members,
-                      onBackgroundChange: _showBackgroundMenu,
-                      hostLevel: _currentUserLevel,
-                    );
-                  },
-                ),
-                
-                // Room Layout with real-time members
-                Expanded(
-                  child: _buildRoomLayout(),
-                ),
-                
-                // Chat Section with real-time messages
-                StreamBuilder<List<ChatMessage>>(
-                  stream: _roomService.getChatMessagesStream(widget.roomId),
-                  builder: (context, messagesSnapshot) {
-                    final messages = messagesSnapshot.data ?? [];
-                    return ChatSection(
-                      chatMessages: messages,
-                      chatController: _chatController,
-                      onSendMessage: _sendChatMessage,
-                    );
-                  },
-                ),
-                
-                // Bottom Controls
-                BottomControls(
-                  isMuted: _isMuted,
-                  onToggleMicrophone: _toggleMicrophone,
-                  onShowGamesMenu: _showGamesMenu,
-                  onShowGiftMenu: _showGiftMenu,
-                  onShowBackgroundMenu: _showBackgroundMenu,
-                  onLeaveRoom: _leaveRoom,
-                  isHost: _isHost,
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return Column(
+      children: [
+        // Room Header with real-time members
+        StreamBuilder<List<RoomMember>>(
+          stream: _roomService.getRoomMembersStream(widget.roomId),
+          builder: (context, membersSnapshot) {
+            final members = membersSnapshot.data ?? [];
+            
+            // Handle empty members list safely
+            if (members.isEmpty) {
+              return RoomHeader(
+                members: [],
+                onBackgroundChange: _showBackgroundMenu,
+                onRoomInfoEdit: _showRoomInfoEdit,
+                roomName: _roomName,
+                roomDescription: _roomDescription,
+                isCurrentUserHost: _currentUserRole == UserRole.admin,
+                activeSpeakersCount: 0,
+              );
+            }
+            
+            final activeSpeakersCount = members.where((member) => member.isSpeaking).length;
+            
+            // Safe host finding
+            RoomMember host;
+            try {
+              host = members.firstWhere((member) => member.isHost);
+            } catch (e) {
+              // If no host found, use first member as fallback
+              host = members.first;
+            }
+
+            return RoomHeader(
+              members: members,
+              onBackgroundChange: _showBackgroundMenu,
+              onRoomInfoEdit: _showRoomInfoEdit,
+              roomName: _roomName,
+              roomDescription: _roomDescription,
+              isCurrentUserHost: _currentUserRole == UserRole.admin,
+              activeSpeakersCount: activeSpeakersCount,
+            );
+          },
+        ),
+        
+        // Seats layout - takes remaining space
+        Expanded(
+          child: _buildRoomLayout(),
+        ),
+      ],
     );
   }
 
@@ -585,44 +897,69 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       builder: (context, snapshot) {
         final members = snapshot.data ?? [];
         
-        // Find host or use first member as fallback
-        final host = members.firstWhere(
-          (member) => member.isHost, 
-          orElse: () => members.isNotEmpty ? members.first : RoomMember(
-            id: '',
-            name: 'Loading...',
-            role: 'Host',
+        // Safe host finding with proper error handling
+        RoomMember host;
+        if (members.isNotEmpty) {
+          try {
+            host = members.firstWhere((member) => member.isHost);
+          } catch (e) {
+            // If no host found, use first member
+            host = members.first;
+          }
+        } else {
+          // Create fallback host when no members exist
+          host = RoomMember(
+            id: 'fallback_host',
+            userId: 'fallback_host',
+            username: 'No Host',
+            role: MemberRole.admin,
             isSpeaking: false,
             avatar: '👑',
             points: 0,
-            isHost: true,
             level: 1,
             joinedAt: DateTime.now(),
-            userId: '',
-          )
-        );
+            lastActive: DateTime.now(),
+            isMuted: false,
+            isHandRaised: false,
+            achievements: [],
+            title: 'Host',
+            messageColor: '#FFD700',
+            totalMessages: 0,
+            roomsJoined: 1,
+            sessionId: 'fallback',
+          );
+        }
 
-        return Padding(
-          padding: const EdgeInsets.all(16),
+        // Filter out host from member seats
+        final nonHostMembers = members.where((member) => !member.isHost).toList();
+
+        return Container(
+          padding: const EdgeInsets.all(8), // Reduced padding
           child: Column(
             children: [
-              HostSeat(host: host),
-              const SizedBox(height: 24),
+              HostSeat(
+                host: host,
+                isCurrentUser: host.userId == _currentUserId,
+              ),
+              const SizedBox(height: 12), // Reduced spacing
               Expanded(
                 child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(), // Disable scrolling
+                  shrinkWrap: true,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.9,
+                    crossAxisSpacing: 4, // Reduced from 16 to 4
+                    mainAxisSpacing: 4,  // Reduced from 16 to 4
+                    childAspectRatio: 0.8, // Slightly adjusted for tighter layout
                   ),
                   itemCount: 9, // 9 total seats
                   itemBuilder: (context, index) {
-                    if (index < members.length) {
-                      final member = members[index];
+                    if (index < nonHostMembers.length) {
+                      final member = nonHostMembers[index];
                       return MemberSeat(
                         member: member,
                         onTap: () => _showMemberOptions(member),
+                        isCurrentUser: member.userId == _currentUserId,
                       );
                     } else {
                       return EmptySeat(
@@ -640,9 +977,200 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
     );
   }
 
+  Widget _buildLeftRoomState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.meeting_room_outlined,
+            size: 64,
+            color: Colors.white.withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'You have left the room',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Chat history has been cleared',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              // Option to rejoin room
+              _initializeUserAndRoom();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Rejoin Room'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _chatController.dispose();
+    // Ensure user leaves room when screen is disposed
+    if (_isInRoom) {
+      _roomService.leaveRoom(widget.roomId, _currentUserId, _currentUsername);
+    }
+    super.dispose();
+  }
+}
+
+// Room Info Edit Dialog
+class RoomInfoEditDialog extends StatefulWidget {
+  final String roomName;
+  final String roomDescription;
+  final String welcomeMessage;
+  final bool isHost;
+  final Function({String? name, String? description, String? welcomeMessage}) onSave;
+
+  const RoomInfoEditDialog({
+    super.key,
+    required this.roomName,
+    required this.roomDescription,
+    required this.welcomeMessage,
+    required this.isHost,
+    required this.onSave,
+  });
+
+  @override
+  State<RoomInfoEditDialog> createState() => _RoomInfoEditDialogState();
+}
+
+class _RoomInfoEditDialogState extends State<RoomInfoEditDialog> {
+  late TextEditingController _nameController;
+  late TextEditingController _descController;
+  late TextEditingController _welcomeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.roomName);
+    _descController = TextEditingController(text: widget.roomDescription);
+    _welcomeController = TextEditingController(text: widget.welcomeMessage);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.grey[900],
+      title: const Text(
+        'Room Settings',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.isHost) ...[
+              _buildTextField(
+                controller: _nameController,
+                label: 'Room Name',
+                hint: 'Enter room name...',
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                controller: _descController,
+                label: 'Description',
+                hint: 'Enter room description...',
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+            ],
+            _buildTextField(
+              controller: _welcomeController,
+              label: 'Welcome Message',
+              hint: 'Enter welcome message for new users...',
+              maxLines: 3,
+            ),
+            if (!widget.isHost)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Only room admins can change room name and description',
+                  style: TextStyle(color: Colors.white54, fontSize: 10),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+        ),
+        TextButton(
+          onPressed: () {
+            widget.onSave(
+              name: widget.isHost ? _nameController.text : null,
+              description: widget.isHost ? _descController.text : null,
+              welcomeMessage: _welcomeController.text,
+            );
+          },
+          child: const Text('Save', style: TextStyle(color: Colors.blue)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            maxLines: maxLines,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descController.dispose();
+    _welcomeController.dispose();
     super.dispose();
   }
 }
