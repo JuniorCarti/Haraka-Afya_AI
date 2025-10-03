@@ -79,3 +79,12 @@ class WebRTCService {
       _onUserJoined(userId);
     });
 
+    _socket.on('user-left', (data) {
+      final userId = data['userId'];
+      final username = data['username'];
+      print('👤 User left: $username ($userId)');
+      for (final callback in onUserLeft) {
+        callback(userId, username);
+      }
+      _onUserLeft(userId);
+    });
