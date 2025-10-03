@@ -88,3 +88,41 @@ class WebRTCService {
       }
       _onUserLeft(userId);
     });
+    _socket.on('room-users', (data) {
+      final users = List.from(data['users']);
+      print('📊 Room users: $users');
+      // Handle existing users in room
+      for (final user in users) {
+        _onUserJoined(user['id']);
+      }
+    });
+
+    _socket.on('offer', (data) async {
+      final offer = data['offer'];
+      final userId = data['userId'];
+      print('📞 Received offer from $userId');
+      await _onOffer(offer, userId);
+    });
+
+    _socket.on('answer', (data) async {
+      final answer = data['answer'];
+      final userId = data['userId'];
+      print('📨 Received answer from $userId');
+      await _onAnswer(answer, userId);
+    });
+
+    _socket.on('ice-candidate', (data) async {
+      final candidate = data['candidate'];
+      final userId = data['userId'];
+      await _onIceCandidate(candidate, userId);
+    });
+
+    _socket.on('user-audio-changed', (data) {
+      final userId = data['userId'];
+      final isMuted = data['isMuted'];
+      final username = data['username'];
+      print('🎤 User audio changed: $username - muted: $isMuted');
+      for (final callback in onUserAudioChanged) {
+        callback(userId, isMuted);
+      }
+    });
