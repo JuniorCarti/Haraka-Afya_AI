@@ -202,3 +202,27 @@ Future<void> _getUserMedia() async {
         'offer': offer.toMap(),
         'targetUserId': remoteUserId,
       });
+      print('📞 Sent offer to $remoteUserId');
+      
+    } catch (e) {
+      print('❌ Error creating peer connection: $e');
+      _onError('Failed to connect to user: $e');
+    }
+  }
+
+  Future<void> _onOffer(dynamic offerData, String remoteUserId) async {
+    if (_localStream == null) return;
+
+    try {
+      print('📞 Processing offer from $remoteUserId');
+      final peerConnection = await _createPeerConnection();
+      _peerConnections[remoteUserId] = peerConnection;
+
+      // Add local stream to connection
+      _localStream!.getTracks().forEach((track) {
+        peerConnection.addTrack(track, _localStream!);
+      });
+
+      await peerConnection.setRemoteDescription(
+        RTCSessionDescription(offerData['sdp'], offerData['type']),
+      );
