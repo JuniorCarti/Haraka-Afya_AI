@@ -51,3 +51,31 @@ class WebRTCService {
       print('❌ Connection error: $error');
       completer.completeError(error);
     });
+    // Timeout after 10 seconds
+    return completer.future.timeout(const Duration(seconds: 10));
+  }
+
+  void _setupSocketListeners() {
+    _socket.on('connect', (_) {
+      print('✅ Connected to signaling server');
+    });
+
+    _socket.on('disconnect', (_) {
+      print('❌ Disconnected from signaling server');
+    });
+
+    _socket.on('connect_error', (error) {
+      print('❌ Connection error: $error');
+      _onError('Connection failed: $error');
+    });
+
+    _socket.on('user-joined', (data) {
+      final userId = data['userId'];
+      final username = data['username'];
+      print('👤 User joined: $username ($userId)');
+      for (final callback in onUserJoined) {
+        callback(userId, username);
+      }
+      _onUserJoined(userId);
+    });
+
