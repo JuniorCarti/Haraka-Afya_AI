@@ -24,45 +24,46 @@ class BottomControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withOpacity(0.95),
         border: Border(
           top: BorderSide(color: Colors.white.withOpacity(0.1)),
         ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Games button
-          ControlButton(
-            icon: Icons.sports_esports_rounded,
-            label: 'Games',
-            onPressed: onShowGamesMenu,
+          // Left side - Action buttons
+          Row(
+            children: [
+              // Games button
+              _buildMiniButton(
+                icon: Icons.sports_esports_rounded,
+                onPressed: onShowGamesMenu,
+              ),
+              const SizedBox(width: 6),
+              
+              // Gift button
+              _buildMiniButton(
+                icon: Icons.card_giftcard_rounded,
+                onPressed: onShowGiftMenu,
+              ),
+              const SizedBox(width: 6),
+              
+              // Background button (only for host)
+              if (isHost)
+                _buildMiniButton(
+                  icon: Icons.wallpaper_rounded,
+                  onPressed: onShowBackgroundMenu,
+                ),
+            ],
           ),
-          const SizedBox(width: 12),
           
-          // Gift button
-          ControlButton(
-            icon: Icons.card_giftcard_rounded,
-            label: 'Gifts',
-            onPressed: onShowGiftMenu,
-          ),
-          const SizedBox(width: 12),
-          
-          // Background button (only for host)
-          if (isHost)
-            ControlButton(
-              icon: Icons.wallpaper_rounded,
-              label: 'Background',
-              onPressed: onShowBackgroundMenu,
-            ),
-          
-          const Spacer(),
-          
-          // Mic control
+          // Center - Mic control
           Container(
-            width: 50,
-            height: 50,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               gradient: isMuted 
                   ? const LinearGradient(colors: [Colors.grey, Colors.grey])
@@ -71,8 +72,7 @@ class BottomControls extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: (isMuted ? Colors.grey : Colors.green).withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 2,
+                  blurRadius: 4,
                 ),
               ],
             ),
@@ -80,21 +80,51 @@ class BottomControls extends StatelessWidget {
               icon: Icon(
                 isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
                 color: Colors.white,
-                size: 20,
+                size: 16,
               ),
               onPressed: onToggleMicrophone,
+              padding: EdgeInsets.zero,
             ),
           ),
-          const Spacer(),
           
-          // Leave room
-          ControlButton(
+          // Right side - Leave button
+          _buildMiniButton(
             icon: Icons.logout_rounded,
-            label: 'Leave',
             onPressed: onLeaveRoom,
             isDanger: true,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMiniButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool isDanger = false,
+  }) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: isDanger 
+            ? Colors.red.withOpacity(0.2)
+            : Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDanger 
+              ? Colors.red.withOpacity(0.3)
+              : Colors.white.withOpacity(0.2),
+        ),
+      ),
+      child: IconButton(
+        icon: Icon(
+          icon,
+          color: isDanger ? Colors.red : Colors.white,
+          size: 16,
+        ),
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
       ),
     );
   }
