@@ -97,3 +97,22 @@ class _EmojiPickerWidgetState extends State<EmojiPickerWidget> {
       ),
     );
   }
+  void _onEmojiSelected(Emoji emoji) {
+    final text = widget.textController.text;
+    final selection = widget.textController.selection;
+    
+    // Handle text insertion safely
+    final newText = text.replaceRange(
+      selection.start,
+      selection.end,
+      emoji.emoji,
+    );
+    
+    widget.textController.value = widget.textController.value.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(
+        offset: selection.start + emoji.emoji.length,
+      ),
+    );
+  }
+}
