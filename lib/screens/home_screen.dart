@@ -16,6 +16,7 @@ import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 import 'package:haraka_afya_ai/screens/upcoming_events.dart';
 import 'package:lottie/lottie.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,8 +29,33 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final bool _hasLiveRooms = true; // Simulating live rooms availability
-  final int _liveRoomsCount = 3; // Simulating number of live rooms
+  
+  // Live rooms state
+  int _liveRoomsCount = 0;
+  bool _hasLiveRooms = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLiveRoomsCount();
+  }
+
+  // Fetch actual live rooms count from Firestore
+  void _loadLiveRoomsCount() {
+    _firestore
+        .collection('voice_rooms')
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _liveRoomsCount = snapshot.docs.length;
+          _hasLiveRooms = _liveRoomsCount > 0;
+        });
+      }
+    });
+  }
 
   void _navigateToPage(int index) {
     setState(() {
@@ -412,7 +438,9 @@ class HomeContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Share your thoughts and experiences anonymously with others',
+                          hasLiveRooms 
+                            ? '$liveRoomsCount live support ${liveRoomsCount == 1 ? 'room' : 'rooms'} available now!'
+                            : 'Share your thoughts and experiences anonymously with others',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[600],
@@ -460,7 +488,7 @@ class HomeContent extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => VoiceRoomScreen(roomId: 'exampleRoomId'),
+                              builder: (context) => const AnonymousChatScreen(),
                             ),
                           );
                         },
@@ -472,7 +500,7 @@ class HomeContent extends StatelessWidget {
                           ),
                         ),
                         child: const Text(
-                          'Join Now',
+                          'Find Rooms',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
