@@ -39,3 +39,31 @@ class _EmojiPickerWidgetState extends State<EmojiPickerWidget> {
                 ),
               ),
             ),
+             child: Row(
+              children: [
+                Text(
+                  'Emojis',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 16,
+                  ),
+                  onPressed: widget.onVisibilityChanged,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Emoji picker
