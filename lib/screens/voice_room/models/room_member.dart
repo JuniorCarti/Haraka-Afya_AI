@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum MemberRole {
   listener,  // Regular listener
   speaker,   // Can speak in room
@@ -24,6 +26,7 @@ class RoomMember {
   final int totalMessages;
   final int roomsJoined;
   final String sessionId;
+  final bool isHost;
 
   RoomMember({
     required this.id,
@@ -44,7 +47,72 @@ class RoomMember {
     this.totalMessages = 0,
     this.roomsJoined = 1,
     required this.sessionId,
+    this.isHost = false,
   });
+
+  // Helper method to convert Firebase Timestamp to DateTime
+  static DateTime _parseTimestamp(dynamic timestamp) {
+    try {
+      if (timestamp == null) return DateTime.now();
+      
+      if (timestamp is Timestamp) {
+        return timestamp.toDate();
+      }
+      
+      if (timestamp is int) {
+        return DateTime.fromMillisecondsSinceEpoch(timestamp);
+      }
+      
+      if (timestamp is String) {
+        return DateTime.tryParse(timestamp) ?? DateTime.now();
+      }
+      
+      return DateTime.now();
+    } catch (e) {
+      print('❌ Error parsing timestamp: $e');
+      return DateTime.now();
+    }
+  }
+
+  // Helper method to convert string to MemberRole
+  static MemberRole _stringToMemberRole(String? roleString) {
+    try {
+      if (roleString == null) return MemberRole.listener;
+      
+      switch (roleString.toLowerCase()) {
+        case 'admin':
+        case '0':
+          return MemberRole.admin;
+        case 'moderator':
+        case '1':
+          return MemberRole.moderator;
+        case 'speaker':
+        case '2':
+          return MemberRole.speaker;
+        case 'listener':
+        case '3':
+        default:
+          return MemberRole.listener;
+      }
+    } catch (e) {
+      print('❌ Error parsing role: $e');
+      return MemberRole.listener;
+    }
+  }
+
+  // Helper method to convert MemberRole to string
+  static String _memberRoleToString(MemberRole role) {
+    switch (role) {
+      case MemberRole.admin:
+        return 'admin';
+      case MemberRole.moderator:
+        return 'moderator';
+      case MemberRole.speaker:
+        return 'speaker';
+      case MemberRole.listener:
+        return 'listener';
+    }
+  }
 
   // Convert to Map for Firebase
   Map<String, dynamic> toMap() {
@@ -52,13 +120,13 @@ class RoomMember {
       'id': id,
       'userId': userId,
       'username': username,
-      'role': role.index,
+      'role': _memberRoleToString(role),
       'isSpeaking': isSpeaking,
       'avatar': avatar,
       'points': points,
       'level': level,
-      'joinedAt': joinedAt.millisecondsSinceEpoch,
-      'lastActive': lastActive.millisecondsSinceEpoch,
+      'joinedAt': FieldValue.serverTimestamp(), // Use server timestamp
+      'lastActive': FieldValue.serverTimestamp(), // Use server timestamp
       'isMuted': isMuted,
       'isHandRaised': isHandRaised,
       'achievements': achievements,
@@ -67,35 +135,96 @@ class RoomMember {
       'totalMessages': totalMessages,
       'roomsJoined': roomsJoined,
       'sessionId': sessionId,
+      'isHost': isHost,
     };
   }
 
-  // Create from Firebase document
+  // Create from Firebase document with proper error handling
   factory RoomMember.fromMap(Map<String, dynamic> data) {
-    return RoomMember(
-      id: data['id'] ?? '',
-      userId: data['userId'] ?? '',
-      username: data['username'] ?? 'Anonymous',
-      role: MemberRole.values[data['role'] ?? 0],
-      isSpeaking: data['isSpeaking'] ?? false,
-      avatar: data['avatar'] ?? '😊',
-      points: data['points'] ?? 0,
-      level: data['level'] ?? 1,
-      joinedAt: DateTime.fromMillisecondsSinceEpoch(
-          data['joinedAt'] ?? DateTime.now().millisecondsSinceEpoch),
-      lastActive: DateTime.fromMillisecondsSinceEpoch(
-          data['lastActive'] ?? DateTime.now().millisecondsSinceEpoch),
-      isMuted: data['isMuted'] ?? false,
-      isHandRaised: data['isHandRaised'] ?? false,
-      achievements: data['achievements'] != null 
-          ? List<String>.from(data['achievements'])
-          : [],
-      title: data['title'] ?? 'Newcomer',
-      messageColor: data['messageColor'] ?? '#4A5568',
-      totalMessages: data['totalMessages'] ?? 0,
-      roomsJoined: data['roomsJoined'] ?? 1,
-      sessionId: data['sessionId'] ?? '',
-    );
+    try {
+      // Safely parse all fields with defaults
+      final id = data['id']?.toString() ?? '';
+      final userId = data['userId']?.toString() ?? '';
+      final username = data['username']?.toString() ?? 'Anonymous';
+      
+      // Parse role safely
+      final role = _stringToMemberRole(data['role']?.toString());
+      
+      // Parse timestamps safely
+      final joinedAt = _parseTimestamp(data['joinedAt']);
+      final lastActive = _parseTimestamp(data['lastActive']);
+      
+      // Parse numeric fields safely
+      final points = (data['points'] is num) ? (data['points'] as num).toInt() : 0;
+      final level = (data['level'] is num) ? (data['level'] as num).toInt() : 1;
+      final totalMessages = (data['totalMessages'] is num) ? (data['totalMessages'] as num).toInt() : 0;
+      final roomsJoined = (data['roomsJoined'] is num) ? (data['roomsJoined'] as num).toInt() : 1;
+      
+      // Parse boolean fields safely
+      final isSpeaking = data['isSpeaking'] == true;
+      final isMuted = data['isMuted'] == true;
+      final isHandRaised = data['isHandRaised'] == true;
+      final isHost = data['isHost'] == true;
+      
+      // Parse list fields safely
+      final achievements = data['achievements'] is List
+          ? List<String>.from(data['achievements'].map((item) => item.toString()))
+          : <String>[];
+      
+      // Parse string fields safely
+      final avatar = data['avatar']?.toString() ?? '😊';
+      final title = data['title']?.toString() ?? 'Newcomer';
+      final messageColor = data['messageColor']?.toString() ?? '#4A5568';
+      final sessionId = data['sessionId']?.toString() ?? '';
+
+      return RoomMember(
+        id: id,
+        userId: userId,
+        username: username,
+        role: role,
+        isSpeaking: isSpeaking,
+        avatar: avatar,
+        points: points,
+        level: level,
+        joinedAt: joinedAt,
+        lastActive: lastActive,
+        isMuted: isMuted,
+        isHandRaised: isHandRaised,
+        achievements: achievements,
+        title: title,
+        messageColor: messageColor,
+        totalMessages: totalMessages,
+        roomsJoined: roomsJoined,
+        sessionId: sessionId,
+        isHost: isHost,
+      );
+    } catch (e) {
+      print('❌ Error parsing RoomMember: $e');
+      print('❌ Problematic data: $data');
+      
+      // Return a safe default member instead of crashing
+      return RoomMember(
+        id: 'error_${DateTime.now().millisecondsSinceEpoch}',
+        userId: 'error_user',
+        username: 'Error User',
+        role: MemberRole.listener,
+        isSpeaking: false,
+        avatar: '❌',
+        points: 0,
+        level: 1,
+        joinedAt: DateTime.now(),
+        lastActive: DateTime.now(),
+        isMuted: false,
+        isHandRaised: false,
+        achievements: [],
+        title: 'Error',
+        messageColor: '#FF0000',
+        totalMessages: 0,
+        roomsJoined: 1,
+        sessionId: 'error_session',
+        isHost: false,
+      );
+    }
   }
 
   // Copy with method for updates
@@ -118,6 +247,7 @@ class RoomMember {
     int? totalMessages,
     int? roomsJoined,
     String? sessionId,
+    bool? isHost,
   }) {
     return RoomMember(
       id: id ?? this.id,
@@ -138,23 +268,25 @@ class RoomMember {
       totalMessages: totalMessages ?? this.totalMessages,
       roomsJoined: roomsJoined ?? this.roomsJoined,
       sessionId: sessionId ?? this.sessionId,
+      isHost: isHost ?? this.isHost,
     );
   }
 
   // Check if member is host/admin
-  bool get isHost => role == MemberRole.admin;
+  bool get isAdmin => role == MemberRole.admin || isHost;
 
   // Check if member is moderator
-  bool get isModerator => role == MemberRole.moderator || role == MemberRole.admin;
+  bool get isModerator => role == MemberRole.moderator || isAdmin;
 
   // Check if member can speak
-  bool get canSpeak => role == MemberRole.speaker || role == MemberRole.moderator || role == MemberRole.admin;
+  bool get canSpeak => role == MemberRole.speaker || isModerator;
 
   // Check if member can moderate
-  bool get canModerate => role == MemberRole.moderator || role == MemberRole.admin;
+  bool get canModerate => isModerator;
 
   // Get role display name
   String get roleDisplayName {
+    if (isAdmin) return 'Host';
     switch (role) {
       case MemberRole.admin:
         return 'Host';
@@ -169,6 +301,7 @@ class RoomMember {
 
   // Get role badge icon
   String get roleBadge {
+    if (isAdmin) return '👑';
     switch (role) {
       case MemberRole.admin:
         return '👑';
@@ -222,7 +355,7 @@ class RoomMember {
 
   // Get message color based on level and role
   String getMessageColor() {
-    if (isHost) return '#FFD700'; // Gold for host
+    if (isAdmin) return '#FFD700'; // Gold for host/admin
     if (isModerator) return '#4CAF50'; // Green for moderator
     
     if (level >= 20) return '#FF6B6B'; // Bright red for legend
@@ -267,9 +400,20 @@ class RoomMember {
     return copyWith(role: MemberRole.moderator);
   }
 
+  // Promote to admin
+  RoomMember promoteToAdmin() {
+    return copyWith(
+      role: MemberRole.admin,
+      isHost: true,
+    );
+  }
+
   // Demote to listener
   RoomMember demoteToListener() {
-    return copyWith(role: MemberRole.listener);
+    return copyWith(
+      role: MemberRole.listener,
+      isHost: false,
+    );
   }
 
   // Get time since joined
@@ -291,10 +435,29 @@ class RoomMember {
 
   // Get activity status
   String get activityStatus {
-    if (isSpeaking) return 'Speaking';
+    if (isSpeaking && !isMuted) return 'Speaking';
     if (isHandRaised) return 'Hand raised';
+    if (isMuted) return 'Muted';
     if (isActive) return 'Active';
     return 'Away';
+  }
+
+  // Get activity status color
+  String get activityStatusColor {
+    if (isSpeaking && !isMuted) return '#4CAF50'; // Green for speaking
+    if (isHandRaised) return '#FFA500'; // Orange for hand raised
+    if (isMuted) return '#FF5722'; // Red for muted
+    if (isActive) return '#2196F3'; // Blue for active
+    return '#9E9E9E'; // Gray for away
+  }
+
+  // Check if member is valid (has required fields)
+  bool get isValid {
+    return id.isNotEmpty && 
+           userId.isNotEmpty && 
+           username.isNotEmpty &&
+           username != 'Anonymous' &&
+           username != 'Error User';
   }
 
   @override
@@ -309,6 +472,44 @@ class RoomMember {
 
   @override
   String toString() {
-    return 'RoomMember(id: $id, username: $username, role: $role, level: $level)';
+    return 'RoomMember(id: $id, username: $username, role: $role, level: $level, isSpeaking: $isSpeaking)';
+  }
+
+  // Create a default member for testing
+  factory RoomMember.defaultMember({
+    String? id,
+    String? username,
+    MemberRole role = MemberRole.listener,
+  }) {
+    final now = DateTime.now();
+    return RoomMember(
+      id: id ?? 'default_${now.millisecondsSinceEpoch}',
+      userId: id ?? 'default_user_${now.millisecondsSinceEpoch}',
+      username: username ?? 'New User',
+      role: role,
+      level: 1,
+      joinedAt: now,
+      lastActive: now,
+      sessionId: 'default_session',
+    );
+  }
+
+  // Create a host member
+  factory RoomMember.hostMember({
+    String? id,
+    String? username,
+  }) {
+    final now = DateTime.now();
+    return RoomMember(
+      id: id ?? 'host_${now.millisecondsSinceEpoch}',
+      userId: id ?? 'host_user_${now.millisecondsSinceEpoch}',
+      username: username ?? 'Room Host',
+      role: MemberRole.admin,
+      level: 10,
+      joinedAt: now,
+      lastActive: now,
+      sessionId: 'host_session',
+      isHost: true,
+    );
   }
 }

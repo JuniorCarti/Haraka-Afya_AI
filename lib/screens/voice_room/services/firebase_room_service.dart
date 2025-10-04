@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/room_member.dart';
-import '../models/chat_message.dart';
+import '../widgets/models/chat_message.dart';
 import '../models/room_background.dart';
 
 class FirebaseRoomService {
@@ -22,7 +22,10 @@ class FirebaseRoomService {
       // Check if user already has a username
       final doc = await _userUsernamesCollection.doc(userId).get();
       if (doc.exists) {
-        return (doc.data() as Map<String, dynamic>)['username'] as String;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null && data['username'] != null) {
+          return data['username'] as String;
+        }
       }
 
       // Generate random username
@@ -45,6 +48,7 @@ class FirebaseRoomService {
 
       return username;
     } catch (e) {
+      print('❌ Error getting/creating username: $e');
       return 'Anonymous';
     }
   }
@@ -54,7 +58,10 @@ class FirebaseRoomService {
     try {
       final doc = await _userAchievementsCollection.doc(userId).get();
       if (doc.exists) {
-        return doc.data() as Map<String, dynamic>;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          return data;
+        }
       }
       
       // Default achievements for new users
@@ -67,6 +74,7 @@ class FirebaseRoomService {
         'roomsJoined': 1,
       };
     } catch (e) {
+      print('❌ Error getting user achievements: $e');
       return {
         'level': 1,
         'points': 0,
@@ -122,7 +130,7 @@ class FirebaseRoomService {
         await sendChatMessage(roomId, welcomeMessage);
       }
 
-      // Add/update member in room
+      // Add/update member in room using the updated toMap() method
       await roomDoc.collection('members').doc(member.id).set(member.toMap());
 
       // Update room member count
@@ -146,8 +154,10 @@ class FirebaseRoomService {
         await sendChatMessage(roomId, joinMessage);
       }
 
+      print('✅ Successfully joined room: $roomId');
       return roomId;
     } catch (e) {
+      print('❌ Error creating/joining room: $e');
       throw Exception('Failed to create/join room: $e');
     }
   }
@@ -165,17 +175,29 @@ class FirebaseRoomService {
         .orderBy('joinedAt')
         .snapshots()
         .handleError((error) {
-          print('Error in members stream: $error');
+          print('❌ Error in members stream: $error');
           return Stream.value([]); // Return empty list on error
         })
         .map((snapshot) {
           try {
-            return snapshot.docs
-                .map((doc) => RoomMember.fromMap(doc.data()))
-                .where((member) => member.id.isNotEmpty) // Filter invalid members
+            final members = snapshot.docs
+                .map((doc) {
+                  try {
+                    return RoomMember.fromMap(doc.data());
+                  } catch (e) {
+                    print('❌ Error parsing individual member: $e');
+                    print('❌ Problematic member data: ${doc.data()}');
+                    return null;
+                  }
+                })
+                .where((member) => member != null && member.isValid)
+                .cast<RoomMember>()
                 .toList();
+
+            print('📊 Loaded ${members.length} valid members');
+            return members;
           } catch (e) {
-            print('Error parsing members: $e');
+            print('❌ Error parsing members list: $e');
             return [];
           }
         });
@@ -189,14 +211,22 @@ class FirebaseRoomService {
         .orderBy('timestamp', descending: false)
         .snapshots()
         .handleError((error) {
-          print('Error in messages stream: $error');
+          print('❌ Error in messages stream: $error');
           return Stream.value([]); // Return empty list on error
         })
         .map((snapshot) {
           try {
             final messages = snapshot.docs
-                .map((doc) => ChatMessage.fromMap(doc.data()))
-                .where((message) => message.id.isNotEmpty) // Filter invalid messages
+                .map((doc) {
+                  try {
+                    return ChatMessage.fromMap(doc.data());
+                  } catch (e) {
+                    print('❌ Error parsing individual message: $e');
+                    return null;
+                  }
+                })
+                .where((message) => message != null && message.id.isNotEmpty)
+                .cast<ChatMessage>()
                 .toList();
             
             // Return all messages if there are active users in the room
@@ -207,7 +237,7 @@ class FirebaseRoomService {
               return [];
             }
           } catch (e) {
-            print('Error parsing messages: $e');
+            print('❌ Error parsing messages list: $e');
             return [];
           }
         });
@@ -234,8 +264,13 @@ class FirebaseRoomService {
         if (message.userRole == UserRole.user || message.userRole == UserRole.moderator || message.userRole == UserRole.admin) {
           await _updateUserMessageCount(message.userId);
         }
+        
+        print('✅ Message sent by ${message.username}');
+      } else {
+        print('❌ User not active in room, message not sent');
       }
     } catch (e) {
+      print('❌ Error sending message: $e');
       throw Exception('Failed to send message: $e');
     }
   }
@@ -252,13 +287,13 @@ class FirebaseRoomService {
       final achievementsDoc = _userAchievementsCollection.doc(userId);
       final achievements = await getUserAchievements(userId);
       
-      final currentCount = achievements['totalMessages'] ?? 0;
+      final currentCount = (achievements['totalMessages'] as int?) ?? 0;
       await achievementsDoc.set({
         'totalMessages': currentCount + 1,
         'lastMessageAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      print('Error updating user message count: $e');
+      print('❌ Error updating user message count: $e');
     }
   }
 
@@ -277,8 +312,10 @@ class FirebaseRoomService {
 
       if (updates.isNotEmpty) {
         await _roomsCollection.doc(roomId).update(updates);
+        print('✅ Room info updated successfully');
       }
     } catch (e) {
+      print('❌ Error updating room info: $e');
       throw Exception('Failed to update room info: $e');
     }
   }
@@ -288,10 +325,14 @@ class FirebaseRoomService {
     try {
       final doc = await _roomsCollection.doc(roomId).get();
       if (doc.exists) {
-        return doc.data() as Map<String, dynamic>;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          return data;
+        }
       }
       throw Exception('Room not found');
     } catch (e) {
+      print('❌ Error getting room info: $e');
       throw Exception('Failed to get room info: $e');
     }
   }
@@ -302,7 +343,9 @@ class FirebaseRoomService {
       await _roomsCollection
           .doc(roomId)
           .update({'currentBackground': background.toMap()});
+      print('✅ Room background updated');
     } catch (e) {
+      print('❌ Error updating background: $e');
       throw Exception('Failed to update background: $e');
     }
   }
@@ -313,24 +356,27 @@ class FirebaseRoomService {
         .doc(roomId)
         .snapshots()
         .handleError((error) {
-          print('Error in background stream: $error');
+          print('❌ Error in background stream: $error');
           return Stream.value(RoomBackground.defaultBackgrounds.first);
         })
         .map((snapshot) {
           try {
             final data = snapshot.data();
-            if (data != null && (data as Map<String, dynamic>)['currentBackground'] != null) {
-              return RoomBackground.fromMap(data['currentBackground']);
+            if (data != null) {
+              final backgroundData = (data as Map<String, dynamic>)['currentBackground'];
+              if (backgroundData != null) {
+                return RoomBackground.fromMap(backgroundData);
+              }
             }
             return RoomBackground.defaultBackgrounds.first;
           } catch (e) {
-            print('Error parsing background: $e');
+            print('❌ Error parsing background: $e');
             return RoomBackground.defaultBackgrounds.first;
           }
         });
   }
 
-  // NEW: Switch host to speaker seat
+  // Switch host to speaker seat
   Future<void> switchHostToSpeaker(String roomId, String userId) async {
     try {
       final roomRef = _roomsCollection.doc(roomId);
@@ -346,13 +392,14 @@ class FirebaseRoomService {
       // Try to transfer host role to another member
       await _transferHostToAnotherMember(roomId, userId);
       
+      print('✅ Host switched to speaker successfully');
     } catch (e) {
-      print('Error switching host to speaker: $e');
+      print('❌ Error switching host to speaker: $e');
       rethrow;
     }
   }
 
-  // NEW: Transfer host role to another member
+  // Transfer host role to another member
   Future<void> _transferHostToAnotherMember(String roomId, String currentHostId) async {
     try {
       final membersSnapshot = await _firestore
@@ -402,6 +449,8 @@ class FirebaseRoomService {
           sessionId: 'system',
         );
         await sendChatMessage(roomId, transferMessage);
+        
+        print('✅ Host role transferred to ${newHostData['username']}');
       } else {
         // No other members to transfer to, room continues without host
         await _firestore
@@ -410,10 +459,70 @@ class FirebaseRoomService {
             .update({
               'hostId': null,
             });
+        print('ℹ️ No other members to transfer host role to');
       }
     } catch (e) {
-      print('Error transferring host role: $e');
+      print('❌ Error transferring host role: $e');
       // Continue without host if transfer fails
+    }
+  }
+
+  // Transfer host role to specific user
+  Future<void> transferHost(String roomId, String newHostId) async {
+    try {
+      // Get the new host's member data
+      final newHostDoc = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(newHostId)
+          .get();
+
+      if (!newHostDoc.exists) {
+        throw Exception('New host member not found');
+      }
+
+      final newHostData = newHostDoc.data() as Map<String, dynamic>;
+
+      // Update new host's role to admin
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(newHostId)
+          .update({
+            'role': _roleToString(MemberRole.admin),
+            'isHost': true,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+      // Update room host ID
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .update({
+            'hostId': newHostId,
+          });
+
+      // Send system message about host transfer
+      final transferMessage = ChatMessage(
+        id: 'transfer_${DateTime.now().millisecondsSinceEpoch}',
+        roomId: roomId,
+        userId: 'system',
+        username: 'System',
+        text: '${newHostData['username']} is now the room host',
+        timestamp: DateTime.now(),
+        userRole: UserRole.system,
+        userLevel: 0,
+        messageColor: '#FFD700',
+        sessionId: 'system',
+      );
+      await sendChatMessage(roomId, transferMessage);
+
+      print('✅ Host role transferred to ${newHostData['username']}');
+    } catch (e) {
+      print('❌ Error transferring host role: $e');
+      rethrow;
     }
   }
 
@@ -444,6 +553,7 @@ class FirebaseRoomService {
         if (_activeUsersInRooms[roomId]!.isEmpty) {
           await _clearAllRoomMessages(roomId);
           _activeUsersInRooms.remove(roomId);
+          print('🗑️ Cleared messages and removed room from active tracking');
         }
       }
 
@@ -479,7 +589,9 @@ class FirebaseRoomService {
       );
       await sendChatMessage(roomId, leaveMessage);
 
+      print('✅ User $username left room $roomId');
     } catch (e) {
+      print('❌ Error leaving room: $e');
       throw Exception('Failed to leave room: $e');
     }
   }
@@ -498,9 +610,9 @@ class FirebaseRoomService {
       }
       await batch.commit();
       
-      print('Cleared all messages for room: $roomId');
+      print('🗑️ Cleared all messages for room: $roomId');
     } catch (e) {
-      print('Error clearing room messages: $e');
+      print('❌ Error clearing room messages: $e');
     }
   }
 
@@ -515,7 +627,9 @@ class FirebaseRoomService {
             'isSpeaking': isSpeaking,
             'lastActive': FieldValue.serverTimestamp(),
           });
+      print('✅ Speaking status updated for member: $isSpeaking');
     } catch (e) {
+      print('❌ Error updating speaking status: $e');
       throw Exception('Failed to update speaking status: $e');
     }
   }
@@ -532,7 +646,9 @@ class FirebaseRoomService {
             'isHost': role == MemberRole.admin,
             'lastActive': FieldValue.serverTimestamp(),
           });
+      print('✅ Member role updated to: ${_roleToString(role)}');
     } catch (e) {
+      print('❌ Error updating member role: $e');
       throw Exception('Failed to update member role: $e');
     }
   }
@@ -542,11 +658,14 @@ class FirebaseRoomService {
     try {
       final doc = await _roomsCollection.doc(roomId).get();
       if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        return data['hostId'] == userId;
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null && data['hostId'] != null) {
+          return data['hostId'] == userId;
+        }
       }
       return false;
     } catch (e) {
+      print('❌ Error checking room host: $e');
       return false;
     }
   }
@@ -556,21 +675,15 @@ class FirebaseRoomService {
     return 'current';
   }
 
-  // Transfer host role
+  // Transfer host role (legacy method - use transferHost instead)
   Future<void> transferHostRole(String roomId, String newHostId) async {
-    try {
-      await _roomsCollection
-          .doc(roomId)
-          .update({'hostId': newHostId});
-    } catch (e) {
-      throw Exception('Failed to transfer host role: $e');
-    }
+    await transferHost(roomId, newHostId);
   }
 
   // Get user level
   Future<int> getUserLevel(String userId) async {
     final achievements = await getUserAchievements(userId);
-    return achievements['level'] ?? 1;
+    return (achievements['level'] as int?) ?? 1;
   }
 
   // Get message color based on user level and role
@@ -619,7 +732,7 @@ class FirebaseRoomService {
       
       return null;
     } catch (e) {
-      print('Error getting room host: $e');
+      print('❌ Error getting room host: $e');
       return null;
     }
   }
@@ -637,5 +750,178 @@ class FirebaseRoomService {
   // Force clear all messages (admin function)
   Future<void> adminClearAllMessages(String roomId) async {
     await _clearAllRoomMessages(roomId);
+  }
+
+  // Promote member to moderator
+  Future<void> promoteToModerator(String roomId, String memberId) async {
+    try {
+      await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .update({
+            'role': _roleToString(MemberRole.moderator),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+      // Send system message
+      final memberDoc = await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .get();
+      
+      if (memberDoc.exists) {
+        final memberData = memberDoc.data() as Map<String, dynamic>;
+        final promoteMessage = ChatMessage(
+          id: 'promote_${DateTime.now().millisecondsSinceEpoch}',
+          roomId: roomId,
+          userId: 'system',
+          username: 'System',
+          text: '${memberData['username']} was promoted to Moderator',
+          timestamp: DateTime.now(),
+          userRole: UserRole.system,
+          userLevel: 0,
+          messageColor: '#4CAF50',
+          sessionId: 'system',
+        );
+        await sendChatMessage(roomId, promoteMessage);
+      }
+      
+      print('✅ Member promoted to moderator');
+    } catch (e) {
+      print('❌ Error promoting to moderator: $e');
+      throw Exception('Failed to promote to moderator: $e');
+    }
+  }
+
+  // Demote member to listener
+  Future<void> demoteToListener(String roomId, String memberId) async {
+    try {
+      await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .update({
+            'role': _roleToString(MemberRole.listener),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+      // Send system message
+      final memberDoc = await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .get();
+      
+      if (memberDoc.exists) {
+        final memberData = memberDoc.data() as Map<String, dynamic>;
+        final demoteMessage = ChatMessage(
+          id: 'demote_${DateTime.now().millisecondsSinceEpoch}',
+          roomId: roomId,
+          userId: 'system',
+          username: 'System',
+          text: '${memberData['username']} was demoted to Listener',
+          timestamp: DateTime.now(),
+          userRole: UserRole.system,
+          userLevel: 0,
+          messageColor: '#FF9800',
+          sessionId: 'system',
+        );
+        await sendChatMessage(roomId, demoteMessage);
+      }
+      
+      print('✅ Member demoted to listener');
+    } catch (e) {
+      print('❌ Error demoting to listener: $e');
+      throw Exception('Failed to demote to listener: $e');
+    }
+  }
+
+  // Mute/unmute member
+  Future<void> toggleMemberMute(String roomId, String memberId, bool isMuted) async {
+    try {
+      await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .update({
+            'isMuted': isMuted,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+      // Send system message for mute actions
+      if (isMuted) {
+        final memberDoc = await _roomsCollection
+            .doc(roomId)
+            .collection('members')
+            .doc(memberId)
+            .get();
+        
+        if (memberDoc.exists) {
+          final memberData = memberDoc.data() as Map<String, dynamic>;
+          final muteMessage = ChatMessage(
+            id: 'mute_${DateTime.now().millisecondsSinceEpoch}',
+            roomId: roomId,
+            userId: 'system',
+            username: 'System',
+            text: '${memberData['username']} was muted',
+            timestamp: DateTime.now(),
+            userRole: UserRole.system,
+            userLevel: 0,
+            messageColor: '#FF5722',
+            sessionId: 'system',
+          );
+          await sendChatMessage(roomId, muteMessage);
+        }
+      }
+      
+      print('✅ Member mute status updated: $isMuted');
+    } catch (e) {
+      print('❌ Error toggling member mute: $e');
+      throw Exception('Failed to toggle member mute: $e');
+    }
+  }
+
+  // Get member by ID
+  Future<RoomMember?> getMember(String roomId, String memberId) async {
+    try {
+      final doc = await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .get();
+      
+      if (doc.exists) {
+        return RoomMember.fromMap(doc.data() as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting member: $e');
+      return null;
+    }
+  }
+
+  // Update user achievements
+  Future<void> updateUserAchievements(String userId, Map<String, dynamic> achievements) async {
+    try {
+      await _userAchievementsCollection
+          .doc(userId)
+          .set(achievements, SetOptions(merge: true));
+      print('✅ User achievements updated');
+    } catch (e) {
+      print('❌ Error updating user achievements: $e');
+    }
+  }
+
+  // Get all active rooms (for debugging)
+  Map<String, Set<String>> getActiveRooms() {
+    return Map.from(_activeUsersInRooms);
+  }
+
+  // Clean up all rooms (for testing/debugging)
+  void cleanupAllRooms() {
+    _activeUsersInRooms.clear();
+    print('🧹 Cleaned up all room tracking');
   }
 }
