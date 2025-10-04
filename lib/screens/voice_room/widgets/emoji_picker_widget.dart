@@ -67,3 +67,33 @@ class _EmojiPickerWidgetState extends State<EmojiPickerWidget> {
             ),
           ),
           // Emoji picker
+        Expanded(
+            child: EmojiPicker(
+              onEmojiSelected: (category, emoji) => _onEmojiSelected(emoji),
+              config: Config(
+                columns: 8,
+                emojiSizeMax: 28.0,
+                bgColor: Colors.transparent,
+                indicatorColor: widget.gradientAnimation.value!,
+                iconColor: Colors.grey,
+                iconColorSelected: widget.gradientAnimation.value!,
+                backspaceColor: widget.gradientAnimation.value!,
+                skinToneDialogBgColor: const Color(0xFF1A1A2E),
+                skinToneIndicatorColor: widget.gradientAnimation.value!,
+                enableSkinTones: true,
+                recentsLimit: 32,
+                noRecents: const Text(
+                  'No Recents',
+                  style: TextStyle(fontSize: 14, color: Colors.black26),
+                ),
+                tabIndicatorAnimDuration: kTabScrollDuration,
+                categoryIcons: const CategoryIcons(),
+                buttonMode: ButtonMode.MATERIAL,
+                initCategory: Category.RECENT,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
