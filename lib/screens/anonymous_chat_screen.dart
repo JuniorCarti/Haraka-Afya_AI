@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:haraka_afya_ai/models/message.dart';
 import 'package:haraka_afya_ai/services/anonymous_chat_service.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
-import 'package:haraka_afya_ai/screens/voice_room_screen.dart'; // Add this import
+import 'package:haraka_afya_ai/screens/voice_room_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -31,6 +31,11 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
   String? _anonymousUsername;
   bool _isSelectingUsername = false;
   final TextEditingController _usernameController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Live rooms state
+  List<Map<String, dynamic>> _liveRooms = [];
+  bool _isLoadingRooms = false;
 
   // Predefined background options
   final List<Map<String, dynamic>> _backgroundOptions = [
@@ -70,6 +75,8 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     _loadBackgroundPreference();
     _loadUsername();
     _loadLikedMessages();
+    _loadLiveRooms();
+    
     // Initialize all replies as expanded by default
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _chatService.getMessages().first.then((messages) {
@@ -79,6 +86,121 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         if (mounted) setState(() {});
       });
     });
+  }
+
+  Future<void> _loadLiveRooms() async {
+    setState(() {
+      _isLoadingRooms = true;
+    });
+
+    try {
+      final snapshot = await _firestore
+          .collection('voice_rooms')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      final rooms = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'] ?? 'Support Room',
+          'topic': data['description'] ?? 'Anonymous support session',
+          'members': (data['members'] as List? ?? []).length,
+          'hostId': data['hostId'],
+          'isActive': data['isActive'] ?? false,
+        };
+      }).toList();
+
+      setState(() {
+        _liveRooms = rooms;
+        _isLoadingRooms = false;
+      });
+    } catch (e) {
+      print('Error loading rooms: $e');
+      setState(() {
+        _isLoadingRooms = false;
+      });
+    }
+  }
+
+ Future<void> _createNewRoom() async {
+  if (_user == null) return;
+
+  try {
+    // Generate a unique room ID
+    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_user!.uid}';
+    
+    // Create room in Firestore
+    await _firestore.collection('voice_rooms').doc(roomId).set({
+      'id': roomId,
+      'name': 'Support Room by ${_anonymousUsername ?? 'Anonymous'}',
+      'description': 'A safe space for support and conversation',
+      'hostId': _user!.uid,
+      'hostName': _anonymousUsername ?? 'Anonymous',
+      'isActive': true,
+      'members': [],
+      'createdAt': FieldValue.serverTimestamp(),
+      'background': {
+        'primaryColor': '#1A1A2E',
+        'secondaryColor': '#16213E',
+        'imageUrl': '',
+        'name': 'Default Dark',
+        'isPremium': false,
+        'requiredLevel': 1,
+      },
+    });
+
+    // Navigate to the new room
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VoiceRoomScreen(roomId: roomId),
+        ),
+      );
+    }
+  } catch (e) {
+    print('Error creating room: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create room: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+  Future<void> _joinRoom(String roomId) async {
+    if (_user == null) return;
+
+    try {
+      // Verify room exists and is active
+      final roomDoc = await _firestore.collection('voice_rooms').doc(roomId).get();
+      if (!roomDoc.exists || !(roomDoc.data()?['isActive'] ?? false)) {
+        throw Exception('Room not available');
+      }
+
+      // Navigate to the room
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VoiceRoomScreen(roomId: roomId),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error joining room: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to join room: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadBackgroundPreference() async {
@@ -123,7 +245,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
   Future<void> _loadLikedMessages() async {
     if (_user == null) return;
     
-    final likedMessages = await FirebaseFirestore.instance
+    final likedMessages = await _firestore
         .collection('anonymous_messages')
         .where('likedBy', arrayContains: _user.uid)
         .get();
@@ -138,7 +260,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     await prefs.setString(_usernameKey, username);
     
     if (_user != null) {
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('user_usernames')
           .doc(_user.uid)
           .set({
@@ -175,15 +297,6 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     );
   }
 
-  void _navigateToVoiceRoom() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VoiceRoomScreen(roomId: 'defaultRoomId'),
-      ),
-    );
-  }
-
   void _showLiveRooms() {
     showModalBottomSheet(
       context: context,
@@ -191,7 +304,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
       isScrollControlled: true,
       builder: (context) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
+          height: MediaQuery.of(context).size.height * 0.8,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.only(
@@ -201,90 +314,125 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
           ),
           child: Column(
             children: [
-              Padding(
+              // Header
+              Container(
                 padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF269A51),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Live Support Rooms',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Live Support Rooms',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Join existing rooms or create your own',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-              // Live rooms list
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+
+              // Refresh button
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    _buildLiveRoomCard(
-                      roomName: 'Mental Health Support',
-                      members: 8,
-                      isActive: true,
-                      topic: 'Daily check-in & support',
+                    Expanded(
+                      child: Text(
+                        '${_liveRooms.length} active room${_liveRooms.length == 1 ? '' : 's'} available',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ),
-                    _buildLiveRoomCard(
-                      roomName: 'Anxiety Relief',
-                      members: 5,
-                      isActive: true,
-                      topic: 'Coping strategies discussion',
-                    ),
-                    _buildLiveRoomCard(
-                      roomName: 'Mindfulness & Meditation',
-                      members: 12,
-                      isActive: true,
-                      topic: 'Guided meditation session',
-                    ),
-                    _buildLiveRoomCard(
-                      roomName: 'Stress Management',
-                      members: 6,
-                      isActive: true,
-                      topic: 'Work-life balance tips',
-                    ),
-                    _buildLiveRoomCard(
-                      roomName: 'Positive Vibes Only',
-                      members: 15,
-                      isActive: true,
-                      topic: 'Sharing positive experiences',
+                    IconButton(
+                      icon: const Icon(Icons.refresh, size: 20),
+                      onPressed: _loadLiveRooms,
+                      tooltip: 'Refresh rooms',
                     ),
                   ],
                 ),
               ),
-              // Quick join button
+
+              // Live rooms list or empty state
+              Expanded(
+                child: _isLoadingRooms
+                    ? const Center(child: CircularProgressIndicator())
+                    : _liveRooms.isEmpty
+                        ? _buildEmptyRoomsState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _liveRooms.length,
+                            itemBuilder: (context, index) {
+                              return _buildLiveRoomCard(_liveRooms[index]);
+                            },
+                          ),
+              ),
+
+              // Create room button
               Container(
                 padding: const EdgeInsets.all(16),
-                child: ElevatedButton(
-                  onPressed: _navigateToVoiceRoom,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF269A51),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Colors.grey.shade300),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.record_voice_over, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Create New Room',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _createNewRoom,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF269A51),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Create New Room',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -294,58 +442,148 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     );
   }
 
-  Widget _buildLiveRoomCard({
-    required String roomName,
-    required int members,
-    required bool isActive,
-    required String topic,
-  }) {
-    return Card(
+  Widget _buildEmptyRoomsState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.record_voice_over_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Active Rooms',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Be the first to create a support room\nand start a conversation',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _createNewRoom,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF269A51),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Create First Room'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveRoomCard(Map<String, dynamic> room) {
+    final isHost = room['hostId'] == _user?.uid;
+    final memberCount = room['members'] ?? 0;
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
         leading: Container(
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: const Color(0xFFD8FBE5),
+            color: isHost 
+                ? const Color(0xFFFFD700).withOpacity(0.2)
+                : const Color(0xFFD8FBE5),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(Icons.record_voice_over, color: Color(0xFF269A51)),
-        ),
-        title: Text(
-          roomName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+          child: Icon(
+            isHost ? Icons.workspace_premium : Icons.record_voice_over,
+            color: isHost ? const Color(0xFFFFD700) : const Color(0xFF269A51),
+            size: 24,
           ),
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                room['name'] ?? 'Support Room',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isHost)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFFD700)),
+                ),
+                child: const Text(
+                  'HOST',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFB8860B),
+                  ),
+                ),
+              ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 4),
             Text(
-              topic,
+              room['topic'] ?? 'Anonymous support session',
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 12,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(
-                    color: isActive ? Colors.green : Colors.grey,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '$members members • Live',
-                  style: TextStyle(
-                    color: isActive ? Colors.green : Colors.grey,
+                  '$memberCount ${memberCount == 1 ? 'member' : 'members'} • Live',
+                  style: const TextStyle(
+                    color: Colors.green,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -355,7 +593,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
           ],
         ),
         trailing: ElevatedButton(
-          onPressed: _navigateToVoiceRoom,
+          onPressed: () => _joinRoom(room['id']),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF269A51),
             foregroundColor: Colors.white,
@@ -364,9 +602,9 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
           ),
-          child: const Text(
-            'Join',
-            style: TextStyle(fontSize: 12),
+          child: Text(
+            isHost ? 'Your Room' : 'Join',
+            style: const TextStyle(fontSize: 12),
           ),
         ),
       ),
@@ -407,11 +645,35 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
           ),
           elevation: 2,
           actions: [
-            // Live Rooms Button
-            IconButton(
-              icon: const Icon(Icons.record_voice_over, color: Colors.black),
-              onPressed: _showLiveRooms,
-              tooltip: 'Join Live Rooms',
+            // Live Rooms Button with badge
+            Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.record_voice_over, color: Colors.black),
+                  onPressed: _showLiveRooms,
+                  tooltip: 'Live Support Rooms',
+                ),
+                if (_liveRooms.isNotEmpty)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${_liveRooms.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             IconButton(
               icon: const Icon(Icons.info_outline, color: Colors.black),
@@ -445,11 +707,24 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                 stream: _chatService.getMessages(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Error loading messages: ${snapshot.error}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    );
                   }
+                  
                   if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
                   }
+                  
                   final messages = snapshot.data!;
                   
                   // Initialize expanded state for new messages
@@ -457,20 +732,58 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                     _expandedReplies.putIfAbsent(message.id, () => true);
                   }
                   
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(8),
-                    reverse: true,
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      return _buildMessageWithReplies(messages[index]);
-                    },
-                  );
+                  return messages.isEmpty
+                      ? _buildEmptyChatState()
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(8),
+                          reverse: true,
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            return _buildMessageWithReplies(messages[index]);
+                          },
+                        );
                 },
               ),
             ),
             if (_replyingToMessageId != null) _buildReplyInput(),
             _buildMessageInput(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyChatState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.forum_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No Messages Yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Be the first to start a conversation\nin the anonymous support space',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
           ],
         ),
       ),
@@ -512,11 +825,15 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                   ),
                 ),
                 Text(
-                  'Join real-time support sessions with voice chat',
+                  _liveRooms.isEmpty
+                      ? 'Create the first support room and start a conversation'
+                      : '${_liveRooms.length} active room${_liveRooms.length == 1 ? '' : 's'} - join now!',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 11,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -532,9 +849,9 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text(
-              'Join Now',
-              style: TextStyle(
+            child: Text(
+              _liveRooms.isEmpty ? 'Create Room' : 'Find Rooms',
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
