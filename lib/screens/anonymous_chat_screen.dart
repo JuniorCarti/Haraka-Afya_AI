@@ -128,14 +128,14 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
 
   try {
     // Generate a unique room ID
-    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_user!.uid}';
+    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_user.uid}';
     
     // Create room in Firestore
     await _firestore.collection('voice_rooms').doc(roomId).set({
       'id': roomId,
       'name': 'Support Room by ${_anonymousUsername ?? 'Anonymous'}',
       'description': 'A safe space for support and conversation',
-      'hostId': _user!.uid,
+      'hostId': _user.uid,
       'hostName': _anonymousUsername ?? 'Anonymous',
       'isActive': true,
       'members': [],
