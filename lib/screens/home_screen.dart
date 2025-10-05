@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/community_screen.dart';
 import 'package:haraka_afya_ai/screens/anonymous_chat_screen.dart';
-import 'package:haraka_afya_ai/screens/voice_room_screen.dart';
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
