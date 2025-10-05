@@ -25,7 +25,7 @@ class BottomControls extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Reduced vertical padding
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -60,7 +60,7 @@ class BottomControls extends StatelessWidget {
                       onPressed: onShowGamesMenu,
                       color: const Color(0xFF6C5CE7),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8), // Reduced spacing
                     
                     _buildActionButton(
                       icon: Icons.card_giftcard_rounded,
@@ -68,7 +68,7 @@ class BottomControls extends StatelessWidget {
                       onPressed: onShowGiftMenu,
                       color: const Color(0xFFE84393),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8), // Reduced spacing
                     
                     // Background button - only for host
                     if (isHost)
@@ -111,8 +111,8 @@ class BottomControls extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 40, // Reduced from 44
+          height: 40, // Reduced from 44
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -122,11 +122,11 @@ class BottomControls extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10), // Slightly smaller radius
             boxShadow: [
               BoxShadow(
                 color: color.withOpacity(0.3),
-                blurRadius: 8,
+                blurRadius: 6, // Reduced blur
                 offset: const Offset(0, 2),
               ),
             ],
@@ -135,19 +135,19 @@ class BottomControls extends StatelessWidget {
             icon: Icon(
               icon,
               color: Colors.white,
-              size: 20,
+              size: 18, // Reduced icon size
             ),
             onPressed: onPressed,
             padding: EdgeInsets.zero,
             tooltip: label,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2), // Reduced spacing
         Text(
           label,
           style: TextStyle(
             color: Colors.white.withOpacity(0.8),
-            fontSize: 10,
+            fontSize: 9, // Reduced font size
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -160,8 +160,8 @@ class BottomControls extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 56,
-          height: 56,
+          width: 48, // Reduced from 56
+          height: 48, // Reduced from 56
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: isMuted 
@@ -178,9 +178,9 @@ class BottomControls extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: (isMuted ? const Color(0xFF636E72) : const Color(0xFF00B894)).withOpacity(0.4),
-                blurRadius: 12,
+                blurRadius: 8, // Reduced blur
                 spreadRadius: 1,
-                offset: const Offset(0, 3),
+                offset: const Offset(0, 2), // Reduced offset
               ),
             ],
           ),
@@ -195,7 +195,7 @@ class BottomControls extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: const Color(0xFF00B894).withOpacity(0.3),
-                        width: 2,
+                        width: 1.5, // Reduced border width
                       ),
                     ),
                   ),
@@ -205,7 +205,7 @@ class BottomControls extends StatelessWidget {
                 icon: Icon(
                   isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
                   color: Colors.white,
-                  size: 24,
+                  size: 20, // Reduced icon size
                 ),
                 onPressed: onToggleMicrophone,
                 padding: EdgeInsets.zero,
@@ -214,12 +214,12 @@ class BottomControls extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2), // Reduced spacing
         Text(
           isMuted ? 'Muted' : 'Live',
           style: TextStyle(
             color: isMuted ? const Color(0xFFE17055) : const Color(0xFF00B894),
-            fontSize: 10,
+            fontSize: 9, // Reduced font size
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -232,19 +232,19 @@ class BottomControls extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 40, // Reduced from 44
+          height: 40, // Reduced from 44
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFE17055), Color(0xFFD63031)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10), // Slightly smaller radius
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFD63031).withOpacity(0.3),
-                blurRadius: 8,
+                blurRadius: 6, // Reduced blur
                 offset: const Offset(0, 2),
               ),
             ],
@@ -253,19 +253,19 @@ class BottomControls extends StatelessWidget {
             icon: const Icon(
               Icons.logout_rounded,
               color: Colors.white,
-              size: 20,
+              size: 18, // Reduced icon size
             ),
             onPressed: onLeaveRoom,
             padding: EdgeInsets.zero,
             tooltip: 'Leave Room',
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2), // Reduced spacing
         Text(
           'Leave',
           style: TextStyle(
             color: const Color(0xFFE17055).withOpacity(0.9),
-            fontSize: 10,
+            fontSize: 9, // Reduced font size
             fontWeight: FontWeight.w500,
           ),
         ),
