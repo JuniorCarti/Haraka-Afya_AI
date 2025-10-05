@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/voice_room/widgets/game_card.dart';
@@ -21,7 +23,6 @@ import 'package:haraka_afya_ai/screens/voice_room/widgets/chat_section/chat_sect
 import 'package:haraka_afya_ai/screens/voice_room/widgets/bottom_controls.dart';
 import 'package:haraka_afya_ai/screens/voice_room/services/webrtc_service.dart';
 
-
 class VoiceRoomScreen extends StatefulWidget {
   final String roomId;
 
@@ -31,7 +32,7 @@ class VoiceRoomScreen extends StatefulWidget {
   State<VoiceRoomScreen> createState() => _VoiceRoomScreenState();
 }
 
-class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
+class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingObserver {
   final List<RoomGame> _availableGames = [
     RoomGame('Pool', Icons.sports, Colors.green),
     RoomGame('Sudoku', Icons.grid_4x4, Colors.blue),
@@ -76,23 +77,159 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
   bool _isWebRTCConnected = false;
   bool _isLoading = true;
   String _connectionStatus = 'Initializing...';
+  bool _permissionGranted = false;
+  bool _showPermissionDialog = false;
+
+  // Connection retry variables
+  int _connectionRetryCount = 0;
+  static const int _maxRetryCount = 3;
+  Timer? _connectionRetryTimer;
 
   @override
   void initState() {
     super.initState();
-    _initializeUserAndRoom();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeApp();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _chatController.dispose();
+    _webRTCService.dispose();
+    _connectionRetryTimer?.cancel();
+    if (_isInRoom) {
+      _roomService.leaveRoom(widget.roomId, _currentUserId, _currentUsername);
+    }
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Check permission again when app comes to foreground
+      _checkMicrophonePermission();
+    }
+  }
+
+  Future<void> _initializeApp() async {
+    await _checkMicrophonePermission();
+    if (_permissionGranted) {
+      await _initializeUserAndRoom();
+    } else {
+      setState(() {
+        _showPermissionDialog = true;
+        _isLoading = false;
+        _connectionStatus = 'Microphone permission required';
+      });
+    }
+  }
+
+  Future<void> _checkMicrophonePermission() async {
+    try {
+      final status = await Permission.microphone.status;
+      
+      if (status.isGranted) {
+        setState(() {
+          _permissionGranted = true;
+          _showPermissionDialog = false;
+        });
+      } else if (status.isDenied) {
+        setState(() {
+          _permissionGranted = false;
+        });
+      } else if (status.isPermanentlyDenied) {
+        setState(() {
+          _permissionGranted = false;
+          _showPermissionDialog = true;
+        });
+      }
+    } catch (e) {
+      print('❌ Error checking microphone permission: $e');
+      setState(() {
+        _permissionGranted = false;
+        _showPermissionDialog = true;
+      });
+    }
+  }
+
+  Future<void> _requestMicrophonePermission() async {
+    try {
+      setState(() {
+        _connectionStatus = 'Requesting microphone permission...';
+        _isLoading = true;
+      });
+
+      final status = await Permission.microphone.request();
+      
+      if (status.isGranted) {
+        setState(() {
+          _permissionGranted = true;
+          _showPermissionDialog = false;
+        });
+        await _initializeUserAndRoom();
+      } else {
+        setState(() {
+          _permissionGranted = false;
+          _showPermissionDialog = true;
+          _isLoading = false;
+          _connectionStatus = 'Microphone permission denied';
+        });
+        
+        if (status.isPermanentlyDenied) {
+          _showPermissionSettingsDialog();
+        }
+      }
+    } catch (e) {
+      print('❌ Error requesting microphone permission: $e');
+      setState(() {
+        _permissionGranted = false;
+        _showPermissionDialog = true;
+        _isLoading = false;
+        _connectionStatus = 'Failed to request permission';
+      });
+    }
+  }
+
+  void _showPermissionSettingsDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Microphone Permission Required'),
+        content: const Text(
+          'Microphone access is required for voice chat. '
+          'Please enable microphone permission in app settings to continue.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _initializeUserAndRoom() async {
     try {
-      setState(() {
-        _connectionStatus = 'Requesting microphone permission...';
-      });
-
-      final status = await Permission.microphone.request();
-      if (!status.isGranted) {
-        throw Exception('Microphone permission denied');
+      if (_connectionRetryCount >= _maxRetryCount) {
+        _showErrorDialog('Connection Failed', 
+            'Unable to connect after $_maxRetryCount attempts. Please check your internet connection.');
+        return;
       }
+
+      setState(() {
+        _connectionStatus = 'Setting up user... (Attempt ${_connectionRetryCount + 1}/$_maxRetryCount)';
+        _isLoading = true;
+      });
 
       final user = _auth.currentUser;
       if (user != null) {
@@ -119,13 +256,28 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       });
 
       _setupWebRTCEventListeners();
-      await _webRTCService.initialize();
+      await _webRTCService.initialize().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('WebRTC initialization timed out');
+        },
+      );
+
+      // Log ICE server status for debugging
+      final connectionStatus = _webRTCService.getConnectionStatus();
+      print('🌐 WebRTC Connection Status: $connectionStatus');
 
       setState(() {
         _connectionStatus = 'Joining room...';
       });
 
-      await _webRTCService.joinRoom(widget.roomId, _currentUserId, _currentUsername);
+      await _webRTCService.joinRoom(widget.roomId, _currentUserId, _currentUsername)
+          .timeout(
+        const Duration(seconds: 20),
+        onTimeout: () {
+          throw TimeoutException('Room join timed out');
+        },
+      );
 
       final member = RoomMember(
         id: _currentUserId,
@@ -150,6 +302,9 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
 
       await _roomService.createOrJoinRoom(widget.roomId, member);
       
+      // Reset retry count on success
+      _connectionRetryCount = 0;
+      
       setState(() {
         _isInRoom = true;
         _isWebRTCConnected = true;
@@ -159,12 +314,39 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
 
       print('✅ Voice room initialized successfully');
       
+    } on TimeoutException catch (e) {
+      print('❌ Connection timeout: $e');
+      _handleConnectionError('Connection timeout: $e');
     } catch (e) {
       print('❌ Error initializing room: $e');
-      _showErrorDialog('Setup Failed', 'Failed to initialize room: $e');
+      _handleConnectionError('Failed to initialize room: $e');
+    }
+  }
+
+  void _handleConnectionError(String error) {
+    _connectionRetryCount++;
+    
+    if (_connectionRetryCount < _maxRetryCount) {
+      // Auto-retry after delay
+      setState(() {
+        _connectionStatus = 'Retrying connection... (${_connectionRetryCount + 1}/$_maxRetryCount)';
+        _isLoading = true;
+      });
+      
+      _connectionRetryTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          _initializeUserAndRoom();
+        }
+      });
+    } else {
+      // Final failure
+      _showErrorDialog('Connection Failed', 
+          'Unable to establish voice connection after $_maxRetryCount attempts. '
+          'This may be due to network restrictions. Please check your internet connection.');
+      
       setState(() {
         _isLoading = false;
-        _connectionStatus = 'Failed to connect';
+        _connectionStatus = 'Connection failed';
       });
     }
   }
@@ -180,6 +362,9 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
 
   void _onAddRemoteStream(MediaStream stream) {
     print('🎧 Remote stream added - user is speaking');
+    setState(() {
+      _isWebRTCConnected = true;
+    });
   }
 
   void _onRemoveRemoteStream(MediaStream stream) {
@@ -200,10 +385,17 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
 
   void _onWebRTCError(String error) {
     print('❌ WebRTC error: $error');
-    _showErrorDialog('Voice Connection Error', error);
+    if (mounted) {
+      _showErrorDialog('Voice Connection Error', error);
+    }
+    setState(() {
+      _isWebRTCConnected = false;
+    });
   }
 
   void _showErrorDialog(String title, String message) {
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -213,6 +405,47 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('OK'),
+          ),
+          if (title.contains('Connection Failed'))
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _connectionRetryCount = 0;
+                _initializeUserAndRoom();
+              },
+              child: const Text('Retry'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showConnectionStatus() {
+    final status = _webRTCService.getConnectionStatus();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('WebRTC Connection Status'),
+        content: Text(
+          'Socket Connected: ${status['socketConnected']}\n'
+          'Peer Connections: ${status['peerConnections']}\n'
+          'Remote Streams: ${status['remoteStreams']}\n'
+          'Has Local Stream: ${status['hasLocalStream']}\n'
+          'ICE Servers: ${status['iceServers']}\n'
+          'Connection Status: $_connectionStatus'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _connectionRetryCount = 0;
+              _initializeUserAndRoom();
+            },
+            child: const Text('Retry Connection'),
           ),
         ],
       ),
@@ -232,12 +465,20 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       _isMuted = !_isMuted;
     });
     
-    await _webRTCService.toggleMicrophone(_isMuted);
-    await _roomService.updateSpeakingStatus(
-      widget.roomId, 
-      _currentUserId, 
-      !_isMuted
-    );
+    try {
+      await _webRTCService.toggleMicrophone(_isMuted);
+      await _roomService.updateSpeakingStatus(
+        widget.roomId, 
+        _currentUserId, 
+        !_isMuted
+      );
+      print('🎤 Microphone ${_isMuted ? 'muted' : 'unmuted'}');
+    } catch (e) {
+      print('❌ Error toggling microphone: $e');
+      setState(() {
+        _isMuted = !_isMuted; // Revert on error
+      });
+    }
   }
 
   void _changeBackground(RoomBackground background) async {
@@ -641,6 +882,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
     try {
       setState(() {
         _isInRoom = false;
+        _isWebRTCConnected = false;
       });
       
       await _webRTCService.leaveRoom(widget.roomId, _currentUserId);
@@ -651,9 +893,11 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
       }
     } catch (e) {
       _showErrorDialog('Leave Error', 'Error leaving room: $e');
-      setState(() {
-        _isInRoom = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isInRoom = true;
+        });
+      }
     }
   }
 
@@ -684,37 +928,119 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
               icon: const Icon(Icons.info_outline_rounded, color: Colors.white54, size: 22),
               onPressed: _showRoomInfoEdit,
             ),
+            IconButton(
+              icon: const Icon(Icons.connected_tv_rounded, color: Colors.white54, size: 22),
+              onPressed: _showConnectionStatus,
+            ),
           ] : null,
         ),
       ),
       drawer: const AppDrawer(),
       body: SafeArea(
-        child: StreamBuilder<RoomBackground>(
-          stream: _roomService.getRoomBackgroundStream(widget.roomId),
-          builder: (context, backgroundSnapshot) {
-            final currentBackground = backgroundSnapshot.data ?? _currentBackground;
-            _currentBackground = currentBackground;
+        child: _showPermissionDialog 
+            ? _buildPermissionRequestScreen()
+            : StreamBuilder<RoomBackground>(
+                stream: _roomService.getRoomBackgroundStream(widget.roomId),
+                builder: (context, backgroundSnapshot) {
+                  final currentBackground = backgroundSnapshot.data ?? _currentBackground;
+                  _currentBackground = currentBackground;
 
-            return Container(
-              decoration: currentBackground.imageUrl.isNotEmpty
-                  ? BoxDecoration(
-                      image: DecorationImage(
-                        image: NetworkImage(currentBackground.imageUrl),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                          Colors.black.withOpacity(0.3),
-                          BlendMode.darken,
-                        ),
-                      ),
-                    )
-                  : null,
-              child: _isLoading 
-                  ? _buildLoadingScreen()
-                  : _isInRoom 
-                      ? _buildMainContent() 
-                      : _buildLeftRoomState(),
-            );
-          },
+                  return Container(
+                    decoration: currentBackground.imageUrl.isNotEmpty
+                        ? BoxDecoration(
+                            image: DecorationImage(
+                              image: NetworkImage(currentBackground.imageUrl),
+                              fit: BoxFit.cover,
+                              colorFilter: ColorFilter.mode(
+                                Colors.black.withOpacity(0.3),
+                                BlendMode.darken,
+                              ),
+                            ),
+                          )
+                        : null,
+                    child: _isLoading 
+                        ? _buildLoadingScreen()
+                        : _isInRoom 
+                            ? _buildMainContent() 
+                            : _buildLeftRoomState(),
+                  );
+                },
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPermissionRequestScreen() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.mic_rounded,
+              size: 64,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Microphone Access Required',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'This app needs microphone access for voice chat functionality. '
+              'Please allow microphone permission to continue.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _leaveRoom();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: _requestMicrophonePermission,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Allow Microphone'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: openAppSettings,
+              child: const Text(
+                'Open App Settings',
+                style: TextStyle(color: Colors.blue),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -737,9 +1063,12 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          if (_connectionStatus.contains('Failed'))
+          if (_connectionStatus.contains('Failed') || _connectionStatus.contains('Retrying'))
             ElevatedButton(
-              onPressed: _initializeUserAndRoom,
+              onPressed: () {
+                _connectionRetryCount = 0;
+                _initializeUserAndRoom();
+              },
               child: const Text('Retry Connection'),
             ),
         ],
@@ -825,7 +1154,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
                 chatMessages: messages,
                 chatController: _chatController,
                 onSendMessage: _sendChatMessage,
-                isAdmin: _currentUserRole == UserRole.admin,
+                isAdmin: _currentUserRole == MemberRole.admin,
                 onRoomInfoUpdate: (newName) {
                   _updateRoomInfo(name: newName);
                 },
@@ -834,7 +1163,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
                 currentUsername: _currentUsername,
                 currentUserRole: _currentUserRole,
                 currentUserLevel: _currentUserLevel,
-                onSwitchToSpeaker: _currentUserRole == UserRole.admin ? _switchHostToSpeaker : null,
+                onSwitchToSpeaker: _currentUserRole == MemberRole.admin ? _switchHostToSpeaker : null,
               );
             },
           ),
@@ -852,7 +1181,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
             onShowGiftMenu: _showGiftMenu,
             onShowBackgroundMenu: _showBackgroundMenu,
             onLeaveRoom: _leaveRoom,
-            isHost: _currentUserRole == UserRole.admin,
+            isHost: _currentUserRole == MemberRole.admin,
           ),
         ),
       ],
@@ -972,7 +1301,10 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _initializeUserAndRoom,
+            onPressed: () {
+              _connectionRetryCount = 0;
+              _initializeUserAndRoom();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -982,16 +1314,6 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _chatController.dispose();
-    _webRTCService.dispose();
-    if (_isInRoom) {
-      _roomService.leaveRoom(widget.roomId, _currentUserId, _currentUsername);
-    }
-    super.dispose();
   }
 }
 
