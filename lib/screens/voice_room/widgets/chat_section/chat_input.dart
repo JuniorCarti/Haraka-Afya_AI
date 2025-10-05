@@ -4,8 +4,6 @@ class ChatInput extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onSendMessage;
-  final VoidCallback onToggleEmojiPicker;
-  final bool showEmojiPicker;
   final Animation<Color?> gradientAnimation;
 
   const ChatInput({
@@ -13,8 +11,6 @@ class ChatInput extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.onSendMessage,
-    required this.onToggleEmojiPicker,
-    required this.showEmojiPicker,
     required this.gradientAnimation,
   });
 
@@ -32,34 +28,12 @@ class ChatInput extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Emoji button
-          _buildEmojiButton(),
-          const SizedBox(width: 6),
           // Text input field
           _buildTextInput(),
           const SizedBox(width: 6),
           // Send button
           _buildSendButton(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmojiButton() {
-    return GestureDetector(
-      onTap: onToggleEmojiPicker,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.emoji_emotions_outlined,
-          color: showEmojiPicker ? gradientAnimation.value : Colors.white.withOpacity(0.7),
-          size: 16,
-        ),
       ),
     );
   }
