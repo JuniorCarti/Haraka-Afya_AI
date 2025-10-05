@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
-import 'emoji_picker_widget.dart';
 import 'message_bubble.dart';
 import 'chat_input.dart';
 import 'chat_header.dart';
@@ -40,7 +39,6 @@ class ChatSection extends StatefulWidget {
 
 class _ChatSectionState extends State<ChatSection> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _showEmojiPicker = false;
   final FocusNode _focusNode = FocusNode();
   late AnimationController _animationController;
   late Animation<Color?> _gradientAnimation;
@@ -68,19 +66,9 @@ class _ChatSectionState extends State<ChatSection> with TickerProviderStateMixin
       end: const Color(0xFF4ECDC4),
     ).animate(_animationController);
     
-    _focusNode.addListener(_onFocusChange);
-    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
-  }
-
-  void _onFocusChange() {
-    if (!_focusNode.hasFocus && _showEmojiPicker) {
-      setState(() {
-        _showEmojiPicker = false;
-      });
-    }
   }
 
   void _toggleExpanded() {
@@ -93,7 +81,6 @@ class _ChatSectionState extends State<ChatSection> with TickerProviderStateMixin
         });
       } else {
         _expandController.reverse();
-        _showEmojiPicker = false;
         _focusNode.unfocus();
       }
     });
@@ -117,26 +104,6 @@ class _ChatSectionState extends State<ChatSection> with TickerProviderStateMixin
     }
   }
 
-  void _toggleEmojiPicker() {
-    if (!_isExpanded) {
-      _toggleExpanded();
-      Future.delayed(const Duration(milliseconds: 150), () {
-        setState(() {
-          _showEmojiPicker = true;
-        });
-      });
-    } else {
-      setState(() {
-        _showEmojiPicker = !_showEmojiPicker;
-        if (_showEmojiPicker) {
-          _focusNode.unfocus();
-        } else {
-          _focusNode.requestFocus();
-        }
-      });
-    }
-  }
-
   void _sendMessage() {
     final text = widget.chatController.text.trim();
     if (text.isNotEmpty) {
@@ -155,9 +122,6 @@ class _ChatSectionState extends State<ChatSection> with TickerProviderStateMixin
       );
       widget.onSendMessage(message);
       widget.chatController.clear();
-      setState(() {
-        _showEmojiPicker = false;
-      });
     }
   }
 
@@ -408,21 +372,11 @@ class _ChatSectionState extends State<ChatSection> with TickerProviderStateMixin
             ),
           ),
 
-          // Emoji picker
-          EmojiPickerWidget(
-            textController: widget.chatController,
-            isVisible: _showEmojiPicker,
-            onVisibilityChanged: _toggleEmojiPicker,
-            gradientAnimation: _gradientAnimation,
-          ),
-
-          // Input area
+          // Input area (emoji picker removed)
           ChatInput(
             controller: widget.chatController,
             focusNode: _focusNode,
             onSendMessage: _sendMessage,
-            onToggleEmojiPicker: _toggleEmojiPicker,
-            showEmojiPicker: _showEmojiPicker,
             gradientAnimation: _gradientAnimation,
           ),
         ],
@@ -485,7 +439,6 @@ class _ChatSectionState extends State<ChatSection> with TickerProviderStateMixin
     _expandController.dispose();
     _animationController.dispose();
     _scrollController.dispose();
-    _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     super.dispose();
   }
