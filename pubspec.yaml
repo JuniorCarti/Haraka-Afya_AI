@@ -67,7 +67,6 @@ dependencies:
   # Icons
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.6.0
-  emoji_picker_flutter: ^1.0.0
 
 dev_dependencies:
   flutter_test:
