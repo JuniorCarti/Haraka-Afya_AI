@@ -1170,3 +1170,12 @@ const SizedBox(width: 12),
       ),
     );
   }
+  String _getGreeting(String? displayName) {
+    final hour = DateTime.now().hour;
+    final name = displayName?.split(' ')[0] ?? 'there';
+    return hour < 12 ? 'Good Morning, $name!'
+        : hour < 17 ? 'Good Afternoon, $name!'
+        : 'Good Evening, $name!';
+  }
+}
+
