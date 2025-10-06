@@ -672,3 +672,26 @@ Container(
       ),
     );
   }
+  Widget _buildCommunitySection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Community Posts',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            Icon(Iconsax.arrow_right_3, color: Colors.grey, size: 20),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const HealthArticlesCarousel(),
+      ],
+    );
+  }
