@@ -333,3 +333,25 @@ actions: [
             Icon(Iconsax.more, color: Colors.grey, size: 20),
           ],
         ),
+const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          children: [
+            _buildServiceItem(
+              icon: Iconsax.book_1,
+              label: 'Learn',
+              bgColor: const Color(0xFFE3F2FD),
+              iconColor: const Color(0xFF1976D2),
+              onTap: () => homeState?._navigateToPage(1),
+            ),
+            _buildServiceItem(
+              icon: Iconsax.health,
+              label: 'Symptoms',
+              bgColor: const Color(0xFFE8F5E9),
+              iconColor: const Color(0xFF388E3C),
+              onTap: () => homeState?._navigateToPage(2),
+            ),
