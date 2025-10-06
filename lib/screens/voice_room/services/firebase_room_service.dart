@@ -962,7 +962,7 @@ class FirebaseRoomService {
           
           String username = 'User';
           if (memberDoc.exists) {
-            final data = memberDoc.data() as Map<String, dynamic>?;
+            final data = memberDoc.data();
             username = data?['username'] ?? 'User';
           }
 
@@ -1048,6 +1048,272 @@ class FirebaseRoomService {
         'activeUsers': 0,
         'error': e.toString(),
       };
+    }
+  }
+
+  // ========== SEAT MANAGEMENT METHODS ==========
+
+  // Check if a seat is available
+  Future<bool> isSeatAvailable(String roomId, int seatNumber) async {
+    try {
+      final seatOccupant = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .where('seatNumber', isEqualTo: seatNumber)
+          .limit(1)
+          .get();
+
+      return seatOccupant.docs.isEmpty;
+    } catch (e) {
+      print('❌ Error checking seat availability: $e');
+      return false;
+    }
+  }
+
+  // Assign a seat to a user
+  Future<void> assignSeat(String roomId, String userId, int seatNumber) async {
+    try {
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .update({
+            'seatNumber': seatNumber,
+            'isSpeaking': true,
+            'role': _roleToString(MemberRole.speaker),
+            'lastActive': FieldValue.serverTimestamp(),
+          });
+
+      print('✅ Seat $seatNumber assigned to user $userId');
+    } catch (e) {
+      print('❌ Error assigning seat: $e');
+      throw Exception('Failed to assign seat: $e');
+    }
+  }
+
+  // Leave current seat
+  Future<void> leaveSeat(String roomId, String userId) async {
+    try {
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .update({
+            'seatNumber': FieldValue.delete(),
+            'isSpeaking': false,
+            'role': _roleToString(MemberRole.listener),
+            'lastActive': FieldValue.serverTimestamp(),
+          });
+
+      print('✅ User $userId left their seat');
+    } catch (e) {
+      print('❌ Error leaving seat: $e');
+      throw Exception('Failed to leave seat: $e');
+    }
+  }
+
+  // Get current seat of a user
+  Future<int?> getCurrentSeat(String roomId, String userId) async {
+    try {
+      final memberDoc = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .get();
+
+      if (memberDoc.exists) {
+        final data = memberDoc.data();
+        return data?['seatNumber'] as int?;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting current seat: $e');
+      return null;
+    }
+  }
+
+  // Get all occupied seats in a room
+  Future<Map<int, String>> getOccupiedSeats(String roomId) async {
+    try {
+      final membersSnapshot = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .where('seatNumber', isNotEqualTo: null)
+          .get();
+
+      final occupiedSeats = <int, String>{};
+      for (final doc in membersSnapshot.docs) {
+        final data = doc.data();
+        final seatNumber = data['seatNumber'] as int?;
+        final username = data['username'] as String?;
+        if (seatNumber != null && username != null) {
+          occupiedSeats[seatNumber] = username;
+        }
+      }
+
+      return occupiedSeats;
+    } catch (e) {
+      print('❌ Error getting occupied seats: $e');
+      return {};
+    }
+  }
+
+  // Force remove user from seat (admin function)
+  Future<void> forceRemoveFromSeat(String roomId, String userId) async {
+    try {
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .update({
+            'seatNumber': FieldValue.delete(),
+            'isSpeaking': false,
+            'role': _roleToString(MemberRole.listener),
+            'lastActive': FieldValue.serverTimestamp(),
+          });
+
+      // Send system message
+      final memberDoc = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .get();
+      
+      if (memberDoc.exists) {
+        final memberData = memberDoc.data() as Map<String, dynamic>;
+        final removeMessage = ChatMessage(
+          id: 'remove_seat_${DateTime.now().millisecondsSinceEpoch}',
+          roomId: roomId,
+          userId: 'system',
+          username: 'System',
+          text: '${memberData['username']} was removed from their seat',
+          timestamp: DateTime.now(),
+          userRole: UserRole.system,
+          userLevel: 0,
+          messageColor: '#FF5722',
+          sessionId: 'system',
+        );
+        await sendChatMessage(roomId, removeMessage);
+      }
+
+      print('✅ User $userId forcibly removed from seat');
+    } catch (e) {
+      print('❌ Error forcing seat removal: $e');
+      throw Exception('Failed to force remove from seat: $e');
+    }
+  }
+
+  // Get seat information for a specific seat
+  Future<RoomMember?> getSeatOccupant(String roomId, int seatNumber) async {
+    try {
+      final seatOccupant = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .where('seatNumber', isEqualTo: seatNumber)
+          .limit(1)
+          .get();
+
+      if (seatOccupant.docs.isNotEmpty) {
+        return RoomMember.fromMap(seatOccupant.docs.first.data());
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting seat occupant: $e');
+      return null;
+    }
+  }
+
+  // Get all available seats (1-6)
+  Future<List<int>> getAvailableSeats(String roomId) async {
+    try {
+      final occupiedSeats = await getOccupiedSeats(roomId);
+      final allSeats = List.generate(6, (index) => index + 1); // Seats 1-6
+      return allSeats.where((seat) => !occupiedSeats.containsKey(seat)).toList();
+    } catch (e) {
+      print('❌ Error getting available seats: $e');
+      return List.generate(6, (index) => index + 1); // Return all seats as available on error
+    }
+  }
+
+  // Check if user has a seat
+  Future<bool> hasSeat(String roomId, String userId) async {
+    try {
+      final currentSeat = await getCurrentSeat(roomId, userId);
+      return currentSeat != null;
+    } catch (e) {
+      print('❌ Error checking if user has seat: $e');
+      return false;
+    }
+  }
+
+  // Get user's current seat information
+  Future<Map<String, dynamic>?> getUserSeatInfo(String roomId, String userId) async {
+    try {
+      final currentSeat = await getCurrentSeat(roomId, userId);
+      if (currentSeat != null) {
+        return {
+          'seatNumber': currentSeat,
+          'hasSeat': true,
+        };
+      }
+      return {
+        'hasSeat': false,
+      };
+    } catch (e) {
+      print('❌ Error getting user seat info: $e');
+      return null;
+    }
+  }
+
+  // Reset all seats (admin function - for room cleanup)
+  Future<void> resetAllSeats(String roomId) async {
+    try {
+      final membersWithSeats = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .where('seatNumber', isNotEqualTo: null)
+          .get();
+
+      final batch = _firestore.batch();
+      for (final doc in membersWithSeats.docs) {
+        batch.update(doc.reference, {
+          'seatNumber': FieldValue.delete(),
+          'isSpeaking': false,
+          'role': _roleToString(MemberRole.listener),
+          'lastActive': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+
+      // Send system message
+      final resetMessage = ChatMessage(
+        id: 'reset_seats_${DateTime.now().millisecondsSinceEpoch}',
+        roomId: roomId,
+        userId: 'system',
+        username: 'System',
+        text: 'All seats have been reset',
+        timestamp: DateTime.now(),
+        userRole: UserRole.system,
+        userLevel: 0,
+        messageColor: '#FF9800',
+        sessionId: 'system',
+      );
+      await sendChatMessage(roomId, resetMessage);
+
+      print('✅ All seats reset for room $roomId');
+    } catch (e) {
+      print('❌ Error resetting all seats: $e');
+      throw Exception('Failed to reset all seats: $e');
     }
   }
 }
