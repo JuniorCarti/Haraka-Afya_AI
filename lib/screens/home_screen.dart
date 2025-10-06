@@ -289,3 +289,27 @@ actions: [
       ],
     );
   }
+  Widget _buildGreetingSection(BuildContext context, String greeting) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          greeting,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A1A1A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'How can I help you stay healthy today?',
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
