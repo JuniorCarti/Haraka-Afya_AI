@@ -11,12 +11,14 @@ import 'package:haraka_afya_ai/features/chat/ai_assistant_popup.dart';
 import 'package:haraka_afya_ai/screens/medication_reminder_page.dart';
 import 'package:haraka_afya_ai/screens/donation_page.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:haraka_afya_ai/widgets/health_articles_carousel.dart';
 import 'package:haraka_afya_ai/screens/subscription_plans_screen.dart';
 import 'package:haraka_afya_ai/screens/upcoming_events.dart';
 import 'package:lottie/lottie.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
+import 'package:haraka_afya_ai/repositories/post_repository.dart';
+import 'package:haraka_afya_ai/models/post.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _liveRoomsCount = 0;
   bool _hasLiveRooms = false;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   @override
   void initState() {
     super.initState();
@@ -55,7 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
   }
-void _navigateToPage(int index) {
+
+  void _navigateToPage(int index) {
     setState(() {
       _currentIndex = index;
     });
@@ -93,7 +97,8 @@ void _navigateToPage(int index) {
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
-Widget _buildBottomNavBar() {
+
+  Widget _buildBottomNavBar() {
     return Container(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.only(
@@ -204,7 +209,7 @@ class HomeContent extends StatelessWidget {
           pinned: true,
           floating: true,
           snap: false,
-expandedHeight: 120,
+          expandedHeight: 120,
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
               decoration: const BoxDecoration(
@@ -243,7 +248,7 @@ expandedHeight: 120,
             ),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-actions: [
+          actions: [
             IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
@@ -289,6 +294,7 @@ actions: [
       ],
     );
   }
+
   Widget _buildGreetingSection(BuildContext context, String greeting) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,6 +319,7 @@ actions: [
       ],
     );
   }
+
   Widget _buildOurServicesSection(BuildContext context) {
     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
 
@@ -333,7 +340,7 @@ actions: [
             Icon(Iconsax.more, color: Colors.grey, size: 20),
           ],
         ),
-const SizedBox(height: 16),
+        const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -381,6 +388,7 @@ const SizedBox(height: 16),
       ],
     );
   }
+
   Widget _buildServiceItem({
     required IconData icon,
     required String label,
@@ -402,7 +410,7 @@ const SizedBox(height: 16),
             ),
           ],
         ),
-child: Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
@@ -428,6 +436,7 @@ child: Column(
       ),
     );
   }
+
   Widget _buildAnonymousChatCard(BuildContext context) {
     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
     final hasLiveRooms = homeState?._hasLiveRooms ?? false;
@@ -505,7 +514,7 @@ child: Column(
                           ),
                       ],
                     ),
-const SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,7 +540,7 @@ const SizedBox(width: 16),
                         ],
                       ),
                     ),
-Container(
+                    Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
@@ -550,7 +559,7 @@ Container(
                       color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-child: Row(
+                    child: Row(
                       children: [
                         Container(
                           width: 6,
@@ -571,7 +580,7 @@ child: Row(
                             ),
                           ),
                         ),
-Container(
+                        Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
@@ -598,6 +607,7 @@ Container(
       ),
     );
   }
+
   Widget _buildUpcomingEventsCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -672,30 +682,394 @@ Container(
       ),
     );
   }
+
   Widget _buildCommunitySection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Community Posts',
+            const Text(
+              'Recent Community Post',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1A1A1A),
               ),
             ),
-            Icon(Iconsax.arrow_right_3, color: Colors.grey, size: 20),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CommunityScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE9ECEF)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View All',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF259450),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Iconsax.arrow_right_3, 
+                        color: Color(0xFF259450), size: 14),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
-        const HealthArticlesCarousel(),
+        _buildRecentPostCard(context),
       ],
     );
   }
-Widget _buildAIAssistantCard(BuildContext context) {
+
+  Widget _buildRecentPostCard(BuildContext context) {
+  final postRepo = Provider.of<PostRepository>(context, listen: false);
+  final user = FirebaseAuth.instance.currentUser;
+
+  return StreamBuilder<List<Post>>(
+    stream: postRepo.getPosts(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return _buildPostLoadingCard();
+      }
+
+      if (snapshot.hasError) {
+        return _buildPostErrorCard();
+      }
+
+      final posts = snapshot.data ?? [];
+      
+      // Filter posts from last 24 hours
+      final now = DateTime.now();
+      final recentPosts = posts.where((post) {
+        final postTime = post.timestamp.toDate();
+        final difference = now.difference(postTime);
+        return difference.inHours <= 24;
+      }).toList();
+
+      if (recentPosts.isEmpty) {
+        return _buildNoRecentPostsCard(context); // Pass context here
+      }
+
+      // Get the most recent post
+      final recentPost = recentPosts.first;
+
+      return _buildPostCard(context, recentPost, user);
+    },
+  );
+}
+  Widget _buildPostCard(BuildContext context, Post post, User? user) {
+    final timeAgo = _getTimeAgo(post.timestamp.toDate());
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CommunityScreen(),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // User info and time
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundImage: NetworkImage(post.userImage),
+                      backgroundColor: Colors.grey.shade200,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post.userName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          Text(
+                            timeAgo,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'New',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: const Color(0xFF259450),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // Post title
+                Text(
+                  post.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                
+                // Post content preview
+                Text(
+                  post.content,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 16),
+                
+                // Engagement stats
+                Row(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Iconsax.heart5,
+                          size: 16,
+                          color: post.likedBy.contains(user?.uid) 
+                              ? Colors.red 
+                              : Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${post.likedBy.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
+                    Row(
+                      children: [
+                        const Icon(Iconsax.message, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${post.commentCount}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Tap to view full post',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: const Color(0xFF259450),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostLoadingCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: const Column(
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Loading recent posts...',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostErrorCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline, size: 24, color: Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text(
+            'Unable to load posts',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoRecentPostsCard(BuildContext context) { // Add context parameter
+  return Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Icon(Icons.forum_outlined, size: 40, color: Colors.grey.shade300),
+        const SizedBox(height: 12),
+        const Text(
+          'No Recent Posts',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A1A1A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Be the first to share in the last 24 hours',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade500,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context, // Now context is available
+              MaterialPageRoute(
+                builder: (context) => const CommunityScreen(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF259450),
+                  Color(0xFF27AE60),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              'Create Post',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _buildAIAssistantCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -780,6 +1154,7 @@ Widget _buildAIAssistantCard(BuildContext context) {
       ),
     );
   }
+
   Widget _buildEmergencyCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -824,7 +1199,7 @@ Widget _buildAIAssistantCard(BuildContext context) {
                 ),
               ],
             ),
-const SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
               'Immediate medical assistance available 24/7',
               style: TextStyle(
@@ -848,7 +1223,7 @@ const SizedBox(height: 12),
                     },
                   ),
                 ),
-const SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildEmergencyButton(
                     icon: Iconsax.car,
@@ -870,6 +1245,7 @@ const SizedBox(width: 12),
       ),
     );
   }
+
   Widget _buildEmergencyButton({
     required IconData icon,
     required String label,
@@ -1170,6 +1546,18 @@ const SizedBox(width: 12),
       ),
     );
   }
+
+  String _getTimeAgo(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    return '${difference.inDays ~/ 7}w ago';
+  }
+
   String _getGreeting(String? displayName) {
     final hour = DateTime.now().hour;
     final name = displayName?.split(' ')[0] ?? 'there';
@@ -1179,3 +1567,8 @@ const SizedBox(width: 12),
   }
 }
 
+extension on DateTime {
+  DateTime toDate() {
+    return this;
+  }
+}
