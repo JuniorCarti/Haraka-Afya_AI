@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:haraka_afya_ai/services/openai_service.dart';
+import 'package:iconsax/iconsax.dart';
 
 class AIAssistantPopup extends StatefulWidget {
   const AIAssistantPopup({super.key});
@@ -16,10 +17,39 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
   final ScrollController _scrollController = ScrollController();
   bool _isMinimized = false;
   bool _showChatList = false;
+
+  // Sample chat sessions
   final List<ChatSession> _chatSessions = [
-    ChatSession(id: '1', title: 'Current Chat', lastMessage: 'Just now'),
-    ChatSession(id: '2', title: 'Previous Consultation', lastMessage: 'Yesterday'),
+    ChatSession(
+      id: '1',
+      title: 'Symptom Consultation',
+      lastMessage: 'I was experiencing headaches...',
+      timestamp: DateTime.now(),
+    ),
+    ChatSession(
+      id: '2',
+      title: 'Medication Advice',
+      lastMessage: 'Can I take this with food?',
+      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+    ChatSession(
+      id: '3',
+      title: 'General Health Tips',
+      lastMessage: 'What are some healthy habits?',
+      timestamp: DateTime.now().subtract(const Duration(days: 3)),
+    ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Add welcome message
+    _messages.add(ChatMessage(
+      text: "Hello! I'm Ellie, your AI health assistant. I'm here to provide general health information and support. Remember, I'm not a substitute for professional medical advice. How can I help you today?",
+      isUser: false,
+      timestamp: DateTime.now(),
+    ));
+  }
 
   @override
   void dispose() {
@@ -48,6 +78,12 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
     setState(() {
       _messages.clear();
       _showChatList = false;
+      // Add welcome message for new chat
+      _messages.add(ChatMessage(
+        text: "Hello! I'm Ellie, your AI health assistant. What would you like to discuss today?",
+        isUser: false,
+        timestamp: DateTime.now(),
+      ));
     });
   }
 
@@ -58,37 +94,52 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
       child: GestureDetector(
         onTap: _showChatSelection,
         child: Material(
-          elevation: 8,
+          elevation: 12,
           borderRadius: BorderRadius.circular(30),
+          shadowColor: const Color(0xFF269A51).withOpacity(0.4),
           child: Container(
-            width: 60,
-            height: 60,
+            width: 70,
+            height: 70,
             decoration: BoxDecoration(
-              color: const Color(0xFF269A51),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF269A51),
+                  Color(0xFF34C759),
+                ],
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF269A51).withOpacity(0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
             child: Stack(
               children: [
                 const Center(
                   child: Icon(
-                    Icons.chat_bubble_outline,
+                    Iconsax.messages_3,
                     color: Colors.white,
-                    size: 30,
+                    size: 32,
                   ),
                 ),
-                if (_messages.isNotEmpty)
+                if (_messages.length > 1)
                   Positioned(
-                    top: 5,
-                    right: 5,
+                    top: 8,
+                    right: 8,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(6),
                       decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      child: const Text(
-                        '1',
-                        style: TextStyle(
+                      child: Text(
+                        '${_messages.length - 1}',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -106,38 +157,64 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
 
   Widget _buildChatListView() {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(20),
-      child: ConstrainedBox(
+      child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.6,
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF269A51),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF269A51),
+                    Color(0xFF34C759),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
-                  const Text(
-                    'Your Chats',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Iconsax.messages_3, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chat History',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Continue your conversations',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.of(context).pop(),
@@ -145,31 +222,129 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            // Chat List
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: _chatSessions.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return ListTile(
-                      leading: const Icon(Icons.add, color: Color(0xFF269A51)),
-                      title: const Text('Start New Chat'),
-                      onTap: _startNewChat,
-                    );
-                  }
-                  final chat = _chatSessions[index - 1];
-                  return ListTile(
-                    leading: const Icon(Icons.chat_bubble_outline, color: Color(0xFF269A51)),
-                    title: Text(chat.title),
-                    subtitle: Text(chat.lastMessage),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      setState(() {
-                        _showChatList = false;
-                      });
-                    },
-                  );
-                },
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                elevation: 8,
+                child: Column(
+                  children: [
+                    // New Chat Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FA),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                        border: Border.all(color: const Color(0xFFE9ECEF)),
+                      ),
+                      child: ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF269A51),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.add, color: Colors.white),
+                        ),
+                        title: const Text(
+                          'Start New Chat',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF269A51),
+                          ),
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF269A51).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'NEW',
+                            style: TextStyle(
+                              color: Color(0xFF269A51),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        onTap: _startNewChat,
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: _chatSessions.length,
+                        itemBuilder: (context, index) {
+                          final chat = _chatSessions[index];
+                          return Container(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey.shade100,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8F5E9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Iconsax.messages_1, 
+                                    color: Color(0xFF269A51), size: 20),
+                              ),
+                              title: Text(
+                                chat.title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF1A1A1A),
+                                ),
+                              ),
+                              subtitle: Text(
+                                chat.lastMessage,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    _formatTime(chat.timestamp),
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Icon(Iconsax.arrow_right_3, 
+                                      color: Colors.grey, size: 16),
+                                ],
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  _showChatList = false;
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -180,140 +355,307 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
 
   Widget _buildMainChatView() {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      insetPadding: const EdgeInsets.all(20),
-      child: ConstrainedBox(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxWidth: MediaQuery.of(context).size.width * 0.95,
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF269A51),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.medical_services, color: Color(0xFF269A51)),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Haraka Afya AI',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          'Online',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.minimize, color: Colors.white),
-                    onPressed: _toggleMinimize,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Container(
-                color: const Color(0xFFECE5DD),
-                child: _messages.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Hey there! What health topic are you curious about today?',
-                          style: TextStyle(color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(8),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          return _buildMessageBubble(_messages[index]);
-                        },
-                      ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(8),
+            // Header
+            Material(
               color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+              elevation: 8,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF269A51),
+                      Color(0xFF34C759),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: Colors.grey.shade300),
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
+                      child: const Icon(Iconsax.health, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: _messageController,
-                              decoration: const InputDecoration(
-                                hintText: 'Type a message...',
-                                border: InputBorder.none,
-                              ),
-                              maxLines: null,
-                              onSubmitted: (_) => _sendMessage(),
+                          Text(
+                            'Ellie - AI Health Assistant',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.emoji_emotions_outlined),
-                            onPressed: () {},
+                          SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(Icons.circle, color: Colors.green, size: 8),
+                              SizedBox(width: 6),
+                              Text(
+                                'Online • Always here to help',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF269A51),
-                    child: IconButton(
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.send, color: Colors.white),
-                      onPressed: _isLoading ? null : _sendMessage,
+                    IconButton(
+                      icon: const Icon(Iconsax.message_programming, 
+                          color: Colors.white),
+                      onPressed: _showChatSelection,
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.minimize, color: Colors.white),
+                      onPressed: _toggleMinimize,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Messages Area
+            Expanded(
+              child: Material(
+                color: const Color(0xFFF8F9FA),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF8F9FA),
                   ),
-                ],
+                  child: _messages.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            return _buildMessageBubble(_messages[index]);
+                          },
+                        ),
+                ),
+              ),
+            ),
+            // Input Area
+            Material(
+              color: Colors.white,
+              elevation: 8,
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(20),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Disclaimer
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3CD),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFFEEBA)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Iconsax.info_circle, 
+                              color: Colors.orange.shade700, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'For informational purposes only. Consult a healthcare professional for medical advice.',
+                              style: TextStyle(
+                                color: Colors.orange.shade800,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Input Field
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F9FA),
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(color: const Color(0xFFE9ECEF)),
+                            ),
+                            child: Row(
+                              children: [
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _messageController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Ask about symptoms, medications, or general health...',
+                                      border: InputBorder.none,
+                                      hintStyle: TextStyle(
+                                        color: Color(0xFF6C757D),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    maxLines: null,
+                                    style: const TextStyle(fontSize: 14),
+                                    onSubmitted: (_) => _sendMessage(),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Iconsax.emoji_happy, 
+                                      color: Color(0xFF6C757D)),
+                                  onPressed: () {},
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF269A51),
+                                Color(0xFF34C759),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(25),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF269A51).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Iconsax.send_2, color: Colors.white),
+                            onPressed: _isLoading ? null : _sendMessage,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(60),
+              ),
+              child: const Icon(
+                Iconsax.health,
+                size: 50,
+                color: Color(0xFF269A51),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Hello! I\'m Ellie 👋',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Your AI Health Assistant',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color(0xFF666666),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'I can help you with:\n• Symptom information\n• Medication questions\n• General health tips\n• Wellness advice\n• Healthcare resources',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF666666),
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF0F0),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFE0E0)),
+              ),
+              child: const Text(
+                '⚠️ Important: I provide general information only. For medical emergencies, please contact healthcare professionals immediately.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFFD32F2F),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -361,7 +703,7 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
     } catch (e) {
       setState(() {
         _messages.add(ChatMessage(
-          text: 'Error: ${e.toString()}',
+          text: 'I apologize, but I\'m having trouble connecting right now. Please try again in a moment.',
           isUser: false,
           timestamp: DateTime.now(),
         ));
@@ -386,49 +728,92 @@ class _AIAssistantPopupState extends State<AIAssistantPopup> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.7,
-        ),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: message.isUser ? const Color(0xFFDCF8C6) : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(8),
-            topRight: const Radius.circular(8),
-            bottomLeft: Radius.circular(message.isUser ? 8 : 0),
-            bottomRight: Radius.circular(message.isUser ? 0 : 8),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 1,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.text,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[600],
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!message.isUser)
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFF269A51),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: const Icon(Iconsax.health, color: Colors.white, size: 16),
             ),
-          ],
-        ),
+          if (!message.isUser) const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: message.isUser 
+                  ? CrossAxisAlignment.end 
+                  : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: message.isUser 
+                        ? const Color(0xFF269A51)
+                        : Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: Radius.circular(message.isUser ? 16 : 4),
+                      bottomRight: Radius.circular(message.isUser ? 4 : 16),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    message.text,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: message.isUser ? Colors.white : const Color(0xFF1A1A1A),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatTime(message.timestamp),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (message.isUser) const SizedBox(width: 8),
+          if (message.isUser)
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Iconsax.user, color: Color(0xFF269A51), size: 16),
+            ),
+        ],
       ),
     );
+  }
+
+  String _formatTime(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
   }
 }
 
@@ -448,10 +833,12 @@ class ChatSession {
   final String id;
   final String title;
   final String lastMessage;
+  final DateTime timestamp;
 
   ChatSession({
     required this.id,
     required this.title,
     required this.lastMessage,
+    required this.timestamp,
   });
 }
