@@ -171,3 +171,21 @@ Widget _buildBottomNavBar() {
               ),
               label: 'Hospitals',
             ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _currentIndex == 4 ? const Color(0xFFEDFCF5) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Iconsax.profile_circle5),
+              ),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
