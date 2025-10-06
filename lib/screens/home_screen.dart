@@ -138,3 +138,25 @@ Widget _buildBottomNavBar() {
               ),
               label: 'Home',
             ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _currentIndex == 1 ? const Color(0xFFEDFCF5) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Iconsax.book_15),
+              ),
+              label: 'Learn',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _currentIndex == 2 ? const Color(0xFFEDFCF5) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Iconsax.health5),
+              ),
+              label: 'Symptoms',
+            ),
