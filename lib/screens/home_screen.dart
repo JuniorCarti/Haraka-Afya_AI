@@ -24,3 +24,13 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+  final PageController _pageController = PageController(initialPage: 0);
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Live rooms state
+  int _liveRoomsCount = 0;
+  bool _hasLiveRooms = false;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
