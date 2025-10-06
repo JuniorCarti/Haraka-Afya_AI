@@ -160,3 +160,14 @@ Widget _buildBottomNavBar() {
               ),
               label: 'Symptoms',
             ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _currentIndex == 3 ? const Color(0xFFEDFCF5) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Iconsax.hospital5),
+              ),
+              label: 'Hospitals',
+            ),
