@@ -82,3 +82,14 @@ void _navigateToPage(int index) {
             _currentIndex = index;
           });
         },
+        children: const [
+          HomeContent(),
+          LearnPage(),
+          SymptomsPage(),
+          HospitalsPage(),
+          ProfilePage(),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
