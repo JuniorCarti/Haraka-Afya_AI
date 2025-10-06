@@ -165,7 +165,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         authorImage: user.photoURL ?? '',
         title: _titleController.text,
         content: _contentController.text,
-        imageUrl: _imageUrl, // Will be null until Firebase Storage is implemented
+        mediaUrls: _selectedImage != null ? [_selectedImage!.path] : [],
         timestamp: DateTime.now(),
       );
 
