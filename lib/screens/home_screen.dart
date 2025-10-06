@@ -531,3 +531,22 @@ const SizedBox(width: 16),
                         ],
                       ),
                     ),
+Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Iconsax.arrow_right_3, 
+                          color: Colors.white, size: 18),
+                    ),
+                  ],
+                ),
+                if (hasLiveRooms) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
