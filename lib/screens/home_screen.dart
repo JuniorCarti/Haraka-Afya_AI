@@ -93,3 +93,10 @@ void _navigateToPage(int index) {
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
+Widget _buildBottomNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
