@@ -17,7 +17,7 @@ class BottomControls extends StatelessWidget {
     required this.onShowGiftMenu,
     required this.onShowBackgroundMenu,
     required this.onLeaveRoom,
-    required this.isHost,
+    required this.isHost, required bool hasSeat, void Function()? onLeaveSeat,
   });
 
   @override
