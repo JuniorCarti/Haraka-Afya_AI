@@ -77,12 +77,18 @@ class _OverviewPageState extends State<OverviewPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
+        SnackBar(
+          content: const Text('Profile updated successfully'),
+          backgroundColor: const Color(0xFF259450),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating profile: $e')),
+        SnackBar(
+          content: Text('Error updating profile: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -92,7 +98,7 @@ class _OverviewPageState extends State<OverviewPage> {
       context,
       MaterialPageRoute(
         builder: (context) => HealthStatsEditPage(
-          initialStats: HealthStats.fromMap(_userData['healthStats']),
+          initialStats: HealthStats.fromMap(_userData['healthStats'] ?? {}),
         ),
       ),
     );
@@ -105,9 +111,9 @@ class _OverviewPageState extends State<OverviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE6F6EC),
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             _buildProfileCard(),
@@ -122,77 +128,212 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Widget _buildProfileCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: _userData['subscriptionType'] == 'premium'
-              ? const Color(0xFFFEF5D6)
-              : Colors.white,
-        ),
-        padding: const EdgeInsets.all(16),
+    final isPremium = _userData['subscriptionType'] == 'premium';
+    
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: isPremium
+            ? const LinearGradient(
+                colors: [
+                  Color(0xFFFFD700),
+                  Color(0xFFFFA000),
+                ],
+              )
+            : const LinearGradient(
+                colors: [
+                  Color(0xFF259450),
+                  Color(0xFF1976D2),
+                ],
+              ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF259450).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.grey[200],
-              child: _userData['firstName'] != null
-                  ? Text(
-                      _userData['firstName'][0].toUpperCase(),
-                      style: const TextStyle(fontSize: 24, color: Color(0xFF16A249)),
-                    )
-                  : const Icon(Icons.person, size: 40),
+            Stack(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    image: _userData['photoURL'] != null
+                        ? DecorationImage(
+                            image: NetworkImage(_userData['photoURL']),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _userData['photoURL'] == null
+                      ? Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: Center(
+                            child: Text(
+                              _userData['firstName'] != null && _userData['firstName'].isNotEmpty
+                                  ? _userData['firstName'][0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF259450),
+                              ),
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+                if (isPremium)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.workspace_premium,
+                        color: Color(0xFFFFA000),
+                        size: 16,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
-              '${_userData['firstName'] ?? ''} ${_userData['lastName'] ?? ''}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              '${_userData['firstName'] ?? ''} ${_userData['lastName'] ?? ''}'.trim(),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 4),
-            Text(_user?.email ?? ''),
-            const SizedBox(height: 8),
+            Text(
+              _user?.email ?? '',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.9),
+              ),
+            ),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: _userData['subscriptionType'] == 'premium'
-                    ? const Color(0xFF16A249)
-                    : Colors.grey,
+                color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                _userData['subscriptionType'] == 'premium' ? 'PREMIUM' : 'FREE',
+                isPremium ? 'PREMIUM MEMBER' : 'FREE PLAN',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             if (!_isEditing)
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF16A249),
+              Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                onPressed: () => setState(() => _isEditing = true),
-                child: const Text('Edit Profile', style: TextStyle(color: Colors.white)),
+          child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(12),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: () => setState(() => _isEditing = true), // ✅ changed onPressed → onTap
+    child: const Center(
+      child: Text(
+        'Edit Profile',
+        style: TextStyle(
+          color: Color(0xFF259450),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+  ),
+),
+
               )
             else
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  TextButton(
-                    onPressed: () => setState(() => _isEditing = false),
-                    child: const Text('Cancel', style: TextStyle(color: Color(0xFF16A249))),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A249),
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(12),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: () => setState(() => _isEditing = false), // ✅ changed onPressed → onTap
+    child: const Center(
+      child: Text(
+        'Cancel',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+  ),
+),
+
                     ),
-                    onPressed: _updateProfile,
-                    child: const Text('Save', style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                   child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(12),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: _updateProfile, // ✅ changed from onPressed → onTap
+    child: const Center(
+      child: Text(
+        'Save',
+        style: TextStyle(
+          color: Color(0xFF259450),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+  ),
+),
+
+                    ),
                   ),
                 ],
               ),
@@ -203,15 +344,22 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Widget _buildHealthStatsSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: const Color(0xFF16A249).withOpacity(0.1),
-        ),
-        padding: const EdgeInsets.all(16),
+    final hasHealthData = _userData['healthStats'] != null && _userData['healthStats'].isNotEmpty;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -221,25 +369,79 @@ class _OverviewPageState extends State<OverviewPage> {
                 const Text(
                   'Health Statistics',
                   style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF16A249)),
-                ),
-                if (_isEditing)
-                  TextButton(
-                    onPressed: _navigateToHealthStatsEdit,
-                    child: const Text('Edit',
-                        style: TextStyle(color: Color(0xFF16A249))),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
                   ),
+                ),
+                Container(
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(8),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(8),
+    onTap: _navigateToHealthStatsEdit, // ✅ changed from onPressed → onTap
+    child: const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Icon(Icons.edit, size: 14, color: Color(0xFF259450)),
+          SizedBox(width: 4),
+          Text(
+            'Edit',
+            style: TextStyle(
+              color: Color(0xFF259450),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (_userData['healthStats'] == null || _userData['healthStats'].isEmpty)
-              const Center(
-                child: Text(
-                  'No health data available\nTap Edit to add your health stats',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+            const SizedBox(height: 16),
+            if (!hasHealthData)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.health_and_safety,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No Health Data',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Add your health statistics to track your wellness journey',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF999999),
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -247,16 +449,16 @@ class _OverviewPageState extends State<OverviewPage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                childAspectRatio: 1.5,
+                childAspectRatio: 1.4,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 children: [
-                  _buildStatCard('Height', '${_userData['healthStats']['height']} cm', Icons.height),
-                  _buildStatCard('Weight', '${_userData['healthStats']['weight']} kg', Icons.monitor_weight),
-                  _buildStatCard('Blood Pressure', _userData['healthStats']['bloodPressure'], Icons.favorite),
-                  _buildStatCard('Blood Sugar', '${_userData['healthStats']['bloodSugar']} mg/dL', Icons.bloodtype),
-                  _buildStatCard('Heart Rate', '${_userData['healthStats']['heartRate']} BPM', Icons.favorite_border),
-                  _buildStatCard('Blood Type', _userData['healthStats']['bloodType'], Icons.bloodtype),
+                  _buildStatCard('Height', '${_userData['healthStats']['height']} cm', Icons.height, const Color(0xFF259450)),
+                  _buildStatCard('Weight', '${_userData['healthStats']['weight']} kg', Icons.monitor_weight, const Color(0xFF1976D2)),
+                  _buildStatCard('Blood Pressure', _userData['healthStats']['bloodPressure'], Icons.monitor_heart, const Color(0xFFD32F2F)),
+                  _buildStatCard('Blood Sugar', '${_userData['healthStats']['bloodSugar']} mg/dL', Icons.water_drop, const Color(0xFFE91E63)),
+                  _buildStatCard('Heart Rate', '${_userData['healthStats']['heartRate']} BPM', Icons.favorite, const Color(0xFF7B1FA2)),
+                  _buildStatCard('Blood Type', _userData['healthStats']['bloodType'], Icons.bloodtype, const Color(0xFF0097A7)),
                 ],
               ),
           ],
@@ -265,68 +467,119 @@ class _OverviewPageState extends State<OverviewPage> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: const Color(0xFF16A249)),
-              const SizedBox(width: 6),
-              Text(title,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF16A249))),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(value,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 16, color: color),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
               style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black)),
-        ],
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF666666),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildRecentActivitySection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: const Color(0xFF16A249).withOpacity(0.1),
-        ),
-        padding: const EdgeInsets.all(16),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Recent Activity',
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF16A249)),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             if (_recentActivities.isEmpty)
-              const Center(
-                child: Text(
-                  'No recent activity',
-                  style: TextStyle(color: Colors.grey),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.history,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No Recent Activity',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Your recent activities will appear here',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF999999),
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -342,34 +595,54 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Widget _buildActivityItem(Map<String, dynamic> activity) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFF16A249),
-              shape: BoxShape.circle,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Color(0xFF259450),
+                size: 20,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(activity['title'] ?? 'Activity',
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    activity['title'] ?? 'Activity',
                     style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF16A249))),
-                if (activity['timestamp'] != null)
-                  Text(_formatTimestamp(activity['timestamp']),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  if (activity['timestamp'] != null)
+                    Text(
+                      _formatTimestamp(activity['timestamp']),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
