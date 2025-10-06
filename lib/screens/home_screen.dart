@@ -797,3 +797,30 @@ Widget _buildAIAssistantCard(BuildContext context) {
           width: 1,
         ),
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Iconsax.warning_2,
+                      color: Colors.red, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Emergency Services',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+              ],
+            ),
