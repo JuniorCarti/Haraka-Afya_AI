@@ -27,6 +27,7 @@ class RoomMember {
   final int roomsJoined;
   final String sessionId;
   final bool isHost;
+  final int? seatNumber; // Add seat number field
 
   RoomMember({
     required this.id,
@@ -48,6 +49,7 @@ class RoomMember {
     this.roomsJoined = 1,
     required this.sessionId,
     this.isHost = false,
+    this.seatNumber, // Add seat number parameter
   });
 
   // Helper method to convert Firebase Timestamp to DateTime
@@ -136,6 +138,7 @@ class RoomMember {
       'roomsJoined': roomsJoined,
       'sessionId': sessionId,
       'isHost': isHost,
+      'seatNumber': seatNumber, // Include seat number
     };
   }
 
@@ -159,6 +162,9 @@ class RoomMember {
       final level = (data['level'] is num) ? (data['level'] as num).toInt() : 1;
       final totalMessages = (data['totalMessages'] is num) ? (data['totalMessages'] as num).toInt() : 0;
       final roomsJoined = (data['roomsJoined'] is num) ? (data['roomsJoined'] as num).toInt() : 1;
+      
+      // Parse seat number safely
+      final seatNumber = (data['seatNumber'] is num) ? (data['seatNumber'] as num).toInt() : null;
       
       // Parse boolean fields safely
       final isSpeaking = data['isSpeaking'] == true;
@@ -197,6 +203,7 @@ class RoomMember {
         roomsJoined: roomsJoined,
         sessionId: sessionId,
         isHost: isHost,
+        seatNumber: seatNumber, // Include seat number
       );
     } catch (e) {
       print('❌ Error parsing RoomMember: $e');
@@ -223,6 +230,7 @@ class RoomMember {
         roomsJoined: 1,
         sessionId: 'error_session',
         isHost: false,
+        seatNumber: null, // Default to no seat
       );
     }
   }
@@ -248,6 +256,7 @@ class RoomMember {
     int? roomsJoined,
     String? sessionId,
     bool? isHost,
+    int? seatNumber, // Add seat number to copyWith
   }) {
     return RoomMember(
       id: id ?? this.id,
@@ -269,6 +278,7 @@ class RoomMember {
       roomsJoined: roomsJoined ?? this.roomsJoined,
       sessionId: sessionId ?? this.sessionId,
       isHost: isHost ?? this.isHost,
+      seatNumber: seatNumber ?? this.seatNumber, // Include seat number
     );
   }
 
@@ -283,6 +293,40 @@ class RoomMember {
 
   // Check if member can moderate
   bool get canModerate => isModerator;
+
+  // Check if member has a seat
+  bool get hasSeat => seatNumber != null;
+
+  // Check if member is in host seat (seat 0)
+  bool get isInHostSeat => seatNumber == 0;
+
+  // Check if member is in listener seat (seats 1-6)
+  bool get isInListenerSeat => seatNumber != null && seatNumber! >= 1 && seatNumber! <= 6;
+
+  // Get seat display name
+  String get seatDisplayName {
+    if (seatNumber == null) return 'No Seat';
+    if (seatNumber == 0) return 'Host Seat';
+    return 'Seat $seatNumber';
+  }
+
+  // Get seat status
+  String get seatStatus {
+    if (!hasSeat) return 'No Seat';
+    if (isSpeaking && !isMuted) return 'Speaking';
+    if (isMuted) return 'Muted';
+    if (isHandRaised) return 'Hand Raised';
+    return 'Occupied';
+  }
+
+  // Get seat status color
+  String get seatStatusColor {
+    if (!hasSeat) return '#9E9E9E'; // Gray for no seat
+    if (isSpeaking && !isMuted) return '#4CAF50'; // Green for speaking
+    if (isMuted) return '#FF5722'; // Red for muted
+    if (isHandRaised) return '#FFA500'; // Orange for hand raised
+    return '#2196F3'; // Blue for occupied
+  }
 
   // Get role display name
   String get roleDisplayName {
@@ -390,6 +434,29 @@ class RoomMember {
     return copyWith(isHandRaised: !isHandRaised);
   }
 
+  // Assign to seat
+  RoomMember assignToSeat(int seatNumber) {
+    return copyWith(
+      seatNumber: seatNumber,
+      isSpeaking: true,
+      role: seatNumber == 0 ? MemberRole.admin : MemberRole.speaker,
+    );
+  }
+
+  // Leave seat
+  RoomMember leaveSeat() {
+    return copyWith(
+      seatNumber: null,
+      isSpeaking: false,
+      role: MemberRole.listener,
+    );
+  }
+
+  // Switch seat
+  RoomMember switchSeat(int newSeatNumber) {
+    return copyWith(seatNumber: newSeatNumber);
+  }
+
   // Promote to speaker
   RoomMember promoteToSpeaker() {
     return copyWith(role: MemberRole.speaker);
@@ -460,6 +527,28 @@ class RoomMember {
            username != 'Error User';
   }
 
+  // Check if member can be assigned to a seat
+  bool get canTakeSeat {
+    // Host can always take host seat (0)
+    if (isAdmin) return true;
+    // Regular users can only take listener seats (1-6)
+    return !isAdmin;
+  }
+
+  // Check if member can leave their current seat
+  bool get canLeaveSeat {
+    return hasSeat;
+  }
+
+  // Check if member can switch to a specific seat
+  bool canSwitchToSeat(int newSeatNumber) {
+    if (!hasSeat) return false; // Must have a seat to switch
+    if (newSeatNumber == seatNumber) return false; // Can't switch to same seat
+    if (isAdmin && newSeatNumber != 0) return false; // Host can only be in seat 0
+    if (!isAdmin && newSeatNumber == 0) return false; // Non-hosts can't take host seat
+    return true;
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -472,7 +561,34 @@ class RoomMember {
 
   @override
   String toString() {
-    return 'RoomMember(id: $id, username: $username, role: $role, level: $level, isSpeaking: $isSpeaking)';
+    return 'RoomMember(id: $id, username: $username, role: $role, level: $level, seat: $seatNumber, isSpeaking: $isSpeaking)';
+  }
+
+  // Create an empty member (for empty seats)
+  factory RoomMember.empty() {
+    final now = DateTime.now();
+    return RoomMember(
+      id: '',
+      userId: '',
+      username: '',
+      role: MemberRole.listener,
+      isSpeaking: false,
+      avatar: '',
+      points: 0,
+      level: 1,
+      joinedAt: now,
+      lastActive: now,
+      isMuted: false,
+      isHandRaised: false,
+      achievements: [],
+      title: '',
+      messageColor: '',
+      totalMessages: 0,
+      roomsJoined: 0,
+      sessionId: '',
+      isHost: false,
+      seatNumber: null,
+    );
   }
 
   // Create a default member for testing
@@ -480,6 +596,7 @@ class RoomMember {
     String? id,
     String? username,
     MemberRole role = MemberRole.listener,
+    int? seatNumber,
   }) {
     final now = DateTime.now();
     return RoomMember(
@@ -491,6 +608,7 @@ class RoomMember {
       joinedAt: now,
       lastActive: now,
       sessionId: 'default_session',
+      seatNumber: seatNumber,
     );
   }
 
@@ -510,6 +628,28 @@ class RoomMember {
       lastActive: now,
       sessionId: 'host_session',
       isHost: true,
+      seatNumber: 0, // Host always in seat 0
+    );
+  }
+
+  // Create a listener member with seat
+  factory RoomMember.listenerWithSeat({
+    String? id,
+    String? username,
+    int seatNumber = 1,
+  }) {
+    final now = DateTime.now();
+    return RoomMember(
+      id: id ?? 'listener_${now.millisecondsSinceEpoch}',
+      userId: id ?? 'listener_user_${now.millisecondsSinceEpoch}',
+      username: username ?? 'Listener',
+      role: MemberRole.listener,
+      level: 1,
+      joinedAt: now,
+      lastActive: now,
+      sessionId: 'listener_session',
+      isHost: false,
+      seatNumber: seatNumber,
     );
   }
 }
