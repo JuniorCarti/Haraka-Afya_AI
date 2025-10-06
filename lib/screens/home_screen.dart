@@ -204,3 +204,18 @@ class HomeContent extends StatelessWidget {
           pinned: true,
           floating: true,
           snap: false,
+expandedHeight: 120,
+          flexibleSpace: FlexibleSpaceBar(
+            background: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF259450),
+                    Color(0xFF1976D2),
+                  ],
+                ),
+              ),
+            ),
+          ),
