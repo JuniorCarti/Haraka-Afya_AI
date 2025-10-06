@@ -780,3 +780,20 @@ Widget _buildAIAssistantCard(BuildContext context) {
       ),
     );
   }
+  Widget _buildEmergencyCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.grey.shade100,
+          width: 1,
+        ),
+      ),
