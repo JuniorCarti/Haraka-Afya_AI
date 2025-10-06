@@ -9,17 +9,18 @@ class HealthStatsViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Health Statistics',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
             color: Colors.white,
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blue[700],
+        backgroundColor: const Color(0xFF259450),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -33,25 +34,32 @@ class HealthStatsViewPage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Colors.blue[700]!, Colors.purple[700]!],
+                  colors: [
+                    Color(0xFF259450),
+                    Color(0xFF1976D2),
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: const Color(0xFF259450).withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     child: const Icon(
                       Icons.health_and_safety,
                       size: 40,
@@ -62,7 +70,7 @@ class HealthStatsViewPage extends StatelessWidget {
                   const Text(
                     'Health Overview',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -72,7 +80,7 @@ class HealthStatsViewPage extends StatelessWidget {
                     'Your complete health profile',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withOpacity(0.9),
                     ),
                   ),
                 ],
@@ -81,12 +89,15 @@ class HealthStatsViewPage extends StatelessWidget {
             const SizedBox(height: 24),
             
             // Basic Information Section
-            const Text(
-              'Basic Information',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                'Basic Information',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -96,31 +107,31 @@ class HealthStatsViewPage extends StatelessWidget {
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.2,
+              childAspectRatio: 1.1,
               children: [
                 _buildStatCard(
                   title: 'Height',
                   value: stats.height != null ? '${stats.height} cm' : 'Not set',
                   icon: Icons.height,
-                  color: Colors.blue,
+                  color: const Color(0xFF259450),
                 ),
                 _buildStatCard(
                   title: 'Weight',
                   value: stats.weight != null ? '${stats.weight} kg' : 'Not set',
                   icon: Icons.monitor_weight,
-                  color: Colors.green,
+                  color: const Color(0xFF1976D2),
                 ),
                 _buildStatCard(
                   title: 'Blood Type',
                   value: stats.bloodType.isNotEmpty ? stats.bloodType : 'Not set',
                   icon: Icons.bloodtype,
-                  color: Colors.red,
+                  color: const Color(0xFFD32F2F),
                 ),
                 _buildStatCard(
                   title: 'Heart Rate',
                   value: stats.heartRate != null ? '${stats.heartRate} bpm' : 'Not set',
                   icon: Icons.favorite,
-                  color: Colors.pink,
+                  color: const Color(0xFFE91E63),
                 ),
               ],
             ),
@@ -128,68 +139,167 @@ class HealthStatsViewPage extends StatelessWidget {
             const SizedBox(height: 32),
             
             // Medical Metrics Section
-            const Text(
-              'Medical Metrics',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                'Medical Metrics',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A1A),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            Column(
-              children: [
-                _buildMetricTile(
-                  title: 'Blood Pressure',
-                  value: stats.bloodPressure.isNotEmpty ? stats.bloodPressure : 'Not measured',
-                  icon: Icons.monitor_heart,
-                  color: Colors.deepPurple,
-                ),
-                _buildMetricTile(
-                  title: 'Blood Sugar',
-                  value: stats.bloodSugar != null ? '${stats.bloodSugar} mg/dL' : 'Not measured',
-                  icon: Icons.water_drop,
-                  color: Colors.teal,
-                ),
-              ],
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildMetricTile(
+                    title: 'Blood Pressure',
+                    value: stats.bloodPressure.isNotEmpty ? stats.bloodPressure : 'Not measured',
+                    icon: Icons.monitor_heart,
+                    color: const Color(0xFF7B1FA2),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  ),
+                  _buildMetricTile(
+                    title: 'Blood Sugar',
+                    value: stats.bloodSugar != null ? '${stats.bloodSugar} mg/dL' : 'Not measured',
+                    icon: Icons.water_drop,
+                    color: const Color(0xFF0097A7),
+                  ),
+                ],
+              ),
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             
             // Summary Card
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFE8F5E9),
+                    Color(0xFFE3F2FD),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF259450),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.assessment,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Health Summary',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _getSummaryText(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF666666),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
                       children: [
-                        Icon(Icons.assessment, color: Colors.blue[600], size: 20),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Summary',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                        Expanded(
+                          flex: _getCompletionPercentage(),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF259450),
+                                  Color(0xFF27AE60),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
+                        ),
+                        Expanded(
+                          flex: 100 - _getCompletionPercentage(),
+                          child: const SizedBox(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _getSummaryText(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                        height: 1.4,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Profile Completion',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      Text(
+                        '${_getCompletionPercentage()}%',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF259450),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -210,12 +320,12 @@ class HealthStatsViewPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -223,10 +333,11 @@ class HealthStatsViewPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),
             ),
@@ -236,18 +347,19 @@ class HealthStatsViewPage extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Color(0xFF1A1A1A),
               ),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF666666),
+                fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
             ),
@@ -263,32 +375,59 @@ class HealthStatsViewPage extends StatelessWidget {
     required IconData icon,
     required Color color,
   }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        trailing: Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: color,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              value.contains('Not') ? 'Add' : 'View',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -305,11 +444,25 @@ class HealthStatsViewPage extends StatelessWidget {
     if (stats.bloodType.isNotEmpty) filledFields++;
     
     if (filledFields == 0) {
-      return 'Start by adding your health information to get a complete overview of your health status.';
+      return 'Start by adding your health information to get a complete overview of your health status and personalized insights.';
     } else if (filledFields < totalFields) {
-      return 'You have provided $filledFields out of $totalFields health metrics. Consider adding more information for a comprehensive health profile.';
+      return 'You have provided $filledFields out of $totalFields health metrics. Complete your profile for comprehensive health monitoring and better insights.';
     } else {
-      return 'Great! You have a complete health profile. All $totalFields metrics are recorded and available for review.';
+      return 'Excellent! Your health profile is complete. All $totalFields metrics are recorded, providing you with comprehensive health monitoring and personalized insights.';
     }
+  }
+
+  int _getCompletionPercentage() {
+    int filledFields = 0;
+    int totalFields = 6;
+    
+    if (stats.height != null) filledFields++;
+    if (stats.weight != null) filledFields++;
+    if (stats.bloodPressure.isNotEmpty) filledFields++;
+    if (stats.bloodSugar != null) filledFields++;
+    if (stats.heartRate != null) filledFields++;
+    if (stats.bloodType.isNotEmpty) filledFields++;
+    
+    return ((filledFields / totalFields) * 100).round();
   }
 }
