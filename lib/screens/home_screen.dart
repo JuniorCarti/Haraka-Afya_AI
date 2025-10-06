@@ -753,3 +753,30 @@ Widget _buildAIAssistantCard(BuildContext context) {
                           color: Colors.white,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Get instant health advice & support',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Iconsax.message, 
+                      color: Colors.white, size: 20),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
