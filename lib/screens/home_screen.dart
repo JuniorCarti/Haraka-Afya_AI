@@ -189,3 +189,18 @@ Widget _buildBottomNavBar() {
   }
 }
 
+class HomeContent extends StatelessWidget {
+  const HomeContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final greeting = _getGreeting(user?.displayName);
+
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          floating: true,
+          snap: false,
