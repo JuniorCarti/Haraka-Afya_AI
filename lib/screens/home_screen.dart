@@ -232,3 +232,14 @@ expandedHeight: 120,
               ),
             ),
           ),
+          leading: IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Iconsax.menu_1, color: Colors.white, size: 20),
+            ),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
