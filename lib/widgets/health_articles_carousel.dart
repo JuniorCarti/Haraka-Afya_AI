@@ -21,7 +21,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.97); // wider cards
+    _pageController = PageController(viewportFraction: 0.97);
     _startAutoPlay();
   }
 
@@ -45,7 +45,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
         curve: Curves.easeInOutQuint,
       );
 
-      _currentPage = nextPage; // update manually to avoid blinking bug
+      _currentPage = nextPage;
     });
   }
 
@@ -53,7 +53,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
     setState(() {
       _currentPage = index;
     });
-    _startAutoPlay(); // Restart timer when user swipes
+    _startAutoPlay();
   }
 
   @override
@@ -82,7 +82,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_pageController.hasClients) {
               _pageController.jumpToPage(0);
-              _currentPage = 0; // reset page index
+              _currentPage = 0;
             }
           });
           _startAutoPlay();
@@ -95,25 +95,102 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
 
   Widget _buildLoadingIndicator() {
     return SizedBox(
-      height: 280,
-      child: Center(child: CircularProgressIndicator()),
+      height: 320,
+      child: Center(
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF259450),
+                Color(0xFF1976D2),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildErrorWidget(String error) {
     return SizedBox(
-      height: 280,
-      child: Center(child: Text('Error loading posts: $error')),
+      height: 320,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFEBEE),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFFFCDD2)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                'Error loading posts',
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildEmptyState() {
     return SizedBox(
-      height: 280,
+      height: 320,
       child: Center(
-        child: Text(
-          'No posts available yet. Be the first to share!',
-          style: TextStyle(color: Colors.grey),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F5E9),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.forum_outlined,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No posts available yet',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Be the first to share!',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -123,7 +200,7 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 280,
+          height: 320,
           child: PageView.builder(
             controller: _pageController,
             itemCount: _posts.length,
@@ -131,27 +208,33 @@ class _HealthArticlesCarouselState extends State<HealthArticlesCarousel> {
             itemBuilder: (context, index) {
               final post = _posts[index];
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0), // tighter gap
+                padding: const EdgeInsets.symmetric(horizontal: 6.0),
                 child: _PostCard(post: post),
               );
             },
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         if (_posts.length > 1)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(_posts.length, (index) {
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                width: 8,
+                width: index == _currentPage ? 24 : 8,
                 height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: index == _currentPage
-                      ? const Color(0xFF259450)
-                      : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(4),
+                  gradient: index == _currentPage
+                      ? const LinearGradient(
+                          colors: [
+                            Color(0xFF259450),
+                            Color(0xFF1976D2),
+                          ],
+                        )
+                      : null,
+                  color: index == _currentPage ? null : Colors.grey.shade300,
                 ),
               );
             }),
@@ -168,88 +251,190 @@ class _PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (post.mediaUrls.isNotEmpty) _buildPostImage(),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.title.isNotEmpty ? post.title : 'Community Post',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  post.content,
-                  style: const TextStyle(fontSize: 14),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundImage: NetworkImage(post.authorImage),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        post.authorName,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      _formatTimestamp(post.timestamp),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
+      ),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (post.mediaUrls.isNotEmpty) _buildPostImage(),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFE8F5E9),
+                          Color(0xFFE3F2FD),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      post.title.isNotEmpty ? post.title : 'Community Post',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    post.content,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      height: 1.5,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF259450),
+                            width: 2,
+                          ),
+                          image: DecorationImage(
+                            image: NetworkImage(post.authorImage),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              post.authorName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _formatTimestamp(post.timestamp),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.visibility, size: 14, color: Color(0xFF259450)),
+                            SizedBox(width: 4),
+                            Text(
+                              'View',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF259450),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPostImage() {
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       child: SizedBox(
-        height: 120,
+        height: 160,
         width: double.infinity,
-        child: CachedNetworkImage(
-          imageUrl: post.mediaUrls.first,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: Colors.grey[200],
-            child: const Center(
-              child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+        child: Stack(
+          children: [
+            CachedNetworkImage(
+              imageUrl: post.mediaUrls.first,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: 160,
+              placeholder: (context, url) => Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.grey.shade200,
+                      Colors.grey.shade300,
+                    ],
+                  ),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.grey.shade200,
+                      Colors.grey.shade300,
+                    ],
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                ),
+              ),
             ),
-          ),
+            // Gradient overlay
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.3),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
