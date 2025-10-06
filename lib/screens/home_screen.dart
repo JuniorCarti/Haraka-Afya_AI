@@ -219,3 +219,16 @@ expandedHeight: 120,
               ),
             ),
           ),
+          title: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [Colors.white, Colors.white],
+            ).createShader(bounds),
+            child: const Text(
+              'Haraka Afya',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
