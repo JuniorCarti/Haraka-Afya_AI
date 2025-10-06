@@ -355,3 +355,29 @@ const SizedBox(height: 16),
               iconColor: const Color(0xFF388E3C),
               onTap: () => homeState?._navigateToPage(2),
             ),
+            _buildServiceItem(
+              icon: Iconsax.hospital,
+              label: 'Facilities',
+              bgColor: const Color(0xFFF3E5F5),
+              iconColor: const Color(0xFF8E24AA),
+              onTap: () => homeState?._navigateToPage(3),
+            ),
+            _buildServiceItem(
+              icon: Iconsax.heart,
+              label: 'Donate',
+              bgColor: const Color(0xFFFFEBEE),
+              iconColor: const Color(0xFFD32F2F),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DonationPage(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
