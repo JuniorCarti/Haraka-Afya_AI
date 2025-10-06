@@ -34,3 +34,24 @@ class _HomeScreenState extends State<HomeScreen> {
   int _liveRoomsCount = 0;
   bool _hasLiveRooms = false;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  @override
+  void initState() {
+    super.initState();
+    _loadLiveRoomsCount();
+  }
+
+  // Fetch actual live rooms count from Firestore
+  void _loadLiveRoomsCount() {
+    _firestore
+        .collection('voice_rooms')
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _liveRoomsCount = snapshot.docs.length;
+          _hasLiveRooms = _liveRoomsCount > 0;
+        });
+      }
+    });
+  }
