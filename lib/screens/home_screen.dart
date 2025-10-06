@@ -824,3 +824,27 @@ Widget _buildAIAssistantCard(BuildContext context) {
                 ),
               ],
             ),
+const SizedBox(height: 12),
+            Text(
+              'Immediate medical assistance available 24/7',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildEmergencyButton(
+                    icon: Iconsax.call,
+                    label: 'Call 911',
+                    color: Colors.red,
+                    onPressed: () async {
+                      const url = 'tel:911';
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(Uri.parse(url));
+                      }
+                    },
+                  ),
+                ),
