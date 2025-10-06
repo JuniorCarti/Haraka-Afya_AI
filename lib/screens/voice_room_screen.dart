@@ -62,6 +62,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
   int _currentUserLevel = 1;
   UserRole _currentUserRole = UserRole.user;
   bool _isMuted = true;
+  int? _currentSeatNumber;
   
   // Room state
   String _roomName = 'Support Room';
@@ -249,6 +250,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
       } else {
         _currentUsername = 'Guest';
         _currentUserId = 'guest_${DateTime.now().millisecondsSinceEpoch}';
+        _currentUserRole = UserRole.user; // Guests are always listeners
       }
 
       setState(() {
@@ -279,6 +281,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         },
       );
 
+      // Create member with proper role and no seat initially
       final member = RoomMember(
         id: _currentUserId,
         userId: _currentUserId,
@@ -298,6 +301,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         totalMessages: 0,
         roomsJoined: 1,
         sessionId: 'current',
+        seatNumber: _currentUserRole == UserRole.admin ? 0 : null, // Host has seat 0, listeners start without seat
       );
 
       await _roomService.createOrJoinRoom(widget.roomId, member);
@@ -825,18 +829,109 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     }
   }
 
-  void _joinSeat() async {
+  // Seat Management Methods
+  void _assignSeat(int seatNumber) async {
     if (!_isInRoom) return;
     
     try {
-      await _roomService.updateSpeakingStatus(widget.roomId, _currentUserId, true);
-      await _roomService.updateMemberRole(widget.roomId, _currentUserId, MemberRole.speaker);
+      // Check if seat is available
+      final isSeatAvailable = await _roomService.isSeatAvailable(widget.roomId, seatNumber);
+      if (!isSeatAvailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Seat $seatNumber is already occupied!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Leave current seat if any
+      if (_currentSeatNumber != null) {
+        await _roomService.leaveSeat(widget.roomId, _currentUserId);
+      }
+      
+      // Assign new seat
+      await _roomService.assignSeat(widget.roomId, _currentUserId, seatNumber);
+      
       setState(() {
+        _currentSeatNumber = seatNumber;
         _isMuted = false;
       });
+      
       await _webRTCService.toggleMicrophone(false);
+      await _roomService.updateSpeakingStatus(widget.roomId, _currentUserId, true);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Joined seat $seatNumber'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
-      _showErrorDialog('Join Error', 'Failed to join seat: $e');
+      _showErrorDialog('Seat Error', 'Failed to assign seat: $e');
+    }
+  }
+
+  void _switchSeat(int newSeatNumber) async {
+    if (!_isInRoom || _currentSeatNumber == null) return;
+    
+    try {
+      // Check if new seat is available
+      final isSeatAvailable = await _roomService.isSeatAvailable(widget.roomId, newSeatNumber);
+      if (!isSeatAvailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Seat $newSeatNumber is already occupied!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      // Leave current seat
+      await _roomService.leaveSeat(widget.roomId, _currentUserId);
+      
+      // Assign new seat
+      await _roomService.assignSeat(widget.roomId, _currentUserId, newSeatNumber);
+      
+      setState(() {
+        _currentSeatNumber = newSeatNumber;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Switched from seat $_currentSeatNumber to seat $newSeatNumber'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      _showErrorDialog('Switch Error', 'Failed to switch seat: $e');
+    }
+  }
+
+  void _leaveCurrentSeat() async {
+    if (!_isInRoom || _currentSeatNumber == null) return;
+    
+    try {
+      await _roomService.leaveSeat(widget.roomId, _currentUserId);
+      
+      // Update local state
+      setState(() {
+        _currentSeatNumber = null;
+        _isMuted = true;
+      });
+      await _webRTCService.toggleMicrophone(true);
+      await _roomService.updateSpeakingStatus(widget.roomId, _currentUserId, false);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Left your seat'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } catch (e) {
+      _showErrorDialog('Leave Seat Error', 'Failed to leave seat: $e');
     }
   }
 
@@ -883,6 +978,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
       setState(() {
         _isInRoom = false;
         _isWebRTCConnected = false;
+        _currentSeatNumber = null;
       });
       
       await _webRTCService.leaveRoom(widget.roomId, _currentUserId);
@@ -1182,6 +1278,8 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
             onShowBackgroundMenu: _showBackgroundMenu,
             onLeaveRoom: _leaveRoom,
             isHost: _currentUserRole == MemberRole.admin,
+            hasSeat: _currentSeatNumber != null,
+            onLeaveSeat: _currentSeatNumber != null ? _leaveCurrentSeat : null,
           ),
         ),
       ],
@@ -1194,86 +1292,108 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
       builder: (context, snapshot) {
         final members = snapshot.data ?? [];
         
-        RoomMember host;
-        if (members.isNotEmpty) {
-          try {
-            host = members.firstWhere((member) => member.role == MemberRole.admin);
-          } catch (e) {
-            host = members.first;
+        // Separate host and listeners
+        RoomMember? host;
+        final listeners = <RoomMember>[];
+        
+        for (final member in members) {
+          if (member.role == MemberRole.admin) {
+            host = member;
+          } else {
+            listeners.add(member);
           }
-        } else {
-          host = RoomMember(
-            id: 'fallback_host',
-            userId: 'fallback_host',
-            username: 'No Host',
-            role: MemberRole.admin,
-            isSpeaking: false,
-            avatar: '👑',
-            points: 0,
-            level: 1,
-            joinedAt: DateTime.now(),
-            lastActive: DateTime.now(),
-            isMuted: false,
-            isHandRaised: false,
-            achievements: [],
-            title: 'Host',
-            messageColor: '#FFD700',
-            totalMessages: 0,
-            roomsJoined: 1,
-            sessionId: 'fallback',
-          );
         }
-
-        final nonHostMembers = members.where((member) => member.role != MemberRole.admin).toList();
+        
+        // Create fallback host if none exists
+        host ??= RoomMember(
+          id: 'fallback_host',
+          userId: 'fallback_host',
+          username: 'No Host',
+          role: MemberRole.admin,
+          isSpeaking: false,
+          avatar: '👑',
+          points: 0,
+          level: 1,
+          joinedAt: DateTime.now(),
+          lastActive: DateTime.now(),
+          isMuted: false,
+          isHandRaised: false,
+          achievements: [],
+          title: 'Host',
+          messageColor: '#FFD700',
+          totalMessages: 0,
+          roomsJoined: 1,
+          sessionId: 'fallback',
+        );
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(8),
           child: Column(
             children: [
-              HostSeat(
-                host: host,
-                isCurrentUser: host.userId == _currentUserId,
-              ),
+              // Host seat - only show if user is host or host exists
+              if (_currentUserRole == UserRole.admin || host.userId != 'fallback_host')
+                HostSeat(
+                  host: host,
+                  isCurrentUser: host.userId == _currentUserId,
+                  onTap: _currentUserRole == UserRole.admin 
+                      ? () => _showMemberOptions(host!)
+                      : null,
+                ),
               const SizedBox(height: 12),
               
-              // Responsive grid for member seats
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossAxisCount = constraints.maxWidth > 600 ? 4 : 3;
-                  final itemCount = 9;
-                  final rows = (itemCount / crossAxisCount).ceil();
-                  
-                  return SizedBox(
-                    height: rows * 120, // Fixed height based on row count
-                    child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 4,
-                        mainAxisSpacing: 4,
-                        childAspectRatio: 0.8,
-                      ),
-                      itemCount: itemCount,
-                      itemBuilder: (context, index) {
-                        if (index < nonHostMembers.length) {
-                          final member = nonHostMembers[index];
-                          return MemberSeat(
-                            member: member,
-                            onTap: () => _showMemberOptions(member),
-                            isCurrentUser: member.userId == _currentUserId,
-                          );
-                        } else {
-                          return EmptySeat(
-                            seatNumber: index + 1,
-                            onTap: _joinSeat,
-                          );
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
+              // Listener seats
+              _buildListenerSeats(listeners),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildListenerSeats(List<RoomMember> listeners) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+        final totalSeats = 6; // Fixed 6 listener seats
+        final rows = (totalSeats / crossAxisCount).ceil();
+        
+        return SizedBox(
+          height: rows * 140,
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.9,
+            ),
+            itemCount: totalSeats,
+            itemBuilder: (context, index) {
+              final seatNumber = index + 1;
+              final occupant = listeners.firstWhere(
+                (member) => member.seatNumber == seatNumber,
+                orElse: () => RoomMember.empty(),
+              );
+              
+              if (occupant.id.isNotEmpty) {
+                // Seat is occupied
+                return MemberSeat(
+                  member: occupant,
+                  onTap: () => _showMemberOptions(occupant),
+                  isCurrentUser: occupant.userId == _currentUserId,
+                  onLeaveSeat: occupant.userId == _currentUserId ? _leaveCurrentSeat : null,
+                );
+              } else {
+                // Empty seat
+                return EmptySeat(
+                  seatNumber: seatNumber,
+                  onTap: () => _assignSeat(seatNumber),
+                  onSwitchSeat: _currentSeatNumber != null ? 
+                      () => _switchSeat(seatNumber) : null,
+                  canSwitch: _currentSeatNumber != null,
+                );
+              }
+            },
           ),
         );
       },
