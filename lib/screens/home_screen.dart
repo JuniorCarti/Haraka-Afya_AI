@@ -313,3 +313,23 @@ actions: [
       ],
     );
   }
+  Widget _buildOurServicesSection(BuildContext context) {
+    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Our Services',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            Icon(Iconsax.more, color: Colors.grey, size: 20),
+          ],
+        ),
