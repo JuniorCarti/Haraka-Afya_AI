@@ -10,7 +10,7 @@ class MemberSeat extends StatelessWidget {
     super.key, 
     required this.member,
     required this.onTap,
-    this.isCurrentUser = false,
+    this.isCurrentUser = false, void Function()? onLeaveSeat,
   });
 
   @override
