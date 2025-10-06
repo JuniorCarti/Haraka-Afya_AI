@@ -259,3 +259,33 @@ actions: [
           backgroundColor: const Color(0xFF259450),
           elevation: 0,
         ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildGreetingSection(context, greeting),
+              const SizedBox(height: 24),
+              _buildAIAssistantCard(context),
+              const SizedBox(height: 20),
+              _buildOurServicesSection(context),
+              const SizedBox(height: 24),
+              _buildEmergencyCard(context),
+              const SizedBox(height: 20),
+              _buildSymptomChecker(context),
+              const SizedBox(height: 24),
+              _buildUpcomingEventsCard(context),
+              const SizedBox(height: 20),
+              _buildAnonymousChatCard(context),
+              const SizedBox(height: 20),
+              _buildCommunitySection(context),
+              const SizedBox(height: 20),
+              _buildMedicationReminder(context),
+              const SizedBox(height: 20),
+              _buildPremiumUpgrade(context),
+              const SizedBox(height: 40),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
