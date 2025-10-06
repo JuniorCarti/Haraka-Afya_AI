@@ -428,3 +428,27 @@ child: Column(
       ),
     );
   }
+  Widget _buildAnonymousChatCard(BuildContext context) {
+    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+    final hasLiveRooms = homeState?._hasLiveRooms ?? false;
+    final liveRoomsCount = homeState?._liveRoomsCount ?? 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF667EEA),
+            Color(0xFF764BA2),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF667EEA).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
