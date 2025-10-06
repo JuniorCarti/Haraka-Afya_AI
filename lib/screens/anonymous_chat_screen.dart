@@ -128,14 +128,14 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
 
   try {
     // Generate a unique room ID
-    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_user.uid}';
+    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_user!.uid}';
     
     // Create room in Firestore
     await _firestore.collection('voice_rooms').doc(roomId).set({
       'id': roomId,
       'name': 'Support Room by ${_anonymousUsername ?? 'Anonymous'}',
       'description': 'A safe space for support and conversation',
-      'hostId': _user.uid,
+      'hostId': _user!.uid,
       'hostName': _anonymousUsername ?? 'Anonymous',
       'isActive': true,
       'members': [],
@@ -171,6 +171,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     }
   }
 }
+
   Future<void> _joinRoom(String roomId) async {
     if (_user == null) return;
 
@@ -232,7 +233,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         _anonymousUsername = savedUsername;
       });
     } else if (_user != null) {
-      final username = await _chatService.getOrCreateUsername(_user.uid);
+      final username = await _chatService.getOrCreateUsername(_user!.uid);
       setState(() {
         _anonymousUsername = username;
       });
@@ -247,7 +248,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     
     final likedMessages = await _firestore
         .collection('anonymous_messages')
-        .where('likedBy', arrayContains: _user.uid)
+        .where('likedBy', arrayContains: _user!.uid)
         .get();
     
     setState(() {
@@ -262,7 +263,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     if (_user != null) {
       await _firestore
           .collection('user_usernames')
-          .doc(_user.uid)
+          .doc(_user!.uid)
           .set({
             'username': username,
             'createdAt': FieldValue.serverTimestamp(),
@@ -272,7 +273,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
 
   void _generateRandomUsername() {
     if (_user != null) {
-      _chatService.getOrCreateUsername(_user.uid).then((username) {
+      _chatService.getOrCreateUsername(_user!.uid).then((username) {
         setState(() {
           _anonymousUsername = username;
         });
@@ -318,7 +319,14 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF269A51),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF259450),
+                      Color(0xFF1976D2),
+                    ],
+                  ),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
@@ -371,10 +379,17 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, size: 20),
-                      onPressed: _loadLiveRooms,
-                      tooltip: 'Refresh rooms',
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.refresh, size: 20, color: Color(0xFF259450)),
+                        onPressed: _loadLiveRooms,
+                        tooltip: 'Refresh rooms',
+                      ),
                     ),
                   ],
                 ),
@@ -406,29 +421,46 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton(
-                        onPressed: _createNewRoom,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF269A51),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF259450),
+                              Color(0xFF27AE60),
+                            ],
                           ),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Create New Room',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF259450).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
                           ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: _createNewRoom,
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, size: 20, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Create New Room',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -449,10 +481,18 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.record_voice_over_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.record_voice_over_outlined,
+                size: 40,
+                color: Color(0xFF259450),
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -460,7 +500,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: Color(0xFF1A1A1A),
               ),
             ),
             const SizedBox(height: 8),
@@ -473,14 +513,42 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _createNewRoom,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF269A51),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            Container(
+              height: 45,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF259450),
+                    Color(0xFF27AE60),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF259450).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: const Text('Create First Room'),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: _createNewRoom,
+                  child: const Center(
+                    child: Text(
+                      'Create First Room',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -496,115 +564,139 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
-            blurRadius: 4,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: isHost 
-                ? const Color(0xFFFFD700).withOpacity(0.2)
-                : const Color(0xFFD8FBE5),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            isHost ? Icons.workspace_premium : Icons.record_voice_over,
-            color: isHost ? const Color(0xFFFFD700) : const Color(0xFF269A51),
-            size: 24,
-          ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                room['name'] ?? 'Support Room',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (isHost)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFFD700)),
-                ),
-                child: const Text(
-                  'HOST',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFB8860B),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              room['topic'] ?? 'Anonymous support session',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _joinRoom(room['id']),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
                 Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: isHost 
+                        ? const LinearGradient(
+                            colors: [
+                              Color(0xFFFFD700),
+                              Color(0xFFFFA000),
+                            ],
+                          )
+                        : const LinearGradient(
+                            colors: [
+                              Color(0xFF259450),
+                              Color(0xFF27AE60),
+                            ],
+                          ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isHost ? Icons.workspace_premium : Icons.record_voice_over,
+                    color: Colors.white,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  '$memberCount ${memberCount == 1 ? 'member' : 'members'} • Live',
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              room['name'] ?? 'Support Room',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isHost)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD700).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFFFD700)),
+                              ),
+                              child: const Text(
+                                'HOST',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFB8860B),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        room['topic'] ?? 'Anonymous support session',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$memberCount ${memberCount == 1 ? 'member' : 'members'} • Live',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF259450),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 16,
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        trailing: ElevatedButton(
-          onPressed: () => _joinRoom(room['id']),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF269A51),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: Text(
-            isHost ? 'Your Room' : 'Join',
-            style: const TextStyle(fontSize: 12),
           ),
         ),
       ),
@@ -628,70 +720,107 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
-        child: AppBar(
-          title: const Text(
-            'Anonymous Support Space',
-            style: TextStyle(
-              fontWeight: FontWeight.bold, 
-              color: Colors.black,
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF259450),
+                Color(0xFF1976D2),
+              ],
             ),
           ),
-          centerTitle: true,
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFD8FBE5),
+          child: AppBar(
+            title: const Text(
+              'Anonymous Support Space',
+              style: TextStyle(
+                fontWeight: FontWeight.bold, 
+                color: Colors.white,
+                fontSize: 18,
+              ),
             ),
-          ),
-          elevation: 2,
-          actions: [
-            // Live Rooms Button with badge
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.record_voice_over, color: Colors.black),
-                  onPressed: _showLiveRooms,
-                  tooltip: 'Live Support Rooms',
-                ),
-                if (_liveRooms.isNotEmpty)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '${_liveRooms.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              // Live Rooms Button with badge
+              Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.record_voice_over, color: Colors.white),
+                      onPressed: _showLiveRooms,
+                      tooltip: 'Live Support Rooms',
+                    ),
+                  ),
+                  if (_liveRooms.isNotEmpty)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${_liveRooms.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.info_outline, color: Colors.black),
-              onPressed: _showPrivacyInfo,
-            ),
-            IconButton(
-              icon: const Icon(Icons.wallpaper, color: Colors.black),
-              onPressed: _showBackgroundOptions,
-            ),
-            IconButton(
-              icon: const Icon(Icons.person_outline, color: Colors.black),
-              onPressed: () {
-                setState(() {
-                  _isSelectingUsername = true;
-                });
-              },
-            ),
-          ],
+                ],
+              ),
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.info_outline, color: Colors.white),
+                  onPressed: _showPrivacyInfo,
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.wallpaper, color: Colors.white),
+                  onPressed: _showBackgroundOptions,
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.person_outline, color: Colors.white),
+                  onPressed: () {
+                    setState(() {
+                      _isSelectingUsername = true;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       drawer: const AppDrawer(),
@@ -736,7 +865,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                       ? _buildEmptyChatState()
                       : ListView.builder(
                           controller: _scrollController,
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(16),
                           reverse: true,
                           itemCount: messages.length,
                           itemBuilder: (context, index) {
@@ -761,10 +890,18 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.forum_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.forum_outlined,
+                size: 40,
+                color: Color(0xFF259450),
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -772,7 +909,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: Color(0xFF1A1A1A),
               ),
             ),
             const SizedBox(height: 8),
@@ -793,24 +930,33 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
   Widget _buildQuickAccessBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF269A51), Color(0xFF34C759)],
+          colors: [Color(0xFF259450), Color(0xFF34C759)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.3),
+            color: const Color(0xFF259450).withOpacity(0.3),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.record_voice_over, color: Colors.white, size: 20),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.record_voice_over, color: Colors.white, size: 20),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -839,23 +985,34 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: _showLiveRooms,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF269A51),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
+          Container(
+            height: 35,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              _liveRooms.isEmpty ? 'Create Room' : 'Find Rooms',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(20),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(20),
+    onTap: _showLiveRooms, // ✅ changed from onPressed → onTap
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Center(
+        child: Text(
+          _liveRooms.isEmpty ? 'Create Room' : 'Find Rooms',
+          style: const TextStyle(
+            color: Color(0xFF259450),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+  ),
+),
+
           ),
         ],
       ),
@@ -872,18 +1029,38 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF259450),
+                        Color(0xFF1976D2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.person_outline,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 20),
                 const Text(
                   'Choose Your Anonymous Identity',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Card(
                   elevation: 4,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -897,38 +1074,73 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Text(
-                          _anonymousUsername ?? 'Generating...',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _anonymousUsername ?? 'Generating...',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF259450),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
-                        ElevatedButton(
-                          onPressed: _generateRandomUsername,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF269A51),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 30, vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        Container(
+                          height: 45,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF259450),
+                                Color(0xFF27AE60),
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF259450).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: const Text(
-                            'Generate Random Name',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                          child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(14),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(14),
+    onTap: _generateRandomUsername, // ✅ changed from onPressed → onTap
+    child: const Center(
+      child: Text(
+        'Generate Random Name',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  ),
+),
                         ),
                         const SizedBox(height: 15),
-                        const Text('OR', style: TextStyle(fontSize: 16)),
+                        const Text('OR', style: TextStyle(fontSize: 16, color: Colors.grey)),
                         const SizedBox(height: 15),
                         TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(
                             labelText: 'Choose your own name',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Color(0xFF259450)),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 15, vertical: 15),
@@ -936,27 +1148,49 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                           maxLength: 20,
                         ),
                         const SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (_usernameController.text.trim().isNotEmpty) {
-                              setState(() {
-                                _anonymousUsername = _usernameController.text.trim();
-                                _isSelectingUsername = false;
-                              });
-                              _saveUsername(_usernameController.text.trim());
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF269A51),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 30, vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        Container(
+                          height: 45,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF259450),
+                                Color(0xFF27AE60),
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF259450).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: const Text(
-                            'Use This Name',
-                            style: TextStyle(color: Colors.white),
+                          child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(14),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(14),
+    onTap: () { // ✅ change onPressed → onTap
+      if (_usernameController.text.trim().isNotEmpty) {
+        setState(() {
+          _anonymousUsername = _usernameController.text.trim();
+          _isSelectingUsername = false;
+        });
+        _saveUsername(_usernameController.text.trim());
+      }
+    },
+                              child: const Center(
+                                child: Text(
+                                  'Use This Name',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -966,7 +1200,10 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                               _isSelectingUsername = false;
                             });
                           },
-                          child: const Text('Continue with current name'),
+                          child: const Text(
+                            'Continue with current name',
+                            style: TextStyle(color: Color(0xFF259450)),
+                          )
                         ),
                       ],
                     ),
@@ -1031,12 +1268,19 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             child: Row(
               children: [
                 const SizedBox(width: 40),
-                Icon(
-                  _expandedReplies[message.id]! 
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  size: 20,
-                  color: Colors.grey,
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _expandedReplies[message.id]! 
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1088,7 +1332,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         ? const Color(0xFFF1F5FF)
         : const Color(0xFFEAFBF1);
     final hasLiked = _likedMessages.contains(message.id) || 
-                    (_user != null && message.likedBy.contains(_user.uid));
+                    (_user != null && message.likedBy.contains(_user!.uid));
 
     final iconColor = _chatBackgroundImage != null 
         ? Colors.white 
@@ -1103,7 +1347,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.78,
             ),
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: bubbleColor,
               borderRadius: BorderRadius.circular(20),
@@ -1111,8 +1355,8 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.15),
                   spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -1121,9 +1365,18 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Colors.blueAccent.shade100,
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF259450),
+                            Color(0xFF1976D2),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: const Icon(Icons.person_outline,
                           size: 14, color: Colors.white),
                     ),
@@ -1138,12 +1391,12 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   message.content,
                   style: const TextStyle(fontSize: 15, height: 1.4),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   DateFormat('h:mm a').format(message.timestamp),
                   style: TextStyle(
@@ -1155,6 +1408,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             ),
           ),
           Container(
+            margin: const EdgeInsets.only(left: 8),
             decoration: BoxDecoration(
               color: _chatBackgroundImage != null 
                   ? Colors.black.withOpacity(0.2) 
@@ -1166,45 +1420,52 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      hasLiked ? Icons.favorite : Icons.favorite_border,
-                      color: hasLiked ? Colors.pink : iconColor,
-                      size: 18,
-                    ),
-                    onPressed: () {
+                  // Like button
+                  GestureDetector(
+                    onTap: () {
                       if (_user != null) {
                         if (hasLiked) {
                           // Unlike functionality can be added here
                         } else {
-                          _chatService.likeMessage(message.id, _user.uid);
+                          _chatService.likeMessage(message.id, _user!.uid);
                           setState(() {
                             _likedMessages.add(message.id);
                           });
                         }
                       }
                     },
-                  ),
-                  Text(
-                    '${message.likes}', 
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: iconColor,
-                      shadows: _chatBackgroundImage != null
-                          ? [const Shadow(color: Colors.black, blurRadius: 2)]
-                          : null,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            hasLiked ? Icons.favorite : Icons.favorite_border,
+                            color: hasLiked ? Colors.pink : iconColor,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${message.likes}', 
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: iconColor,
+                              shadows: _chatBackgroundImage != null
+                                  ? [const Shadow(color: Colors.black, blurRadius: 2)]
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    icon: Icon(
-                      Icons.reply,
-                      size: 18,
-                      color: _replyingToMessageId == message.id 
-                          ? Colors.blue 
-                          : iconColor,
-                    ),
-                    onPressed: () {
+                  // Reply button
+                  GestureDetector(
+                    onTap: () {
                       setState(() {
                         _replyingToMessageId = _replyingToMessageId == message.id 
                             ? null 
@@ -1214,12 +1475,35 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                         }
                       });
                     },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.reply,
+                        size: 18,
+                        color: _replyingToMessageId == message.id 
+                            ? Colors.blue 
+                            : iconColor,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  // More options button
                   PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert, 
-                      size: 18,
-                      color: iconColor,
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.more_vert, 
+                        size: 18,
+                        color: iconColor,
+                      ),
                     ),
                     itemBuilder: (context) => [
                       PopupMenuItem(
@@ -1254,9 +1538,9 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).padding.bottom,
-        left: 8,
-        right: 8,
-        top: 4),
+        left: 16,
+        right: 16,
+        top: 8),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1265,20 +1549,27 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             BoxShadow(
               color: Colors.grey.withOpacity(0.15),
               spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, -1),
+              blurRadius: 6,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            IconButton(
-              icon: const Icon(Icons.emoji_emotions_outlined, 
-                color: Colors.blueGrey,
-                size: 22),
-              onPressed: () {},
-              padding: const EdgeInsets.all(8),
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.emoji_emotions_outlined, 
+                  color: Colors.blueGrey,
+                  size: 22),
+                onPressed: () {},
+                padding: const EdgeInsets.all(8),
+              ),
             ),
             Expanded(
               child: ConstrainedBox(
@@ -1307,46 +1598,72 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.attach_file, 
-                color: Colors.blueGrey,
-                size: 22),
-              onPressed: () {},
-              padding: const EdgeInsets.all(8),
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.attach_file, 
+                  color: Colors.blueGrey,
+                  size: 22),
+                onPressed: () {},
+                padding: const EdgeInsets.all(8),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.camera_alt, 
-                color: Colors.blueGrey,
-                size: 22),
-              onPressed: () {},
-              padding: const EdgeInsets.all(8),
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.camera_alt, 
+                  color: Colors.blueGrey,
+                  size: 22),
+                onPressed: () {},
+                padding: const EdgeInsets.all(8),
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 6, bottom: 4),
-              child: CircleAvatar(
-                backgroundColor: const Color(0xFF269A51),
-                radius: 20,
-                child: IconButton(
-                  icon: const Icon(Icons.send, 
-                    color: Colors.white,
-                    size: 18),
-                  onPressed: () {
-                    if (_messageController.text.trim().isNotEmpty && _user != null) {
-                      _chatService.postMessage(
-                        content: _messageController.text.trim(),
-                        userId: _user.uid,
-                        senderName: _anonymousUsername,
-                      );
-                      _messageController.clear();
-                      _scrollController.animateTo(
-                        0,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    }
-                  },
-                  padding: EdgeInsets.zero,
+            Container(
+              margin: const EdgeInsets.only(right: 6, bottom: 4),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF259450),
+                    Color(0xFF27AE60),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF259450).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, 
+                  color: Colors.white,
+                  size: 20),
+                onPressed: () {
+                  if (_messageController.text.trim().isNotEmpty && _user != null) {
+                    _chatService.postMessage(
+                      content: _messageController.text.trim(),
+                      userId: _user!.uid,
+                      senderName: _anonymousUsername,
+                    );
+                    _messageController.clear();
+                    _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                },
+                padding: const EdgeInsets.all(12),
               ),
             ),
           ],
@@ -1357,7 +1674,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
 
   Widget _buildReplyInput() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1366,8 +1683,8 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
             BoxShadow(
               color: Colors.grey.withOpacity(0.15),
               spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 1),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -1394,14 +1711,21 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                         vertical: 10,
                       ),
                       isDense: true,
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.close, size: 20),
-                        onPressed: () {
-                          setState(() {
-                            _replyingToMessageId = null;
-                          });
-                        },
-                        padding: EdgeInsets.zero,
+                      suffixIcon: Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () {
+                            setState(() {
+                              _replyingToMessageId = null;
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                        ),
                       ),
                     ),
                     style: const TextStyle(fontSize: 14),
@@ -1409,36 +1733,48 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 6, bottom: 4),
-              child: CircleAvatar(
-                backgroundColor: const Color(0xFF269A51),
-                radius: 20,
-                child: IconButton(
-                  icon: const Icon(Icons.send, size: 18, color: Colors.white),
-                  onPressed: () {
-                    if (_replyController.text.trim().isNotEmpty && 
-                        _replyingToMessageId != null && 
-                        _user != null) {
-                      _chatService.postMessage(
-                        content: _replyController.text.trim(),
-                        parentId: _replyingToMessageId,
-                        userId: _user.uid,
-                        senderName: _anonymousUsername,
-                      );
-                      _replyController.clear();
-                      setState(() {
-                        _replyingToMessageId = null;
-                      });
-                      _scrollController.animateTo(
-                        0,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
-                    }
-                  },
-                  padding: EdgeInsets.zero,
+            Container(
+              margin: const EdgeInsets.only(right: 6, bottom: 4),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF259450),
+                    Color(0xFF27AE60),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF259450).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, size: 20, color: Colors.white),
+                onPressed: () {
+                  if (_replyController.text.trim().isNotEmpty && 
+                      _replyingToMessageId != null && 
+                      _user != null) {
+                    _chatService.postMessage(
+                      content: _replyController.text.trim(),
+                      parentId: _replyingToMessageId,
+                      userId: _user!.uid,
+                      senderName: _anonymousUsername,
+                    );
+                    _replyController.clear();
+                    setState(() {
+                      _replyingToMessageId = null;
+                    });
+                    _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                },
+                padding: const EdgeInsets.all(12),
               ),
             ),
           ],
@@ -1451,28 +1787,89 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
+        return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text('Privacy Information'),
-          content: const SingleChildScrollView(
-            child: Text(
-              'This is a completely anonymous space:\n\n'
-              '• Your identity is never revealed\n'
-              '• Messages are not linked to your account\n'
-              '• Be kind and respectful to others\n'
-              '• Report any inappropriate content\n\n'
-              'Moderators may remove harmful content, but cannot identify who posted it.',
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF259450),
+                        Color(0xFF1976D2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Icon(
+                    Icons.security,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Privacy Information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'This is a completely anonymous space:\n\n'
+                  '• Your identity is never revealed\n'
+                  '• Messages are not linked to your account\n'
+                  '• Be kind and respectful to others\n'
+                  '• Report any inappropriate content\n\n'
+                  'Moderators may remove harmful content, but cannot identify who posted it.',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF259450),
+                        Color(0xFF27AE60),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(14),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(14),
+    onTap: () => Navigator.pop(context), // ✅ Fixed here
+    child: const Center(
+      child: Text(
+        'OK',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  ),
+),
+
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
         );
       },
     );
@@ -1482,17 +1879,46 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.7,
           padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
           child: Column(
             children: [
-              const Text(
-                'Choose Chat Background',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF259450),
+                      Color(0xFF1976D2),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.wallpaper, color: Colors.white, size: 24),
+                    SizedBox(width: 12),
+                    Text(
+                      'Choose Chat Background',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
@@ -1500,51 +1926,56 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
                     childAspectRatio: 1.2,
                   ),
                   itemCount: _backgroundOptions.length,
                   itemBuilder: (context, index) {
                     final option = _backgroundOptions[index];
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (option.containsKey('image')) {
-                            _chatBackgroundImage = option['image'];
-                            _chatBackgroundColor = const Color(0xFFFDFDFD);
-                            _saveBackgroundPreference(true, option['image']);
-                          } else {
-                            _chatBackgroundColor = option['color'] as Color;
-                            _chatBackgroundImage = null;
-                            _saveBackgroundPreference(false, '');
-                          }
-                        });
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: option['color'] as Color?,
-                          image: option.containsKey('image')
-                              ? DecorationImage(
-                                  image: NetworkImage(option['image'] as String),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Center(
-                          child: Text(
-                            option['name'] as String,
-                            style: TextStyle(
-                              color: option.containsKey('image') 
-                                  ? Colors.white 
-                                  : Colors.black,
-                              fontWeight: FontWeight.bold,
-                              shadows: option.containsKey('image')
-                                  ? [const Shadow(color: Colors.black, blurRadius: 4)]
-                                  : null,
+                    return Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          setState(() {
+                            if (option.containsKey('image')) {
+                              _chatBackgroundImage = option['image'];
+                              _chatBackgroundColor = const Color(0xFFFDFDFD);
+                              _saveBackgroundPreference(true, option['image']);
+                            } else {
+                              _chatBackgroundColor = option['color'] as Color;
+                              _chatBackgroundImage = null;
+                              _saveBackgroundPreference(false, '');
+                            }
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: option['color'] as Color?,
+                            image: option.containsKey('image')
+                                ? DecorationImage(
+                                    image: NetworkImage(option['image'] as String),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Center(
+                            child: Text(
+                              option['name'] as String,
+                              style: TextStyle(
+                                color: option.containsKey('image') 
+                                    ? Colors.white 
+                                    : Colors.black,
+                                fontWeight: FontWeight.bold,
+                                shadows: option.containsKey('image')
+                                    ? [const Shadow(color: Colors.black, blurRadius: 4)]
+                                    : null,
+                              ),
                             ),
                           ),
                         ),
