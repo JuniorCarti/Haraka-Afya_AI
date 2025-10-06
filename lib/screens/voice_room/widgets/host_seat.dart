@@ -10,7 +10,7 @@ class HostSeat extends StatelessWidget {
     super.key, 
     required this.host,
     this.onHostTap,
-    this.isCurrentUser = false,
+    this.isCurrentUser = false, void Function()? onTap,
   });
 
   @override
