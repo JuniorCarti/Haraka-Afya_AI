@@ -30,42 +30,64 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: const Color(0xFF259450),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       drawer: const AppDrawer(),
-      backgroundColor: const Color(0xFFEDFCF5),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: EdgeInsets.only(bottom: bottomPadding + 16),
         child: Column(
           children: [
             // Filter dropdown
-            Padding(
+            Container(
+              margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: DropdownButtonFormField<String>(
                 value: _selectedFilter,
                 decoration: InputDecoration(
-                  labelText: 'Filter by',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  labelText: 'Filter Events',
+                  labelStyle: const TextStyle(
+                    color: Color(0xFF259450),
+                    fontWeight: FontWeight.w500,
                   ),
+                  border: InputBorder.none,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Colors.transparent,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: 0,
+                    vertical: 0,
                   ),
                 ),
                 items: _filterOptions.map((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
-                    child: Text(value),
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        color: Color(0xFF1A1A1A),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
@@ -73,6 +95,8 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
                     _selectedFilter = newValue;
                   });
                 },
+                dropdownColor: Colors.white,
+                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF259450)),
               ),
             ),
             const SizedBox(height: 8),
@@ -179,195 +203,258 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.grey.shade100,
+          width: 1,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: SizedBox(
-                    height: 150,
-                    child: ImageSlideshow(
-                      width: double.infinity,
-                      height: 150,
-                      initialPage: 0,
-                      indicatorColor: Colors.blue,
-                      indicatorBackgroundColor: Colors.grey,
-                      indicatorRadius: 4,
-                      autoPlayInterval: 4000, // 4 seconds
-                      isLoop: true,
-                      children: imageUrls.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final url = entry.value;
-                        return Image.network(
-                          url,
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              height: 150,
-                              color: Colors.grey[200],
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 150,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                child: SizedBox(
+                  height: 180,
+                  child: ImageSlideshow(
+                    width: double.infinity,
+                    height: 180,
+                    initialPage: 0,
+                    indicatorColor: const Color(0xFF259450),
+                    indicatorBackgroundColor: Colors.grey.shade300,
+                    indicatorRadius: 4,
+                    autoPlayInterval: 4000, // 4 seconds
+                    isLoop: true,
+                    children: imageUrls.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final url = entry.value;
+                      return Image.network(
+                        url,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 180,
                             color: Colors.grey[200],
-                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                          ),
-                        );
-                      }).toList(),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 180,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF259450),
+                        Color(0xFF1976D2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    eventType,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: ValueNotifier<int>(0),
-                      builder: (context, currentIndex, child) {
-                        return Text(
-                          'Photo by ${photographers[currentIndex % photographers.length]}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white,
-                          ),
-                        );
-                      },
-                    ),
+              ),
+              Positioned(
+                bottom: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: ValueNotifier<int>(0),
+                    builder: (context, currentIndex, child) {
+                      return Text(
+                        'Photo by ${photographers[currentIndex % photographers.length]}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildEventDetailRow(Icons.calendar_today, date),
+                const SizedBox(height: 8),
+                _buildEventDetailRow(Icons.access_time, time),
+                const SizedBox(height: 8),
+                _buildEventDetailRow(Icons.location_on, location),
+                const SizedBox(height: 16),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (hasSupportButton)
+                      Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        height: 40,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFFD700),
+                              Color(0xFFFFA000),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFA000).withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                       child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(12),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: () { // ✅ changed from onPressed → onTap
+      // Handle Support action
+    },
+
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.volunteer_activism, size: 16, color: Colors.white),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Support',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF259450),
+                            Color(0xFF27AE60),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF259450).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                     child: Material(
+  color: Colors.transparent,
+  borderRadius: BorderRadius.circular(12),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: () { // ✅ changed from onPressed → onTap
+      // Handle Register action
+    },
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.event_available, size: 16, color: Colors.white),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Register',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD6E7), // Light pink background
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          eventType,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _buildEventDetailRow(Icons.calendar_today, date),
-                  const SizedBox(height: 4),
-                  _buildEventDetailRow(Icons.access_time, time),
-                  const SizedBox(height: 4),
-                  _buildEventDetailRow(Icons.location_on, location),
-                  const SizedBox(height: 12),
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (hasSupportButton)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Handle Support action
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD8FBE5),
-                              foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            ),
-                            child: const Text(
-                              'Support',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Handle Register action
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFECFDF5),
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -375,13 +462,28 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
   Widget _buildEventDetailRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.black54),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.black87,
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F5E9),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: const Color(0xFF259450),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF1A1A1A),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
