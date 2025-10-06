@@ -125,3 +125,16 @@ Widget _buildBottomNavBar() {
           selectedFontSize: 11,
           unselectedFontSize: 11,
           iconSize: 24,
+          onTap: _navigateToPage,
+          items: [
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _currentIndex == 0 ? const Color(0xFFEDFCF5) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Iconsax.home_15),
+              ),
+              label: 'Home',
+            ),
