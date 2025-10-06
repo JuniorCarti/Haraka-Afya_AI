@@ -848,3 +848,25 @@ const SizedBox(height: 12),
                     },
                   ),
                 ),
+const SizedBox(width: 12),
+                Expanded(
+                  child: _buildEmergencyButton(
+                    icon: Iconsax.car,
+                    label: 'Ambulance',
+                    color: const Color(0xFF259450),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Requesting ambulance service...'),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
