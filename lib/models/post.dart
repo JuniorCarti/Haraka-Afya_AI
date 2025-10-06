@@ -24,21 +24,24 @@ class Post {
     required this.timestamp,
     this.likedBy = const [],
     this.commentCount = 0,
-    this.likeCount = 0, String? imageUrl,
+    this.likeCount = 0,
   });
 
   /// Creates a Post object from a Firestore document with null safety
   factory Post.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!; // Using ! since we expect data to exist
+    final data = doc.data()!;
 
-    // Helper function to safely parse lists
+    // Helper function to safely parse lists from dynamic to List<String>
     List<String> parseStringList(dynamic value) {
       if (value == null) return [];
-      try {
-        return List<String>.from(value);
-      } catch (e) {
-        return [];
+      if (value is List<dynamic>) {
+        // Convert List<dynamic> to List<String>
+        return value.map((item) => item.toString()).toList();
       }
+      if (value is List<String>) {
+        return value;
+      }
+      return [];
     }
 
     return Post(
@@ -61,6 +64,12 @@ class Post {
       QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     return Post.fromFirestore(doc);
   }
+
+  /// Getter for user image - returns authorImage
+  String get userImage => authorImage;
+
+  /// Getter for user name - returns authorName
+  String get userName => authorName;
 
   /// Converts Post object to Firestore map with type safety
   Map<String, dynamic> toMap() {
