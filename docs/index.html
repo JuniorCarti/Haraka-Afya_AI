@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haraka Afya AI - Download</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0C6D5B 0%, #34C759 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .download-container {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            text-align: center;
+            max-width: 440px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+
+        .app-logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #0C6D5B, #34C759);
+            border-radius: 24px;
+            margin: 0 auto 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 40px;
+            box-shadow: 0 10px 30px rgba(12, 109, 91, 0.3);
+        }
+
+        .app-name {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0C6D5B, #34C759);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .app-tagline {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .app-description {
+            color: #888;
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0C6D5B, #34C759);
+            color: white;
+            padding: 18px 36px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(12, 109, 91, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(12, 109, 91, 0.4);
+        }
+
+        .download-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .version-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 16px;
+            margin: 25px 0;
+            text-align: left;
+        }
+
+        .version-info h3 {
+            color: #0C6D5B;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: between;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            color: #856404;
+            padding: 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .warning-box strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .installation-steps {
+            text-align: left;
+            margin-top: 25px;
+            font-size: 14px;
+        }
+
+        .installation-steps h3 {
+            color: #0C6D5B;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .steps-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .steps-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+
+        .steps-list li:last-child {
+            border-bottom: none;
+        }
+
+        .step-number {
+            background: #0C6D5B;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .feature-item::before {
+            content: "✓";
+            color: #34C759;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 480px) {
+            .download-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .app-name {
+                font-size: 28px;
+            }
+            
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="download-container">
+        <div class="app-logo">
+            🏥
+        </div>
+        
+        <h1 class="app-name">Haraka Afya AI</h1>
+        <p class="app-tagline">Your AI Health Companion</p>
+        <p class="app-description">
+            Anonymous support, community healing, and AI-powered health guidance in one secure platform.
+        </p>
+
+        <!-- Update this URL with your actual latest release APK -->
+        <a href="https://github.com/JuniorCarti/Haraka-Afya_AI/releases/latest/download/app-release.apk" 
+           class="download-btn" 
+           download="HarakaAfyaAI.apk"
+           id="downloadButton">
+           <span style="margin-right: 10px;">📥</span>
+           Download Latest Version
+        </a>
+
+        <div class="feature-list">
+            <div class="feature-item">Anonymous Chat Support</div>
+            <div class="feature-item">Voice Support Rooms</div>
+            <div class="feature-item">AI Health Assistant</div>
+            <div class="feature-item">Community Groups</div>
+            <div class="feature-item">Secure & Private</div>
+            <div class="feature-item">24/7 Available</div>
+        </div>
+
+        <div class="version-info">
+            <h3>📋 Version Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Version:</span>
+                    <span class="info-value" id="version">Latest</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Size:</span>
+                    <span class="info-value" id="fileSize">~35 MB</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Updated:</span>
+                    <span class="info-value" id="updateDate">January 2024</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Requirements:</span>
+                    <span class="info-value">Android 8.0+</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="warning-box">
+            <strong>⚠️ Installation Note</strong>
+            Before installing, enable "Unknown Sources" in your Android settings:<br>
+            Settings → Security → Unknown Sources
+        </div>
+
+        <div class="installation-steps">
+            <h3>🔧 Installation Guide</h3>
+            <ul class="steps-list">
+                <li>
+                    <span class="step-number">1</span>
+                    Download the APK file above
+                </li>
+                <li>
+                    <span class="step-number">2</span>
+                    Open the downloaded file
+                </li>
+                <li>
+                    <span class="step-number">3</span>
+                    Tap "Install" when prompted
+                </li>
+                <li>
+                    <span class="step-number">4</span>
+                    Launch Haraka Afya AI and start your journey!
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced download tracking and dynamic info
+        document.getElementById('downloadButton').addEventListener('click', function(e) {
+            // Track download event
+            console.log('Haraka Afya AI download initiated');
+            
+            // You can add analytics here
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'download', {
+                    'event_category': 'apk_download',
+                    'event_label': 'Haraka_Afya_AI'
+                });
+            }
+            
+            // Optional: Show download confirmation
+            setTimeout(() => {
+                alert('📥 Download started! Check your notifications.');
+            }, 1000);
+        });
+
+        // Dynamic file size detection (optional)
+        async function getFileSize() {
+            try {
+                const response = await fetch('https://github.com/JuniorCarti/Haraka-Afya_AI/releases/latest/download/app-release.apk', {
+                    method: 'HEAD'
+                });
+                
+                if (response.ok) {
+                    const size = response.headers.get('content-length');
+                    if (size) {
+                        const sizeMB = (size / (1024 * 1024)).toFixed(1);
+                        document.getElementById('fileSize').textContent = `${sizeMB} MB`;
+                    }
+                }
+            } catch (error) {
+                console.log('Could not fetch file size');
+            }
+        }
+
+        // Get latest release info
+        async function getLatestReleaseInfo() {
+            try {
+                const response = await fetch('https://api.github.com/repos/JuniorCarti/Haraka-Afya_AI/releases/latest');
+                const data = await response.json();
+                
+                if (data.tag_name) {
+                    document.getElementById('version').textContent = data.tag_name;
+                }
+                if (data.published_at) {
+                    const date = new Date(data.published_at);
+                    document.getElementById('updateDate').textContent = date.toLocaleDateString();
+                }
+            } catch (error) {
+                console.log('Could not fetch release info');
+            }
+        }
+
+        // Initialize dynamic content
+        window.addEventListener('load', () => {
+            getFileSize();
+            getLatestReleaseInfo();
+        });
+    </script>
+</body>
+</html>
