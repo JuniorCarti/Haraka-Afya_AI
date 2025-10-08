@@ -128,14 +128,14 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
 
   try {
     // Generate a unique room ID
-    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_user!.uid}';
+    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}_${_user.uid}';
     
     // Create room in Firestore
     await _firestore.collection('voice_rooms').doc(roomId).set({
       'id': roomId,
       'name': 'Support Room by ${_anonymousUsername ?? 'Anonymous'}',
       'description': 'A safe space for support and conversation',
-      'hostId': _user!.uid,
+      'hostId': _user.uid,
       'hostName': _anonymousUsername ?? 'Anonymous',
       'isActive': true,
       'members': [],
@@ -233,7 +233,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         _anonymousUsername = savedUsername;
       });
     } else if (_user != null) {
-      final username = await _chatService.getOrCreateUsername(_user!.uid);
+      final username = await _chatService.getOrCreateUsername(_user.uid);
       setState(() {
         _anonymousUsername = username;
       });
@@ -248,7 +248,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     
     final likedMessages = await _firestore
         .collection('anonymous_messages')
-        .where('likedBy', arrayContains: _user!.uid)
+        .where('likedBy', arrayContains: _user.uid)
         .get();
     
     setState(() {
@@ -263,7 +263,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
     if (_user != null) {
       await _firestore
           .collection('user_usernames')
-          .doc(_user!.uid)
+          .doc(_user.uid)
           .set({
             'username': username,
             'createdAt': FieldValue.serverTimestamp(),
@@ -273,7 +273,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
 
   void _generateRandomUsername() {
     if (_user != null) {
-      _chatService.getOrCreateUsername(_user!.uid).then((username) {
+      _chatService.getOrCreateUsername(_user.uid).then((username) {
         setState(() {
           _anonymousUsername = username;
         });
@@ -1332,7 +1332,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
         ? const Color(0xFFF1F5FF)
         : const Color(0xFFEAFBF1);
     final hasLiked = _likedMessages.contains(message.id) || 
-                    (_user != null && message.likedBy.contains(_user!.uid));
+                    (_user != null && message.likedBy.contains(_user.uid));
 
     final iconColor = _chatBackgroundImage != null 
         ? Colors.white 
@@ -1427,7 +1427,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                         if (hasLiked) {
                           // Unlike functionality can be added here
                         } else {
-                          _chatService.likeMessage(message.id, _user!.uid);
+                          _chatService.likeMessage(message.id, _user.uid);
                           setState(() {
                             _likedMessages.add(message.id);
                           });
@@ -1652,7 +1652,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                   if (_messageController.text.trim().isNotEmpty && _user != null) {
                     _chatService.postMessage(
                       content: _messageController.text.trim(),
-                      userId: _user!.uid,
+                      userId: _user.uid,
                       senderName: _anonymousUsername,
                     );
                     _messageController.clear();
@@ -1760,7 +1760,7 @@ class _AnonymousChatScreenState extends State<AnonymousChatScreen> {
                     _chatService.postMessage(
                       content: _replyController.text.trim(),
                       parentId: _replyingToMessageId,
-                      userId: _user!.uid,
+                      userId: _user.uid,
                       senderName: _anonymousUsername,
                     );
                     _replyController.clear();
