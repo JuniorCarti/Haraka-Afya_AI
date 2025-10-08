@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haraka Afya AI - Your AI Health Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0C6D5B;
+            --primary-dark: #085C4B;
+            --primary-light: #34C759;
+            --accent: #007AFF;
+            --text-primary: #1D1D1F;
+            --text-secondary: #8E8E93;
+            --text-tertiary: #C7C7CC;
+            --background: #FFFFFF;
+            --surface: #F8F9FA;
+            --border: #E5E5EA;
+            --success: #34C759;
+            --warning: #FF9500;
+            --error: #FF3B30;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, 
+                var(--primary) 0%, 
+                var(--primary-dark) 25%, 
+                var(--primary-light) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 48px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            max-width: 480px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.1), 
+                transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(45deg) translateX(-100%); }
+            50% { transform: rotate(45deg) translateX(100%); }
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 28px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            box-shadow: 
+                0 20px 40px rgba(12, 109, 91, 0.3),
+                0 0 0 4px rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-icon::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.3), 
+                transparent);
+            transform: rotate(45deg);
+            animation: iconShine 4s ease-in-out infinite;
+        }
+
+        @keyframes iconShine {
+            0%, 100% { transform: rotate(45deg) translateX(-100%); }
+            50% { transform: rotate(45deg) translateX(100%); }
+        }
+
+        .app-title {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            line-height: 1.1;
+        }
+
+        .app-subtitle {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .app-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .download-section {
+            margin-bottom: 32px;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 20px 40px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 
+                0 12px 30px rgba(12, 109, 91, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.2), 
+                transparent);
+            transition: left 0.5s;
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 20px 40px rgba(12, 109, 91, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+        }
+
+        .download-btn:active {
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .qr-section {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 24px;
+            margin: 32px 0;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .qr-code {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 16px;
+            background: white;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .qr-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 32px 0;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .feature-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .info-section {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 24px;
+            margin: 24px 0;
+            border: 1px solid var(--border);
+        }
+
+        .info-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .info-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            color: var(--primary);
+        }
+
+        .info-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .warning-card {
+            background: linear-gradient(135deg, #FFF3CD, #FFEAA7);
+            border: 1px solid #FFD166;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 24px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .warning-card::before {
+            content: '⚠️';
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            font-size: 20px;
+        }
+
+        .warning-content {
+            margin-left: 32px;
+        }
+
+        .warning-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 8px;
+        }
+
+        .warning-text {
+            font-size: 14px;
+            color: #856404;
+            line-height: 1.5;
+        }
+
+        .steps-section {
+            margin-top: 32px;
+        }
+
+        .steps-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .steps-title::before {
+            content: '🔧';
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .steps-list {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .step-item {
+            counter-increment: step-counter;
+            padding: 20px 0 20px 60px;
+            position: relative;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .step-item:last-child {
+            border-bottom: none;
+        }
+
+        .step-item::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 20px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(12, 109, 91, 0.3);
+        }
+
+        .step-text {
+            font-size: 15px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 24px 0;
+            border: 1px solid var(--border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 480px) {
+            .glass-card {
+                padding: 32px 24px;
+                border-radius: 24px;
+            }
+
+            .app-title {
+                font-size: 36px;
+            }
+
+            .app-subtitle {
+                font-size: 18px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .download-btn {
+                padding: 18px 32px;
+                font-size: 16px;
+            }
+        }
+
+        /* Loading animation */
+        .loading-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            animation: loading 2s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 0%; }
+        }
+
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-bar"></div>
+    
+    <div class="glass-card floating">
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="app-icon">🏥</div>
+            <h1 class="app-title">Haraka Afya AI</h1>
+            <p class="app-subtitle">Your AI Health Companion</p>
+            <p class="app-description">
+                Professional mental health support, anonymous community healing, and AI-powered guidance in one secure platform.
+            </p>
+        </div>
+
+        <!-- Download Section -->
+        <div class="download-section">
+            <a href="https://github.com/JuniorCarti/Haraka-Afya_AI/releases/latest/download/haraka.apk" 
+               class="download-btn" 
+               download="HarakaAfyaAI.apk"
+               id="downloadButton">
+               <span class="btn-icon">📥</span>
+               Download Latest Version
+            </a>
+        </div>
+
+        <!-- QR Code Section -->
+        <div class="qr-section">
+            <div class="qr-code" id="qrCode">
+                <!-- QR Code will be generated here -->
+            </div>
+            <p class="qr-label">Scan to download on mobile</p>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="feature-icon">🤖</span>
+                <div class="feature-text">AI Assistant</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">💬</span>
+                <div class="feature-text">Anonymous Chat</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🎙️</span>
+                <div class="feature-text">Voice Rooms</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">👥</span>
+                <div class="feature-text">Community</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🔒</span>
+                <div class="feature-text">Secure</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🌍</span>
+                <div class="feature-text">24/7 Support</div>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number" id="downloadCount">10K+</span>
+                <span class="stat-label">Downloads</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="userRating">4.8</span>
+                <span class="stat-label">Rating</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="activeUsers">5K+</span>
+                <span class="stat-label">Active</span>
+            </div>
+        </div>
+
+        <!-- Version Information -->
+        <div class="info-section">
+            <div class="info-header">
+                <span class="info-icon">📋</span>
+                <h3 class="info-title">Version Information</h3>
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Version:</span>
+                    <span class="info-value" id="version">v2.1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Size:</span>
+                    <span class="info-value" id="fileSize">~35 MB</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Updated:</span>
+                    <span class="info-value" id="updateDate">Jan 2024</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Android:</span>
+                    <span class="info-value">8.0+</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warning Card -->
+        <div class="warning-card">
+            <div class="warning-content">
+                <div class="warning-title">Installation Required</div>
+                <div class="warning-text">
+                    Enable "Unknown Sources" in Android Settings → Security before installing. Your safety and privacy are our top priority.
+                </div>
+            </div>
+        </div>
+
+        <!-- Installation Steps -->
+        <div class="steps-section">
+            <h3 class="steps-title">Installation Guide</h3>
+            <ol class="steps-list">
+                <li class="step-item">
+                    <span class="step-text">Download the APK file using the button above</span>
+                </li>
+                <li class="step-item">
+                    <span class="step-text">Open your Downloads folder and locate the file</span>
+                </li>
+                <li class="step-item">
+                    <span class="step-text">Tap "Install" when prompted by the system</span>
+                </li>
+                <li class="step-item">
+                    <span class="step-text">Launch Haraka Afya AI and begin your wellness journey</span>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+    class DownloadPage {
+        constructor() {
+            this.downloadUrl = 'https://github.com/JuniorCarti/Haraka-Afya_AI/releases/latest/download/haraka.apk';
+            this.tracker = new DownloadTracker();
+            this.init();
+        }
+
+        async init() {
+            this.generateQRCode();
+            this.setupEventListeners();
+            await this.loadReleaseInfo();
+            await this.detectFileSize();
+            this.animateStats();
+            
+            // Initialize with current download count
+            this.tracker.updateDisplay();
+        }
+
+        generateQRCode() {
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(this.downloadUrl)}&format=svg`;
+            document.getElementById('qrCode').innerHTML = `<img src="${qrCodeUrl}" alt="Scan to download Haraka Afya AI" style="width: 100%; height: 100%; border-radius: 8px;">`;
+        }
+
+        setupEventListeners() {
+            const downloadBtn = document.getElementById('downloadButton');
+            
+            downloadBtn.addEventListener('click', (e) => {
+                // Track the download
+                this.tracker.trackDownload();
+                this.showDownloadConfirmation();
+                
+                // You can also add a small delay to ensure tracking happens
+                setTimeout(() => {
+                    window.location.href = this.downloadUrl;
+                }, 100);
+            });
+
+            // Add hover effects to feature cards
+            document.querySelectorAll('.feature-card').forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-4px)';
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0px)';
+                });
+            });
+        }
+
+        async loadReleaseInfo() {
+            try {
+                const response = await fetch('https://api.github.com/repos/JuniorCarti/Haraka-Afya_AI/releases/latest');
+                const data = await response.json();
+                
+                if (data.tag_name) {
+                    document.getElementById('version').textContent = data.tag_name;
+                }
+                if (data.published_at) {
+                    const date = new Date(data.published_at);
+                    document.getElementById('updateDate').textContent = date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                }
+                
+                // Get REAL download count from GitHub
+                if (data.assets && data.assets.length > 0) {
+                    const githubDownloadCount = data.assets.reduce((total, asset) => total + asset.download_count, 0);
+                    
+                    // Initialize tracker with GitHub data if it's higher than local storage
+                    const currentCount = this.tracker.getStoredCount();
+                    if (githubDownloadCount > currentCount) {
+                        this.tracker.downloadCount = githubDownloadCount;
+                        this.tracker.saveCount();
+                        this.tracker.updateDisplay();
+                    }
+                }
+            } catch (error) {
+                console.log('Could not fetch release info');
+            }
+        }
+
+        async detectFileSize() {
+            try {
+                const response = await fetch(this.downloadUrl, { method: 'HEAD' });
+                if (response.ok) {
+                    const size = response.headers.get('content-length');
+                    if (size) {
+                        const sizeMB = (size / (1024 * 1024)).toFixed(1);
+                        document.getElementById('fileSize').textContent = `${sizeMB} MB`;
+                    }
+                }
+            } catch (error) {
+                console.log('File size detection failed');
+            }
+        }
+
+        showDownloadConfirmation() {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, var(--primary), var(--primary-light));
+                color: white;
+                padding: 16px 24px;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+                font-weight: 600;
+            `;
+            notification.innerHTML = '📥 Download started! Thank you for downloading.';
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        animateStats() {
+            const stats = document.querySelectorAll('.stat-number');
+            stats.forEach(stat => {
+                if (stat.id !== 'downloadCount') { // Don't animate download count yet
+                    const finalValue = stat.textContent;
+                    if (finalValue.includes('+') || finalValue.includes('.')) {
+                        this.animateValue(stat, 0, parseFloat(finalValue), 2000);
+                    }
+                }
+            });
+        }
+
+        animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = progress * (end - start) + start;
+                element.textContent = end.toString().includes('.') ? value.toFixed(1) : Math.floor(value);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+    }
+
+    // Download Tracker Class
+    class DownloadTracker {
+        constructor() {
+            this.downloadCount = this.getStoredCount();
+        }
+
+        trackDownload() {
+            this.downloadCount++;
+            this.saveCount();
+            this.updateDisplay();
+            this.sendToAnalytics();
+        }
+
+        getStoredCount() {
+            try {
+                const stored = localStorage.getItem('haraka_downloads');
+                if (stored) {
+                    return parseInt(stored);
+                }
+                // If no stored value, try to get from GitHub or use default
+                return 10500; // Your starting number
+            } catch (error) {
+                return 10500;
+            }
+        }
+
+        saveCount() {
+            try {
+                localStorage.setItem('haraka_downloads', this.downloadCount.toString());
+            } catch (error) {
+                console.log('Could not save download count');
+            }
+        }
+
+        updateDisplay() {
+            const countElement = document.getElementById('downloadCount');
+            if (countElement) {
+                countElement.textContent = this.formatNumber(this.downloadCount);
+            }
+        }
+
+        sendToAnalytics() {
+            // Google Analytics
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'download', {
+                    'event_category': 'apk_download',
+                    'event_label': 'Haraka_Afya_AI',
+                    'value': this.downloadCount
+                });
+            }
+
+            // Custom backend (optional - replace with your endpoint)
+            /*
+            fetch('https://your-tracking-service.com/api/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    app: 'Haraka Afya AI',
+                    download_count: this.downloadCount,
+                    timestamp: new Date().toISOString(),
+                    source: 'github_page'
+                })
+            });
+            */
+        }
+
+        formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M+';
+            }
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K+';
+            }
+            return num.toString();
+        }
+    }
+
+    // Add custom animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        
+        /* Pulse animation for counter update */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .counter-update {
+            animation: pulse 0.5s ease-in-out;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Initialize the page when loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        new DownloadPage();
+    });
+</script>
+</body>
+</html>
