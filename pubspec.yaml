@@ -15,6 +15,7 @@ dependencies:
   cloud_firestore: ^5.6.11
   firebase_auth: ^5.6.2
   google_sign_in: ^6.1.5
+  google_generative_ai: 0.0.1-dev
   geolocator: ^10.0.0
   google_maps_flutter: ^2.2.3
   flutter_polyline_points: ^1.0.0
