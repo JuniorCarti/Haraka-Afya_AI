@@ -2,16 +2,17 @@
   "hospitals": [
     {
       "name": "Nairobi Cancer Center",
-      "location": "Nairobi",
+      "location": "Upper Hill, Nairobi",
+      "latitude": -1.2921,
+      "longitude": 36.8219,
       "rating": 4.7,
-      "distance": "3.5 km",
-      "image": "https://example.com/nairobi_center.jpg",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400",
       "cancerTypes": ["Breast", "Lung", "Prostate"],
       "specialists": [
         {
           "name": "Dr. Angela Mwangi",
           "specialty": "Oncologist",
-          "image": "https://example.com/angela.jpg",
+          "image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200",
           "rating": 4.9,
           "experience": "10 yrs"
         }
@@ -20,16 +21,17 @@
     },
     {
       "name": "Eldoret Oncology Hospital",
-      "location": "Eldoret",
+      "location": "Nandi Road, Eldoret",
+      "latitude": 0.5143,
+      "longitude": 35.2698,
       "rating": 4.5,
-      "distance": "1.2 km",
-      "image": "https://example.com/eldoret.jpg",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400",
       "cancerTypes": ["Leukemia", "Skin"],
       "specialists": [
         {
           "name": "Dr. Joan Chebet",
           "specialty": "Dermatologist",
-          "image": "https://example.com/joan.jpg",
+          "image": "https://images.unsplash.com/photo-1594824947933-d0501ba2fe65?w=200",
           "rating": 4.6,
           "experience": "6 yrs"
         }
@@ -38,16 +40,17 @@
     },
     {
       "name": "Coast Cancer Institute",
-      "location": "Mombasa",
+      "location": "Nyali, Mombasa",
+      "latitude": -4.0435,
+      "longitude": 39.6682,
       "rating": 4.2,
-      "distance": "2.8 km",
-      "image": "https://example.com/coast.jpg",
+      "image": "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=400",
       "cancerTypes": ["Lung", "Skin"],
       "specialists": [
         {
           "name": "Dr. Zainab Ali",
           "specialty": "Pulmonologist",
-          "image": "https://example.com/zainab.jpg",
+          "image": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200",
           "rating": 4.3,
           "experience": "9 yrs"
         }
@@ -56,16 +59,17 @@
     },
     {
       "name": "Mount Kenya Medical Oncology",
-      "location": "Nyeri",
+      "location": "Nyeri Town",
+      "latitude": -0.4201,
+      "longitude": 36.9476,
       "rating": 4.0,
-      "distance": "5.1 km",
-      "image": "https://example.com/mtkenya.jpg",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400",
       "cancerTypes": ["Prostate", "Breast"],
       "specialists": [
         {
           "name": "Dr. Kiplangat Ruto",
           "specialty": "Urologist",
-          "image": "https://example.com/ruto.jpg",
+          "image": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200",
           "rating": 4.1,
           "experience": "7 yrs"
         }
@@ -74,16 +78,17 @@
     },
     {
       "name": "Western Cancer Hospital",
-      "location": "Kakamega",
+      "location": "Kakamega Town",
+      "latitude": 0.2827,
+      "longitude": 34.7519,
       "rating": 3.8,
-      "distance": "2.2 km",
-      "image": "https://example.com/western.jpg",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400",
       "cancerTypes": ["Leukemia"],
       "specialists": [
         {
           "name": "Dr. Irene Auma",
           "specialty": "Hematologist",
-          "image": "https://example.com/irene.jpg",
+          "image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200",
           "rating": 4.0,
           "experience": "5 yrs"
         }
@@ -92,16 +97,17 @@
     },
     {
       "name": "Thika Oncology Center",
-      "location": "Thika",
+      "location": "Thika Town",
+      "latitude": -1.0333,
+      "longitude": 37.0833,
       "rating": 4.6,
-      "distance": "1.8 km",
-      "image": "https://example.com/thika.jpg",
+      "image": "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=400",
       "cancerTypes": ["Breast", "Lung", "Skin"],
       "specialists": [
         {
           "name": "Dr. Peter Kariuki",
           "specialty": "Radiologist",
-          "image": "https://example.com/peter.jpg",
+          "image": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200",
           "rating": 4.7,
           "experience": "11 yrs"
         }
@@ -110,16 +116,17 @@
     },
     {
       "name": "Kisumu Cancer Care",
-      "location": "Kisumu",
+      "location": "Milimani, Kisumu",
+      "latitude": -0.1022,
+      "longitude": 34.7617,
       "rating": 4.3,
-      "distance": "4.3 km",
-      "image": "https://example.com/kisumu.jpg",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400",
       "cancerTypes": ["Leukemia", "Skin"],
       "specialists": [
         {
           "name": "Dr. Faith Oketch",
           "specialty": "Oncologist",
-          "image": "https://example.com/faith.jpg",
+          "image": "https://images.unsplash.com/photo-1594824947933-d0501ba2fe65?w=200",
           "rating": 4.2,
           "experience": "8 yrs"
         }
@@ -128,16 +135,17 @@
     },
     {
       "name": "Garissa Oncology Clinic",
-      "location": "Garissa",
+      "location": "Garissa Town",
+      "latitude": -0.4532,
+      "longitude": 39.6461,
       "rating": 3.5,
-      "distance": "7.4 km",
-      "image": "https://example.com/garissa.jpg",
+      "image": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400",
       "cancerTypes": ["Prostate", "Lung"],
       "specialists": [
         {
           "name": "Dr. Ahmed Noor",
           "specialty": "Pulmonologist",
-          "image": "https://example.com/ahmed.jpg",
+          "image": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200",
           "rating": 3.8,
           "experience": "6 yrs"
         }
@@ -146,16 +154,17 @@
     },
     {
       "name": "Meru Regional Cancer Center",
-      "location": "Meru",
+      "location": "Meru Town",
+      "latitude": 0.3557,
+      "longitude": 37.8089,
       "rating": 4.1,
-      "distance": "2.0 km",
-      "image": "https://example.com/meru.jpg",
+      "image": "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=400",
       "cancerTypes": ["Breast", "Skin"],
       "specialists": [
         {
           "name": "Dr. Mercy Nkirote",
           "specialty": "Dermatologist",
-          "image": "https://example.com/mercy.jpg",
+          "image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200",
           "rating": 4.4,
           "experience": "7 yrs"
         }
@@ -164,16 +173,17 @@
     },
     {
       "name": "Machakos Tumor Institute",
-      "location": "Machakos",
+      "location": "Machakos Town",
+      "latitude": -1.5167,
+      "longitude": 37.2667,
       "rating": 3.9,
-      "distance": "3.0 km",
-      "image": "https://example.com/machakos.jpg",
+      "image": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400",
       "cancerTypes": ["Prostate", "Leukemia"],
       "specialists": [
         {
           "name": "Dr. Kevin Mutua",
           "specialty": "Oncologist",
-          "image": "https://example.com/kevin.jpg",
+          "image": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200",
           "rating": 3.9,
           "experience": "5 yrs"
         }
