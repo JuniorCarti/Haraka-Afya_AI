@@ -1,6 +1,13 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import '../components/booking_dialog.dart';
+import '../screens/my_bookings_screen.dart';
 
 class HospitalsPage extends StatefulWidget {
   const HospitalsPage({super.key});
@@ -14,6 +21,13 @@ class _HospitalsPageState extends State<HospitalsPage> {
   String _selectedCategory = 'All';
   String _searchQuery = '';
   final Set<String> _favoriteHospitals = {};
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  // Location variables
+  Position? _currentPosition;
+  String _currentAddress = 'Fetching location...';
+  bool _isLoadingLocation = false;
+  double _searchRadius = 10.0; // Default 10km radius
 
   final List<String> cancerTypes = [
     'All',
@@ -28,6 +42,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _getCurrentLocation();
   }
 
   @override
@@ -35,6 +50,81 @@ class _HospitalsPageState extends State<HospitalsPage> {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Location methods
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      // Check permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            _currentAddress = 'Location permission denied';
+            _isLoadingLocation = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _currentAddress = 'Location permission permanently denied';
+          _isLoadingLocation = false;
+        });
+        return;
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Get address from coordinates
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      Placemark place = placemarks[0];
+
+      setState(() {
+        _currentPosition = position;
+        _currentAddress = "${place.locality}, ${place.administrativeArea}";
+        _isLoadingLocation = false;
+      });
+    } catch (e) {
+      setState(() {
+        _currentAddress = 'Unable to fetch location';
+        _isLoadingLocation = false;
+      });
+    }
+  }
+
+  // Calculate distance between two coordinates (in km)
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // Earth's radius in km
+
+    double dLat = _degreesToRadians(lat2 - lat1);
+    double dLon = _degreesToRadians(lon2 - lon1);
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(lat1)) *
+            cos(_degreesToRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * (3.14159265358979323846 / 180);
   }
 
   void _onSearchChanged() {
@@ -62,6 +152,288 @@ class _HospitalsPageState extends State<HospitalsPage> {
     await Share.share(shareText);
   }
 
+  Future<void> _bookAppointment(
+    BuildContext context, 
+    Map<String, dynamic> hospital, 
+    Map<String, dynamic> specialist
+  ) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _showLoginRequiredDialog(context);
+      return;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => BookingDialog(
+        hospital: hospital,
+        specialist: specialist,
+      ),
+    );
+
+    if (result == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Appointment booked successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('You need to be logged in to book an appointment.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // TODO: Navigate to login screen
+            },
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToMyBookings(BuildContext context) {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _showLoginRequiredDialog(context);
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const MyBookingsScreen()),
+    );
+  }
+
+  void _showNearbyCenters(BuildContext context) {
+    if (_currentPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location not available. Please try again.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(20),
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Nearby Centers',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Location and Radius Controls
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 16, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _currentAddress,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.refresh, size: 18),
+                            onPressed: _getCurrentLocation,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Search Radius:',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Slider(
+                              value: _searchRadius,
+                              min: 1,
+                              max: 50,
+                              divisions: 49,
+                              label: '${_searchRadius.round()} km',
+                              onChanged: (value) {
+                                setModalState(() {
+                                  _searchRadius = value;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            '${_searchRadius.round()} km',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Nearby Hospitals List
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance.collection('hospitals').snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('No hospitals found'));
+                    }
+
+                    // Filter and sort hospitals by distance
+                    var hospitals = snapshot.data!.docs.map((doc) {
+                      final hospital = doc.data() as Map<String, dynamic>;
+                      double distance = _currentPosition != null && 
+                          hospital['latitude'] != null && 
+                          hospital['longitude'] != null
+                          ? _calculateDistance(
+                              _currentPosition!.latitude,
+                              _currentPosition!.longitude,
+                              hospital['latitude'],
+                              hospital['longitude'],
+                            )
+                          : double.infinity;
+                      
+                      return {
+                        'doc': doc,
+                        'distance': distance,
+                        'hospital': hospital,
+                      };
+                    }).where((item) => item['distance'] != null && item['distance']! <= _searchRadius).toList();
+
+                    // Sort by distance
+                    hospitals.sort((a, b) => (a['distance'] as double).compareTo(b['distance'] as double));
+
+                    if (hospitals.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.location_off, size: 60, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No hospitals within ${_searchRadius.round()} km',
+                              style: const TextStyle(fontSize: 16, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: hospitals.length,
+                      itemBuilder: (context, index) {
+                        final item = hospitals[index];
+                        final hospital = item['hospital'] as Map<String, dynamic>;
+                        final distance = item['distance'] as double;
+                        
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                image: hospital['image'] != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(hospital['image']!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                                color: Colors.grey.shade200,
+                              ),
+                              child: hospital['image'] == null
+                                  ? const Icon(Icons.local_hospital, color: Colors.grey)
+                                  : null,
+                            ),
+                            title: Text(hospital['name'] ?? 'Unknown Hospital'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(hospital['location'] ?? 'Unknown location'),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${distance.toStringAsFixed(1)} km away',
+                                  style: const TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.directions, color: Colors.blue),
+                              onPressed: () {
+                                // TODO: Open directions in maps app
+                              },
+                            ),
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              // Optionally scroll to this hospital in the main list
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeaderSection() {
     return Container(
       width: double.infinity,
@@ -87,18 +459,27 @@ class _HospitalsPageState extends State<HospitalsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.local_hospital,
-              color: Colors.white,
-              size: 28,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.local_hospital,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.calendar_today, color: Colors.white),
+                onPressed: () => _navigateToMyBookings(context),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           const Text(
@@ -111,7 +492,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Find specialized cancer treatment centers near you',
+            _isLoadingLocation ? 'Fetching your location...' : 'Near: $_currentAddress',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withOpacity(0.9),
@@ -294,6 +675,16 @@ class _HospitalsPageState extends State<HospitalsPage> {
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
+                if (_searchQuery.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  ),
               ],
             ),
           ),
@@ -305,6 +696,17 @@ class _HospitalsPageState extends State<HospitalsPage> {
   Widget _buildFacilityCard(DocumentSnapshot hospitalDoc) {
     final facility = hospitalDoc.data() as Map<String, dynamic>;
     final isFavorite = _favoriteHospitals.contains(hospitalDoc.id);
+    
+    // Calculate distance if location data is available
+    double? distance;
+    if (_currentPosition != null && facility['latitude'] != null && facility['longitude'] != null) {
+      distance = _calculateDistance(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+        facility['latitude'],
+        facility['longitude'],
+      );
+    }
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -480,21 +882,22 @@ class _HospitalsPageState extends State<HospitalsPage> {
                           ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          facility['distance'] ?? 'N/A',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF259450),
-                            fontWeight: FontWeight.w500,
+                      if (distance != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${distance.toStringAsFixed(1)} km',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF259450),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -543,7 +946,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                   const SizedBox(height: 16),
 
                   // Specialists Section
-                  _buildSpecialistsSection(facility),
+                  _buildSpecialistsSection(facility, hospitalDoc.id),
                   const SizedBox(height: 16),
 
                   // Equipment Section
@@ -557,7 +960,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
     );
   }
 
-  Widget _buildSpecialistsSection(Map<String, dynamic> facility) {
+  Widget _buildSpecialistsSection(Map<String, dynamic> facility, String hospitalId) {
     final specialists = facility['specialists'] as List<dynamic>?;
     
     return Column(
@@ -669,23 +1072,26 @@ class _HospitalsPageState extends State<HospitalsPage> {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF259450),
-                          Color(0xFF27AE60),
-                        ],
+                  GestureDetector(
+                    onTap: () => _bookAppointment(context, facility, specData),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF259450),
+                            Color(0xFF27AE60),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Book',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                      child: const Text(
+                        'Book',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -767,6 +1173,107 @@ class _HospitalsPageState extends State<HospitalsPage> {
     );
   }
 
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(40),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 60,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load facilities',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.local_hospital,
+            size: 60,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No facilities found',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Check back later for updates',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResultsState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 60,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No matching facilities',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try adjusting your search or filters',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -799,6 +1306,20 @@ class _HospitalsPageState extends State<HospitalsPage> {
               padding: EdgeInsets.zero,
             ),
           ),
+          Container(
+            width: 36,
+            height: 36,
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.calendar_today, size: 18),
+              onPressed: () => _navigateToMyBookings(context),
+              padding: EdgeInsets.zero,
+            ),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -820,18 +1341,18 @@ class _HospitalsPageState extends State<HospitalsPage> {
                     icon: Icons.near_me,
                     color: const Color(0xFFFFF0F5),
                     iconColor: const Color(0xFFE75480),
-                    onTap: () {},
+                    onTap: () => _showNearbyCenters(context),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildQuickAccessCard(
-                    title: 'Emergency Care',
-                    subtitle: '24/7 emergency services',
-                    icon: Icons.emergency,
+                    title: 'My Bookings',
+                    subtitle: 'View appointments',
+                    icon: Icons.calendar_today,
                     color: const Color(0xFFE3F2FD),
                     iconColor: const Color(0xFF1976D2),
-                    onTap: () {},
+                    onTap: () => _navigateToMyBookings(context),
                   ),
                 ),
               ],
@@ -879,72 +1400,15 @@ class _HospitalsPageState extends State<HospitalsPage> {
               stream: FirebaseFirestore.instance.collection('hospitals').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(40),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  );
+                  return _buildLoadingState();
                 }
 
                 if (snapshot.hasError) {
-                  return Container(
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 60,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Failed to load facilities',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+                  return _buildErrorState();
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.local_hospital,
-                          size: 60,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No facilities found',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Check back later for updates',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+                  return _buildEmptyState();
                 }
 
                 var hospitals = snapshot.data!.docs.where((hospital) {
@@ -967,35 +1431,7 @@ class _HospitalsPageState extends State<HospitalsPage> {
                 }).toList();
 
                 if (hospitals.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.search_off,
-                          size: 60,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No matching facilities',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Try adjusting your search or filters',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+                  return _buildNoResultsState();
                 }
 
                 return Column(
@@ -1007,5 +1443,14 @@ class _HospitalsPageState extends State<HospitalsPage> {
         ),
       ),
     );
+  }
+}
+
+extension on Object {
+  bool operator <=(double other) {
+    if (this is num) {
+      return (this as num) <= other;
+    }
+    return false;
   }
 }
