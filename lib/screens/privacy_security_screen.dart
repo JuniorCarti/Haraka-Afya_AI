@@ -300,7 +300,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                       }
                     });
                   },
-                )).toList(),
+                )),
                 const SizedBox(height: 8),
                 CheckboxListTile(
                   title: const Text('Anonymize all data'),
