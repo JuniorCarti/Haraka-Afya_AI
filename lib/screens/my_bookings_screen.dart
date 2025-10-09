@@ -17,14 +17,14 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String _selectedFilter = 'all';
 
-  Map<String, String> _statusLabels = {
+  final Map<String, String> _statusLabels = {
     'pending': 'Pending',
     'confirmed': 'Confirmed',
     'cancelled': 'Cancelled',
     'completed': 'Completed',
   };
 
-  Map<String, Color> _statusColors = {
+  final Map<String, Color> _statusColors = {
     'pending': Colors.orange,
     'confirmed': Colors.green,
     'cancelled': Colors.red,
