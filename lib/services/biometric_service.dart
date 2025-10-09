@@ -1,5 +1,4 @@
 import 'package:local_auth/local_auth.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class BiometricService {
   final LocalAuthentication _localAuth = LocalAuthentication();
