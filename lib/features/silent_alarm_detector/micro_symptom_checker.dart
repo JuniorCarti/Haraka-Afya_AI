@@ -11,9 +11,9 @@ class MicroSymptomChecker extends StatefulWidget {
 }
 
 class _MicroSymptomCheckerState extends State<MicroSymptomChecker> {
-  bool _isRecording = false;
-  bool _isAnalyzing = false;
-  String _analysisResult = '';
+  final bool _isRecording = false;
+  final bool _isAnalyzing = false;
+  final String _analysisResult = '';
 
   @override
   Widget build(BuildContext context) {
@@ -257,7 +257,7 @@ class WeeklyCheckinScreen extends StatefulWidget {
 class _WeeklyCheckinScreenState extends State<WeeklyCheckinScreen> {
   int _currentStep = 0;
   bool _isRecording = false;
-  String _recordedAudioPath = '';
+  final String _recordedAudioPath = '';
 
   final List<CheckinStep> _steps = [
     CheckinStep(
