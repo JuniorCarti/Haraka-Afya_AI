@@ -28,7 +28,7 @@ class _LiquidBiopsyTrackerState extends State<LiquidBiopsyTracker> {
     try {
       final snapshot = await _firestore
           .collection('users')
-          .doc(_user!.uid)
+          .doc(_user.uid)
           .collection('liquid_biopsies')
           .orderBy('testDate', descending: true)
           .limit(5)
