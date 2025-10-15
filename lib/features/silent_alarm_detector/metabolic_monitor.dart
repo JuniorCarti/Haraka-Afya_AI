@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:lottie/lottie.dart';
 
 class MetabolicMonitor extends StatefulWidget {
   const MetabolicMonitor({super.key});
