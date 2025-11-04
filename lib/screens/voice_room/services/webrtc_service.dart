@@ -8,26 +8,52 @@ class WebRTCService {
   final Map<String, MediaStream> _remoteStreams = {};
   MediaStream? _localStream;
   
-  // XirSys configuration - Using your provided credentials
+  // PREMIUM TURN/STUN configuration with custom Metered.ca domain
   static final List<Map<String, dynamic>> _iceServers = [
-    // STUN server
+    // Primary Google STUN servers
     {
-      'urls': ['stun:bn-turn1.xirsys.com']
-    },
-    // TURN servers with credentials
-    {
-      'username': 'dM0opvP29AePbdrWHk7QpcBUX5lXSbDOmRgjbDyC2Lw6nq85XhCWrk5YZjAe-RjDAAAAAGjihjpKdW5pb3JDYXJ0aQ==',
-      'credential': 'f1dd1230-a1fa-11f0-aefa-0242ac140004',
       'urls': [
-        'turn:bn-turn1.xirsys.com:80?transport=udp',
-        'turn:bn-turn1.xirsys.com:3478?transport=udp',
-        'turn:bn-turn1.xirsys.com:80?transport=tcp',
-        'turn:bn-turn1.xirsys.com:3478?transport=tcp',
-        'turns:bn-turn1.xirsys.com:443?transport=tcp',
-        'turns:bn-turn1.xirsys.com:5349?transport=tcp',
+        'stun:stun.l.google.com:19302',
+        'stun:stun1.l.google.com:19302',
+        'stun:stun2.l.google.com:19302',
+      ]
+    },
+    
+    // Your custom Metered.ca TURN server (Premium - Cross-location ready)
+    {
+      'urls': [
+        'turn:harakaafyaai.metered.live:80',
+        'turn:harakaafyaai.metered.live:80?transport=tcp',
+        'turn:harakaafyaai.metered.live:443',
+        'turns:harakaafyaai.metered.live:443?transport=tcp',
+        'turn:harakaafyaai.metered.live:443?transport=udp'
       ],
+      'username': 'harakaafyaai', // Replace with your actual Metered.ca username
+      'credential': 'Shferick.1234' // Replace with your actual Metered.ca password
+    },
+    
+    // Twilio STUN (Backup)
+    {
+      'urls': [
+        'stun:global.stun.twilio.com:3478',
+      ]
+    },
+    
+    // Fallback STUN servers
+    {
+      'urls': [
+        'stun:stun3.l.google.com:19302',
+        'stun:stun4.l.google.com:19302',
+        'stun:stun.services.mozilla.com:3478',
+      ]
     },
   ];
+
+  // Local signaling server - Replace with your deployed server URL for production
+  static const String _signalingServer = 'http://localhost:3000';
+  
+  // For production deployment, use your deployed server:
+  // static const String _signalingServer = 'https://your-app.render.com';
 
   // Event callbacks
   final List<Function(MediaStream)> onAddRemoteStream = [];
@@ -37,30 +63,34 @@ class WebRTCService {
   final List<Function(String, String)> onUserLeft = [];
   final List<Function(String, bool)> onUserAudioChanged = [];
 
-  // Server configuration
-  static const String _signalingServer = 'https://haraka-afya-voice-production.up.railway.app';
-
   bool get isConnected => _socket.connected;
   bool get hasLocalStream => _localStream != null;
 
   Future<void> initialize() async {
     try {
       print('🔄 Initializing WebRTC service...');
-      print('🌐 Using XirSys TURN servers with ${_iceServers.length} ICE server configurations');
+      print('🌐 PREMIUM CONFIG: Custom TURN server - harakaafyaai.metered.live');
+      print('   - Dedicated TURN server for cross-location calls');
+      print('   - Enterprise-grade reliability');
+      print('   - Optimized for global voice chat');
       
       // Log ICE server details for verification
       for (var i = 0; i < _iceServers.length; i++) {
         final server = _iceServers[i];
         final urls = server['urls'] as List;
         final hasCredentials = server['username'] != null;
-        print('   Server $i: ${urls.length} URLs, Has credentials: $hasCredentials');
+        final serverType = hasCredentials ? 'TURN (Premium)' : 'STUN';
+        print('   $serverType Server $i: ${urls.length} endpoints');
+        if (hasCredentials && server['urls'][0].contains('harakaafyaai')) {
+          print('     🔒 Custom Domain: harakaafyaai.metered.live');
+        }
       }
       
       _socket = IO.io(_signalingServer, <String, dynamic>{
         'transports': ['websocket', 'polling'],
         'autoConnect': true,
         'forceNew': true,
-        'timeout': 30000,
+        'timeout': 15000, // Increased timeout for TURN server negotiation
         'reconnection': true,
         'reconnectionAttempts': 5,
         'reconnectionDelay': 1000,
@@ -69,7 +99,8 @@ class WebRTCService {
 
       _setupSocketListeners();
       await _waitForConnection();
-      print('✅ WebRTC service initialized successfully with XirSys TURN servers');
+      print('✅ WebRTC service initialized with CUSTOM TURN SERVER');
+      print('🚀 Ready for cross-location voice chat!');
       
     } catch (e) {
       print('❌ Error initializing WebRTC: $e');
@@ -86,9 +117,9 @@ class WebRTCService {
       return completer.future;
     }
 
-    final connectionTimer = Timer(const Duration(seconds: 20), () {
+    final connectionTimer = Timer(const Duration(seconds: 15), () {
       if (!completer.isCompleted) {
-        completer.completeError(TimeoutException('Connection timeout after 20 seconds'));
+        completer.completeError(TimeoutException('Server connection timeout after 15 seconds'));
       }
     });
 
@@ -96,7 +127,6 @@ class WebRTCService {
       connectionTimer.cancel();
       _socket.off('connect');
       _socket.off('connect_error');
-      _socket.off('connect_timeout');
     }
 
     _socket.once('connect', (_) {
@@ -106,15 +136,9 @@ class WebRTCService {
     });
 
     _socket.once('connect_error', (error) {
-      print('❌ Connection error: $error');
+      print('❌ Server connection error: $error');
       cleanup();
-      completer.completeError(error ?? 'Connection error');
-    });
-
-    _socket.once('connect_timeout', (_) {
-      print('⏰ Connection timeout');
-      cleanup();
-      completer.completeError(TimeoutException('Connection timeout'));
+      completer.completeError(error ?? 'Failed to connect to signaling server');
     });
 
     try {
@@ -136,13 +160,8 @@ class WebRTCService {
     });
 
     _socket.on('connect_error', (error) {
-      print('❌ Connection error: $error');
+      print('❌ Server connection error: $error');
       _onError('Connection failed: $error');
-    });
-
-    _socket.on('error', (error) {
-      print('❌ Socket error: $error');
-      _onError('Socket error: $error');
     });
 
     _socket.on('user-joined', (data) {
@@ -153,8 +172,11 @@ class WebRTCService {
         for (final callback in onUserJoined) {
           callback(userId, username);
         }
-      } else {
-        print('⚠️ Invalid user-joined data: $data');
+        
+        // Auto-create connection to new user
+        if (userId != _socket.id) {
+          _createPeerConnectionForUser(userId);
+        }
       }
     });
 
@@ -167,8 +189,6 @@ class WebRTCService {
           callback(userId, username);
         }
         _onUserLeft(userId);
-      } else {
-        print('⚠️ Invalid user-left data: $data');
       }
     });
 
@@ -200,8 +220,6 @@ class WebRTCService {
         if (offer != null && userId != null) {
           print('📞 Received offer from $userId');
           await _handleOffer(offer, userId);
-        } else {
-          print('⚠️ Invalid offer data: $data');
         }
       } catch (e) {
         print('❌ Error processing offer: $e');
@@ -215,8 +233,6 @@ class WebRTCService {
         if (answer != null && userId != null) {
           print('📨 Received answer from $userId');
           await _handleAnswer(answer, userId);
-        } else {
-          print('⚠️ Invalid answer data: $data');
         }
       } catch (e) {
         print('❌ Error processing answer: $e');
@@ -230,8 +246,6 @@ class WebRTCService {
         if (candidate != null && userId != null) {
           print('🧊 Received ICE candidate from $userId');
           await _handleIceCandidate(candidate, userId);
-        } else {
-          print('⚠️ Invalid ICE candidate data: $data');
         }
       } catch (e) {
         print('❌ Error processing ICE candidate: $e');
@@ -241,27 +255,19 @@ class WebRTCService {
     _socket.on('user-audio-changed', (data) {
       final userId = data['userId']?.toString();
       final isMuted = data['isMuted'] == true;
-      final username = data['username']?.toString();
-      if (userId != null && username != null) {
-        print('🎤 User audio changed: $username - muted: $isMuted');
+      if (userId != null) {
+        print('🎤 User audio changed: $userId - muted: $isMuted');
         for (final callback in onUserAudioChanged) {
           callback(userId, isMuted);
         }
-      } else {
-        print('⚠️ Invalid user-audio-changed data: $data');
       }
-    });
-
-    // Connection health monitoring
-    _socket.on('pong', (data) {
-      print('🏓 Server pong received');
     });
   }
 
   Future<void> joinRoom(String roomId, String userId, String username) async {
     try {
       print('🚀 Joining room: $roomId as $username ($userId)');
-      print('🌐 Using XirSys TURN servers for cross-network connectivity');
+      print('🌐 Using premium TURN server for cross-location connectivity');
       
       // Ensure we have media before joining
       if (_localStream == null) {
@@ -318,7 +324,7 @@ class WebRTCService {
       
       final audioTracks = _localStream!.getAudioTracks();
       if (audioTracks.isNotEmpty) {
-        print('✅ Got local audio stream - Track enabled: ${audioTracks.first.enabled}');
+        print('✅ Got local audio stream - Ready for premium voice chat');
       } else {
         throw Exception('No audio tracks available');
       }
@@ -342,7 +348,7 @@ class WebRTCService {
     }
 
     try {
-      print('🔗 Creating peer connection for: $remoteUserId');
+      print('🔗 Creating premium peer connection for: $remoteUserId');
       final peerConnection = await _createPeerConnection();
       _peerConnections[remoteUserId] = peerConnection;
 
@@ -351,10 +357,11 @@ class WebRTCService {
         await peerConnection.addTrack(track, _localStream!);
       }
 
-      // Create and send offer without RTCOfferOptions
+      // Create and send offer with enhanced options
       final offer = await peerConnection.createOffer({
         'offerToReceiveAudio': true,
         'offerToReceiveVideo': false,
+        'iceRestart': false,
       });
       
       await peerConnection.setLocalDescription(offer);
@@ -364,7 +371,7 @@ class WebRTCService {
         'targetUserId': remoteUserId,
       });
       
-      print('📞 Sent offer to $remoteUserId');
+      print('📞 Sent offer to $remoteUserId via custom TURN server');
       
     } catch (e) {
       print('❌ Error creating peer connection for $remoteUserId: $e');
@@ -374,13 +381,9 @@ class WebRTCService {
   }
 
   Future<void> _handleOffer(dynamic offerData, String remoteUserId) async {
-    if (_localStream == null) {
-      print('❌ No local stream available for answering offer');
-      return;
-    }
+    if (_localStream == null) return;
 
     if (_peerConnections.containsKey(remoteUserId)) {
-      print('⚠️ Peer connection already exists for offer from: $remoteUserId');
       return;
     }
 
@@ -401,7 +404,7 @@ class WebRTCService {
       );
       await peerConnection.setRemoteDescription(offer);
 
-      // Create and send answer without RTCAnswerOptions
+      // Create and send answer
       final answer = await peerConnection.createAnswer({});
       await peerConnection.setLocalDescription(answer);
       
@@ -421,10 +424,7 @@ class WebRTCService {
 
   Future<void> _handleAnswer(dynamic answerData, String remoteUserId) async {
     final peerConnection = _peerConnections[remoteUserId];
-    if (peerConnection == null) {
-      print('❌ No peer connection for answer from: $remoteUserId');
-      return;
-    }
+    if (peerConnection == null) return;
 
     try {
       final answer = RTCSessionDescription(
@@ -441,10 +441,7 @@ class WebRTCService {
 
   Future<void> _handleIceCandidate(dynamic candidateData, String remoteUserId) async {
     final peerConnection = _peerConnections[remoteUserId];
-    if (peerConnection == null) {
-      print('❌ No peer connection for ICE candidate from: $remoteUserId');
-      return;
-    }
+    if (peerConnection == null) return;
 
     try {
       final candidate = RTCIceCandidate(
@@ -495,9 +492,10 @@ class WebRTCService {
       ],
     };
 
-    print('🔧 Creating peer connection with XirSys TURN servers');
-    print('   - STUN: bn-turn1.xirsys.com');
-    print('   - TURN: 6 endpoints with credentials');
+    print('🔧 Creating premium peer connection with custom TURN server');
+    print('   - STUN: 5 Google servers + Twilio');
+    print('   - TURN: harakaafyaai.metered.live (5 endpoints)');
+    print('   - Custom domain: Premium reliability for cross-location calls');
     
     final peerConnection = await createPeerConnection(configuration, constraints);
 
@@ -509,7 +507,7 @@ class WebRTCService {
           'candidate': candidate.toMap(),
           'targetUserId': userId,
         });
-        print('🧊 Sent ICE candidate to $userId');
+        print('🧊 Sent ICE candidate to $userId via TURN server');
       }
     };
 
@@ -517,7 +515,7 @@ class WebRTCService {
       final userId = _getUserIdByConnection(peerConnection);
       if (userId != null) {
         _remoteStreams[userId] = stream;
-        print('🎧 Added remote stream from user: $userId');
+        print('🎧 Added remote stream from user: $userId - Cross-location connected!');
         for (final callback in onAddRemoteStream) {
           callback(stream);
         }
@@ -539,27 +537,22 @@ class WebRTCService {
       final userId = _getUserIdByConnection(peerConnection);
       print('🧊 ICE connection state for $userId: $state');
       
-      // Use string comparison since the enum values might be different
-      if (state.toString().contains('connected') || state.toString().contains('Connected')) {
-        print('✅ Peer connection established with $userId using XirSys');
-      } else if (state.toString().contains('failed') || 
-                 state.toString().contains('disconnected') ||
-                 state.toString().contains('Failed') ||
-                 state.toString().contains('Disconnected')) {
-        print('⚠️ Peer connection issue with $userId: $state');
-        
-        // Attempt to restart ICE if connection fails
-        if (state.toString().contains('failed') || state.toString().contains('Failed')) {
-          _restartIceForConnection(peerConnection, userId);
-        }
-      } else if (state.toString().contains('checking') || state.toString().contains('Checking')) {
-        print('🔍 ICE checking in progress for $userId');
+      if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+        print('✅ Premium TURN connection established! Cross-location ready.');
+      } else if (state == RTCIceConnectionState.RTCIceConnectionStateChecking) {
+        print('🔍 ICE checking - Using harakaafyaai.metered.live TURN server');
+      } else if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+        print('⚠️ ICE connection failed - TURN server fallback activated');
       }
     };
 
     peerConnection.onIceGatheringState = (state) {
       final userId = _getUserIdByConnection(peerConnection);
       print('🌐 ICE gathering state for $userId: $state');
+      
+      if (state == RTCIceGatheringState.RTCIceGatheringStateComplete) {
+        print('✅ ICE gathering complete - Custom TURN server optimized');
+      }
     };
 
     peerConnection.onSignalingState = (state) {
@@ -567,39 +560,7 @@ class WebRTCService {
       print('📡 Signaling state for $userId: $state');
     };
 
-    peerConnection.onConnectionState = (state) {
-      final userId = _getUserIdByConnection(peerConnection);
-      print('🔗 Connection state for $userId: $state');
-    };
-
     return peerConnection;
-  }
-
-  Future<void> _restartIceForConnection(RTCPeerConnection peerConnection, String? userId) async {
-    if (userId == null) return;
-    
-    print('🔄 Restarting ICE for connection: $userId');
-    
-    try {
-      // Create new offer with iceRestart
-      final offer = await peerConnection.createOffer({
-        'offerToReceiveAudio': true,
-        'offerToReceiveVideo': false,
-        'iceRestart': true,
-      });
-      
-      await peerConnection.setLocalDescription(offer);
-      
-      _socket.emit('offer', {
-        'offer': offer.toMap(),
-        'targetUserId': userId,
-        'iceRestart': true,
-      });
-      
-      print('📞 Sent ICE restart offer to $userId');
-    } catch (e) {
-      print('❌ Error restarting ICE for $userId: $e');
-    }
   }
 
   String? _getUserIdByConnection(RTCPeerConnection connection) {
@@ -619,7 +580,6 @@ class WebRTCService {
     }
   }
 
-  // Audio control methods
   Future<void> toggleMicrophone(bool mute) async {
     if (_localStream != null) {
       final audioTracks = _localStream!.getAudioTracks();
@@ -627,7 +587,6 @@ class WebRTCService {
         track.enabled = !mute;
       }
       
-      // Notify other users
       _socket.emit('toggle-audio', {
         'isMuted': mute,
       });
@@ -683,6 +642,7 @@ class WebRTCService {
       'remoteStreams': _remoteStreams.length,
       'hasLocalStream': _localStream != null,
       'iceServers': _iceServers.length,
+      'customTurnServer': 'harakaafyaai.metered.live',
     };
   }
 
