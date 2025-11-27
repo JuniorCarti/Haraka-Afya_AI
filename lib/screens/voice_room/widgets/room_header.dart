@@ -18,7 +18,7 @@ class RoomHeader extends StatelessWidget {
     required this.roomName,
     required this.roomDescription,
     required this.isCurrentUserHost,
-    required this.activeSpeakersCount,
+    required this.activeSpeakersCount, required bool hasAudioStream,
   });
 
   @override
