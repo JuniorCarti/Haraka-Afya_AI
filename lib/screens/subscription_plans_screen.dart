@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SubscriptionPlansScreen extends StatefulWidget {
   const SubscriptionPlansScreen({super.key});
@@ -11,8 +12,9 @@ class SubscriptionPlansScreen extends StatefulWidget {
 
 class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   String _selectedPlan = 'Premium';
-  String _selectedPaymentMethod = 'PayPal';
+  String _selectedPaymentMethod = 'M-Pesa';
   bool _isButtonHovered = false;
+  bool _isProcessingPayment = false;
 
   void _selectPlan(String plan) {
     setState(() {
@@ -26,7 +28,172 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     });
   }
 
-  Future<void> _startPayment() async {
+  // M-Pesa Payment Function
+  Future<void> _processMpesaPayment() async {
+    if (_selectedPlan == 'Free') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Free plan activated successfully!')),
+      );
+      return;
+    }
+
+    // Show phone number input dialog for M-Pesa
+    final phoneNumber = await _showPhoneNumberDialog();
+    if (phoneNumber == null || phoneNumber.isEmpty) return;
+
+    setState(() {
+      _isProcessingPayment = true;
+    });
+
+    try {
+      final amount = _selectedPlan == 'Premium' ? 7.99 : 14.99;
+      
+      // Direct M-Pesa integration
+      final result = await _initiateMpesaSTKPush(
+        phoneNumber: phoneNumber,
+        amount: amount,
+        plan: _selectedPlan,
+      );
+
+      if (result['ResponseCode'] == '0') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('M-Pesa payment initiated! Check your phone to complete.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+        
+        // Wait a bit then navigate back
+        await Future.delayed(Duration(seconds: 3));
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('M-Pesa payment failed: ${result['ResponseDescription']}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment error: $e')),
+      );
+    } finally {
+      setState(() {
+        _isProcessingPayment = false;
+      });
+    }
+  }
+
+  // M-Pesa STK Push Implementation
+  Future<Map<String, dynamic>> _initiateMpesaSTKPush({
+    required String phoneNumber,
+    required double amount,
+    required String plan,
+  }) async {
+    final consumerKey = dotenv.get('MPESA_CONSUMER_KEY');
+    final consumerSecret = dotenv.get('MPESA_CONSUMER_SECRET');
+    final businessShortCode = dotenv.get('MPESA_BUSINESS_SHORTCODE');
+    final passKey = dotenv.get('MPESA_PASSKEY');
+    
+    // Get access token
+    final credentials = base64.encode(utf8.encode('$consumerKey:$consumerSecret'));
+    final tokenResponse = await http.get(
+      Uri.parse('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'),
+      headers: {'Authorization': 'Basic $credentials'},
+    );
+
+    if (tokenResponse.statusCode != 200) {
+      throw Exception('Failed to get access token');
+    }
+
+    final accessToken = json.decode(tokenResponse.body)['access_token'];
+
+    // Generate timestamp and password
+    final now = DateTime.now();
+    final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    final password = base64.encode(utf8.encode('$businessShortCode$passKey$timestamp'));
+
+    // Format phone number
+    String formattedPhone = phoneNumber;
+    if (phoneNumber.startsWith('0')) {
+      formattedPhone = '254${phoneNumber.substring(1)}';
+    } else if (phoneNumber.startsWith('+254')) {
+      formattedPhone = phoneNumber.substring(1);
+    }
+
+    // STK Push payload
+    final payload = {
+      "BusinessShortCode": businessShortCode,
+      "Password": password,
+      "Timestamp": timestamp,
+      "TransactionType": "CustomerPayBillOnline",
+      "Amount": amount.toStringAsFixed(0),
+      "PartyA": formattedPhone,
+      "PartyB": businessShortCode,
+      "PhoneNumber": formattedPhone,
+      "CallBackURL": dotenv.get('MPESA_CALLBACK_URL'),
+      "AccountReference": "HARAKA_AFYA",
+      "TransactionDesc": "Subscription - $plan Plan",
+    };
+
+    final response = await http.post(
+      Uri.parse('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(payload),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('STK Push failed: ${response.body}');
+    }
+  }
+
+  Future<String?> _showPhoneNumberDialog() async {
+    String phoneNumber = '';
+    
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('M-Pesa Payment'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Enter your M-Pesa registered phone number:'),
+              SizedBox(height: 16),
+              TextField(
+                onChanged: (value) => phoneNumber = value,
+                decoration: InputDecoration(
+                  hintText: '07XXXXXXXX',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, phoneNumber),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF00A650),
+              ),
+              child: Text('Confirm Payment'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _processOtherPayment() async {
     final amount = _selectedPlan == 'Premium'
         ? '7.99'
         : _selectedPlan == 'Family'
@@ -37,9 +204,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     switch (_selectedPaymentMethod) {
       case 'PayPal':
         paymentUrl = 'http://10.0.2.2:3000/create-paypal-order';
-        break;
-      case 'M-Pesa':
-        paymentUrl = 'http://10.0.2.2:3000/create-mpesa-order';
         break;
       case 'Airtel Money':
         paymentUrl = 'http://10.0.2.2:3000/create-airtel-order';
@@ -71,6 +235,14 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
+    }
+  }
+
+  Future<void> _startPayment() async {
+    if (_selectedPaymentMethod == 'M-Pesa') {
+      await _processMpesaPayment();
+    } else {
+      await _processOtherPayment();
     }
   }
 
@@ -198,24 +370,24 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
               ),
               const SizedBox(height: 16),
               SizedBox(
-                height: 100, // Increased height to prevent overflow
+                height: 100,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
                     const SizedBox(width: 4),
-                    _buildPaymentMethodCard(
-                      name: 'PayPal',
-                      logo: 'assets/paypal.png',
-                      selected: _selectedPaymentMethod == 'PayPal',
-                      onSelect: () => _selectPaymentMethod('PayPal'),
-                      color: const Color(0xFF003087),
-                    ),
                     _buildPaymentMethodCard(
                       name: 'M-Pesa',
                       logo: 'assets/mpesa.png',
                       selected: _selectedPaymentMethod == 'M-Pesa',
                       onSelect: () => _selectPaymentMethod('M-Pesa'),
                       color: const Color(0xFF00A650),
+                    ),
+                    _buildPaymentMethodCard(
+                      name: 'PayPal',
+                      logo: 'assets/paypal.png',
+                      selected: _selectedPaymentMethod == 'PayPal',
+                      onSelect: () => _selectPaymentMethod('PayPal'),
+                      color: const Color(0xFF003087),
                     ),
                     _buildPaymentMethodCard(
                       name: 'Airtel Money',
@@ -238,74 +410,109 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
               const SizedBox(height: 32),
 
               // Action Button
-              MouseRegion(
-                onEnter: (_) => setState(() => _isButtonHovered = true),
-                onExit: (_) => setState(() => _isButtonHovered = false),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+              if (_isProcessingPayment)
+                Container(
                   height: 56,
                   decoration: BoxDecoration(
-                    gradient: _isButtonHovered
-                        ? const LinearGradient(
-                            colors: [
-                              Color(0xFF259450),
-                              Color(0xFF1976D2),
-                            ],
-                          )
-                        : const LinearGradient(
-                            colors: [
-                              Color(0xFF259450),
-                              Color(0xFF27AE60),
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00A650)),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Processing M-Pesa Payment...',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                MouseRegion(
+                  onEnter: (_) => setState(() => _isButtonHovered = true),
+                  onExit: (_) => setState(() => _isButtonHovered = false),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: _isButtonHovered
+                          ? const LinearGradient(
+                              colors: [
+                                Color(0xFF259450),
+                                Color(0xFF1976D2),
+                              ],
+                            )
+                          : const LinearGradient(
+                              colors: [
+                                Color(0xFF259450),
+                                Color(0xFF27AE60),
+                              ],
+                            ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF259450).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: _startPayment,
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _selectedPlan == 'Free' ? Icons.check : Icons.lock_open,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _selectedPlan == 'Free' 
+                                    ? 'Continue with Free Plan'
+                                    : 'Subscribe with $_selectedPaymentMethod',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ],
                           ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF259450).withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: _startPayment,
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _selectedPlan == 'Free' ? Icons.check : Icons.lock_open,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _selectedPlan == 'Free' 
-                                  ? 'Continue with Free Plan'
-                                  : 'Subscribe with $_selectedPaymentMethod',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
               const SizedBox(height: 16),
               if (_selectedPlan != 'Free')
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    'You will be redirected to $_selectedPaymentMethod to complete your payment',
+                    _selectedPaymentMethod == 'M-Pesa'
+                        ? 'You will receive an STK push on your phone to complete payment'
+                        : 'You will be redirected to $_selectedPaymentMethod to complete your payment',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
@@ -313,7 +520,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 20), // Extra bottom padding for safety
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -541,7 +748,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 40, // Increased size for better image visibility
+                    width: 40,
                     height: 40,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
