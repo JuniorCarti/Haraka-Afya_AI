@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:haraka_afya_ai/screens/community_screen.dart';
-import 'package:haraka_afya_ai/screens/anonymous_chat_screen.dart';
+import 'package:haraka_afya_ai/screens/families_home_screen.dart'; // NEW: Import Families
 import 'package:haraka_afya_ai/widgets/app_drawer.dart';
 import 'package:haraka_afya_ai/features/learn_page.dart';
 import 'package:haraka_afya_ai/features/symptoms_page.dart';
@@ -35,12 +35,16 @@ class _HomeScreenState extends State<HomeScreen> {
   // Live rooms state
   int _liveRoomsCount = 0;
   bool _hasLiveRooms = false;
+  
+  // NEW: Families state
+  int _activeFamiliesCount = 0;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
     _loadLiveRoomsCount();
+    _loadActiveFamiliesCount(); // NEW: Load families count
   }
 
   // Fetch actual live rooms count from Firestore
@@ -54,6 +58,21 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _liveRoomsCount = snapshot.docs.length;
           _hasLiveRooms = _liveRoomsCount > 0;
+        });
+      }
+    });
+  }
+
+  // NEW: Fetch active families count
+  void _loadActiveFamiliesCount() {
+    _firestore
+        .collection('families')
+        .where('isPublic', isEqualTo: true)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _activeFamiliesCount = snapshot.docs.length;
         });
       }
     });
@@ -280,7 +299,7 @@ class HomeContent extends StatelessWidget {
               const SizedBox(height: 24),
               _buildUpcomingEventsCard(context),
               const SizedBox(height: 20),
-              _buildAnonymousChatCard(context),
+              _buildFamiliesCard(context), // NEW: Replaced Anonymous Chat with Families
               const SizedBox(height: 20),
               _buildCommunitySection(context),
               const SizedBox(height: 20),
@@ -437,10 +456,12 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildAnonymousChatCard(BuildContext context) {
+  // NEW: Families Card (Replaces Anonymous Chat Card)
+  Widget _buildFamiliesCard(BuildContext context) {
     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
     final hasLiveRooms = homeState?._hasLiveRooms ?? false;
     final liveRoomsCount = homeState?._liveRoomsCount ?? 0;
+    final activeFamiliesCount = homeState?._activeFamiliesCount ?? 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -470,7 +491,7 @@ class HomeContent extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const AnonymousChatScreen(),
+                builder: (context) => const FamiliesHomeScreen(),
               ),
             );
           },
@@ -492,7 +513,7 @@ class HomeContent extends StatelessWidget {
                           child: const Icon(Iconsax.people,
                               color: Colors.white, size: 24),
                         ),
-                        if (hasLiveRooms)
+                        if (hasLiveRooms || activeFamiliesCount > 0)
                           Positioned(
                             top: -2,
                             right: -2,
@@ -503,7 +524,7 @@ class HomeContent extends StatelessWidget {
                                 shape: BoxShape.circle,
                               ),
                               child: Text(
-                                '$liveRoomsCount',
+                                '${liveRoomsCount + activeFamiliesCount}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
@@ -520,7 +541,7 @@ class HomeContent extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Support Community',
+                            'Support Families',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -529,9 +550,9 @@ class HomeContent extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            hasLiveRooms 
-                              ? '$liveRoomsCount active rooms • Join now!'
-                              : 'Connect with others anonymously',
+                            hasLiveRooms || activeFamiliesCount > 0
+                              ? '$activeFamiliesCount families • $liveRoomsCount live rooms'
+                              : 'Join support families and connect with others',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white.withOpacity(0.8),
@@ -551,7 +572,7 @@ class HomeContent extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (hasLiveRooms) ...[
+                if (hasLiveRooms || activeFamiliesCount > 0) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -572,7 +593,9 @@ class HomeContent extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Live support available now!',
+                            hasLiveRooms 
+                              ? 'Live rooms & families available!'
+                              : '$activeFamiliesCount active families waiting!',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white.withOpacity(0.9),
@@ -588,7 +611,7 @@ class HomeContent extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'Join',
+                            'Explore',
                             style: TextStyle(
                               color: Color(0xFF667EEA),
                               fontSize: 12,
@@ -741,41 +764,42 @@ class HomeContent extends StatelessWidget {
   }
 
   Widget _buildRecentPostCard(BuildContext context) {
-  final postRepo = Provider.of<PostRepository>(context, listen: false);
-  final user = FirebaseAuth.instance.currentUser;
+    final postRepo = Provider.of<PostRepository>(context, listen: false);
+    final user = FirebaseAuth.instance.currentUser;
 
-  return StreamBuilder<List<Post>>(
-    stream: postRepo.getPosts(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return _buildPostLoadingCard();
-      }
+    return StreamBuilder<List<Post>>(
+      stream: postRepo.getPosts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildPostLoadingCard();
+        }
 
-      if (snapshot.hasError) {
-        return _buildPostErrorCard();
-      }
+        if (snapshot.hasError) {
+          return _buildPostErrorCard();
+        }
 
-      final posts = snapshot.data ?? [];
-      
-      // Filter posts from last 24 hours
-      final now = DateTime.now();
-      final recentPosts = posts.where((post) {
-        final postTime = post.timestamp.toDate();
-        final difference = now.difference(postTime);
-        return difference.inHours <= 24;
-      }).toList();
+        final posts = snapshot.data ?? [];
+        
+        // Filter posts from last 24 hours
+        final now = DateTime.now();
+        final recentPosts = posts.where((post) {
+          final postTime = post.timestamp.toDate();
+          final difference = now.difference(postTime);
+          return difference.inHours <= 24;
+        }).toList();
 
-      if (recentPosts.isEmpty) {
-        return _buildNoRecentPostsCard(context); // Pass context here
-      }
+        if (recentPosts.isEmpty) {
+          return _buildNoRecentPostsCard(context);
+        }
 
-      // Get the most recent post
-      final recentPost = recentPosts.first;
+        // Get the most recent post
+        final recentPost = recentPosts.first;
 
-      return _buildPostCard(context, recentPost, user);
-    },
-  );
-}
+        return _buildPostCard(context, recentPost, user);
+      },
+    );
+  }
+
   Widget _buildPostCard(BuildContext context, Post post, User? user) {
     final timeAgo = _getTimeAgo(post.timestamp.toDate());
 
@@ -999,75 +1023,75 @@ class HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildNoRecentPostsCard(BuildContext context) { // Add context parameter
-  return Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Column(
-      children: [
-        Icon(Icons.forum_outlined, size: 40, color: Colors.grey.shade300),
-        const SizedBox(height: 12),
-        const Text(
-          'No Recent Posts',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
+  Widget _buildNoRecentPostsCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Be the first to share in the last 24 hours',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade500,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context, // Now context is available
-              MaterialPageRoute(
-                builder: (context) => const CommunityScreen(),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF259450),
-                  Color(0xFF27AE60),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              'Create Post',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.forum_outlined, size: 40, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
+          const Text(
+            'No Recent Posts',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 8),
+          Text(
+            'Be the first to share in the last 24 hours',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CommunityScreen(),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF259450),
+                    Color(0xFF27AE60),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Create Post',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildAIAssistantCard(BuildContext context) {
     return Container(
