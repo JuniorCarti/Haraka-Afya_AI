@@ -12,13 +12,13 @@ class RoomMember {
   final String userId;
   final String username;
   final MemberRole role;
-  final bool isSpeaking;
+  bool isSpeaking; // 🆕 CHANGED: Remove 'final' to make it mutable
   final String avatar;
   final int points;
   final int level;
   final DateTime joinedAt;
-  final DateTime lastActive;
-  final bool isMuted;
+  DateTime lastActive; // 🆕 CHANGED: Make this mutable too
+  bool isMuted; // 🆕 CHANGED: Make this mutable
   final bool isHandRaised;
   final List<String> achievements;
   final String title;
@@ -27,20 +27,20 @@ class RoomMember {
   final int roomsJoined;
   final String sessionId;
   final bool isHost;
-  final int? seatNumber; // Add seat number field
+  int? seatNumber;
 
   RoomMember({
     required this.id,
     required this.userId,
     required this.username,
     required this.role,
-    this.isSpeaking = false,
+    this.isSpeaking = false, // 🆕 REMOVED: final
     this.avatar = '😊',
     this.points = 0,
     required this.level,
     required this.joinedAt,
     required this.lastActive,
-    this.isMuted = false,
+    this.isMuted = false, // 🆕 REMOVED: final
     this.isHandRaised = false,
     this.achievements = const [],
     this.title = 'Newcomer',
@@ -49,8 +49,27 @@ class RoomMember {
     this.roomsJoined = 1,
     required this.sessionId,
     this.isHost = false,
-    this.seatNumber, // Add seat number parameter
+    this.seatNumber,
   });
+
+  // 🆕 NEW: Method to update speaking status
+  void updateSpeakingStatus(bool speaking) {
+    isSpeaking = speaking;
+    lastActive = DateTime.now();
+  }
+
+  // 🆕 NEW: Method to update mute status
+  void updateMuteStatus(bool muted) {
+    isMuted = muted;
+    lastActive = DateTime.now();
+  }
+
+  // 🆕 NEW: Method to update audio state
+  void updateAudioState({bool? speaking, bool? muted}) {
+    if (speaking != null) isSpeaking = speaking;
+    if (muted != null) isMuted = muted;
+    lastActive = DateTime.now();
+  }
 
   // Helper method to convert Firebase Timestamp to DateTime
   static DateTime _parseTimestamp(dynamic timestamp) {
@@ -127,8 +146,8 @@ class RoomMember {
       'avatar': avatar,
       'points': points,
       'level': level,
-      'joinedAt': FieldValue.serverTimestamp(), // Use server timestamp
-      'lastActive': FieldValue.serverTimestamp(), // Use server timestamp
+      'joinedAt': FieldValue.serverTimestamp(),
+      'lastActive': FieldValue.serverTimestamp(),
       'isMuted': isMuted,
       'isHandRaised': isHandRaised,
       'achievements': achievements,
@@ -138,7 +157,7 @@ class RoomMember {
       'roomsJoined': roomsJoined,
       'sessionId': sessionId,
       'isHost': isHost,
-      'seatNumber': seatNumber, // Include seat number
+      'seatNumber': seatNumber,
     };
   }
 
@@ -203,7 +222,7 @@ class RoomMember {
         roomsJoined: roomsJoined,
         sessionId: sessionId,
         isHost: isHost,
-        seatNumber: seatNumber, // Include seat number
+        seatNumber: seatNumber,
       );
     } catch (e) {
       print('❌ Error parsing RoomMember: $e');
@@ -230,12 +249,12 @@ class RoomMember {
         roomsJoined: 1,
         sessionId: 'error_session',
         isHost: false,
-        seatNumber: null, // Default to no seat
+        seatNumber: null,
       );
     }
   }
 
-  // Copy with method for updates
+  // Copy with method for updates (still useful for other fields)
   RoomMember copyWith({
     String? id,
     String? userId,
@@ -256,7 +275,7 @@ class RoomMember {
     int? roomsJoined,
     String? sessionId,
     bool? isHost,
-    int? seatNumber, // Add seat number to copyWith
+    int? seatNumber,
   }) {
     return RoomMember(
       id: id ?? this.id,
@@ -278,7 +297,7 @@ class RoomMember {
       roomsJoined: roomsJoined ?? this.roomsJoined,
       sessionId: sessionId ?? this.sessionId,
       isHost: isHost ?? this.isHost,
-      seatNumber: seatNumber ?? this.seatNumber, // Include seat number
+      seatNumber: seatNumber ?? this.seatNumber,
     );
   }
 
@@ -321,11 +340,11 @@ class RoomMember {
 
   // Get seat status color
   String get seatStatusColor {
-    if (!hasSeat) return '#9E9E9E'; // Gray for no seat
-    if (isSpeaking && !isMuted) return '#4CAF50'; // Green for speaking
-    if (isMuted) return '#FF5722'; // Red for muted
-    if (isHandRaised) return '#FFA500'; // Orange for hand raised
-    return '#2196F3'; // Blue for occupied
+    if (!hasSeat) return '#9E9E9E';
+    if (isSpeaking && !isMuted) return '#4CAF50';
+    if (isMuted) return '#FF5722';
+    if (isHandRaised) return '#FFA500';
+    return '#2196F3';
   }
 
   // Get role display name
@@ -399,16 +418,16 @@ class RoomMember {
 
   // Get message color based on level and role
   String getMessageColor() {
-    if (isAdmin) return '#FFD700'; // Gold for host/admin
-    if (isModerator) return '#4CAF50'; // Green for moderator
+    if (isAdmin) return '#FFD700';
+    if (isModerator) return '#4CAF50';
     
-    if (level >= 20) return '#FF6B6B'; // Bright red for legend
-    if (level >= 15) return '#FFA500'; // Orange for veteran
-    if (level >= 10) return '#48DBFB'; // Bright blue for regular
-    if (level >= 5) return '#9B59B6'; // Purple for active
-    if (level >= 3) return '#2ECC71'; // Green for member
+    if (level >= 20) return '#FF6B6B';
+    if (level >= 15) return '#FFA500';
+    if (level >= 10) return '#48DBFB';
+    if (level >= 5) return '#9B59B6';
+    if (level >= 3) return '#2ECC71';
     
-    return '#4A5568'; // Default gray for newcomer
+    return '#4A5568';
   }
 
   // Increment message count
@@ -424,9 +443,10 @@ class RoomMember {
     return copyWith(lastActive: DateTime.now());
   }
 
-  // Toggle mute status
-  RoomMember toggleMute() {
-    return copyWith(isMuted: !isMuted);
+  // Toggle mute status (now uses direct mutation)
+  void toggleMute() {
+    isMuted = !isMuted;
+    lastActive = DateTime.now();
   }
 
   // Toggle hand raise
@@ -511,11 +531,11 @@ class RoomMember {
 
   // Get activity status color
   String get activityStatusColor {
-    if (isSpeaking && !isMuted) return '#4CAF50'; // Green for speaking
-    if (isHandRaised) return '#FFA500'; // Orange for hand raised
-    if (isMuted) return '#FF5722'; // Red for muted
-    if (isActive) return '#2196F3'; // Blue for active
-    return '#9E9E9E'; // Gray for away
+    if (isSpeaking && !isMuted) return '#4CAF50';
+    if (isHandRaised) return '#FFA500';
+    if (isMuted) return '#FF5722';
+    if (isActive) return '#2196F3';
+    return '#9E9E9E';
   }
 
   // Check if member is valid (has required fields)
@@ -529,9 +549,7 @@ class RoomMember {
 
   // Check if member can be assigned to a seat
   bool get canTakeSeat {
-    // Host can always take host seat (0)
     if (isAdmin) return true;
-    // Regular users can only take listener seats (1-6)
     return !isAdmin;
   }
 
@@ -542,10 +560,10 @@ class RoomMember {
 
   // Check if member can switch to a specific seat
   bool canSwitchToSeat(int newSeatNumber) {
-    if (!hasSeat) return false; // Must have a seat to switch
-    if (newSeatNumber == seatNumber) return false; // Can't switch to same seat
-    if (isAdmin && newSeatNumber != 0) return false; // Host can only be in seat 0
-    if (!isAdmin && newSeatNumber == 0) return false; // Non-hosts can't take host seat
+    if (!hasSeat) return false;
+    if (newSeatNumber == seatNumber) return false;
+    if (isAdmin && newSeatNumber != 0) return false;
+    if (!isAdmin && newSeatNumber == 0) return false;
     return true;
   }
 
@@ -561,7 +579,7 @@ class RoomMember {
 
   @override
   String toString() {
-    return 'RoomMember(id: $id, username: $username, role: $role, level: $level, seat: $seatNumber, isSpeaking: $isSpeaking)';
+    return 'RoomMember(id: $id, username: $username, role: $role, level: $level, seat: $seatNumber, isSpeaking: $isSpeaking, isMuted: $isMuted)';
   }
 
   // Create an empty member (for empty seats)
@@ -628,7 +646,7 @@ class RoomMember {
       lastActive: now,
       sessionId: 'host_session',
       isHost: true,
-      seatNumber: 0, // Host always in seat 0
+      seatNumber: 0,
     );
   }
 
