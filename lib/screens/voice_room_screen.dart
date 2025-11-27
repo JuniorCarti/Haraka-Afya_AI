@@ -77,9 +77,16 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
   bool _isInRoom = false;
   bool _isWebRTCConnected = false;
   bool _isLoading = true;
+  bool _isConnecting = false;
+  bool _connectionFailed = false;
   String _connectionStatus = 'Initializing...';
   bool _permissionGranted = false;
   bool _showPermissionDialog = false;
+
+  // Audio state
+  bool _hasLocalAudioStream = false;
+  bool _hasRemoteAudioStreams = false;
+  int _activeSpeakersCount = 0;
 
   // Connection retry variables
   int _connectionRetryCount = 0;
@@ -108,8 +115,12 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Check permission again when app comes to foreground
       _checkMicrophonePermission();
+    } else if (state == AppLifecycleState.paused) {
+      // Auto-mute when app goes to background
+      if (!_isMuted) {
+        _toggleMicrophone();
+      }
     }
   }
 
@@ -230,6 +241,8 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
       setState(() {
         _connectionStatus = 'Setting up user... (Attempt ${_connectionRetryCount + 1}/$_maxRetryCount)';
         _isLoading = true;
+        _isConnecting = false;
+        _connectionFailed = false;
       });
 
       final user = _auth.currentUser;
@@ -250,22 +263,21 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
       } else {
         _currentUsername = 'Guest';
         _currentUserId = 'guest_${DateTime.now().millisecondsSinceEpoch}';
-        _currentUserRole = UserRole.user; // Guests are always listeners
+        _currentUserRole = UserRole.user;
       }
 
       setState(() {
-        _connectionStatus = 'Connecting to voice server...';
+        _connectionStatus = 'Initializing voice connection...';
       });
 
       _setupWebRTCEventListeners();
       await _webRTCService.initialize().timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 30),
         onTimeout: () {
           throw TimeoutException('WebRTC initialization timed out');
         },
       );
 
-      // Log ICE server status for debugging
       final connectionStatus = _webRTCService.getConnectionStatus();
       print('🌐 WebRTC Connection Status: $connectionStatus');
 
@@ -281,7 +293,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         },
       );
 
-      // Create member with proper role and no seat initially
+      // Create member with proper role
       final member = RoomMember(
         id: _currentUserId,
         userId: _currentUserId,
@@ -301,22 +313,24 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         totalMessages: 0,
         roomsJoined: 1,
         sessionId: 'current',
-        seatNumber: _currentUserRole == UserRole.admin ? 0 : null, // Host has seat 0, listeners start without seat
+        seatNumber: _currentUserRole == UserRole.admin ? 0 : null,
       );
 
       await _roomService.createOrJoinRoom(widget.roomId, member);
       
-      // Reset retry count on success
       _connectionRetryCount = 0;
       
       setState(() {
         _isInRoom = true;
         _isWebRTCConnected = true;
         _isLoading = false;
+        _isConnecting = false;
         _connectionStatus = 'Connected!';
+        _hasLocalAudioStream = _webRTCService.localStream != null;
       });
 
       print('✅ Voice room initialized successfully');
+      print('🎤 Local audio stream: $_hasLocalAudioStream');
       
     } on TimeoutException catch (e) {
       print('❌ Connection timeout: $e');
@@ -331,10 +345,10 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     _connectionRetryCount++;
     
     if (_connectionRetryCount < _maxRetryCount) {
-      // Auto-retry after delay
       setState(() {
         _connectionStatus = 'Retrying connection... (${_connectionRetryCount + 1}/$_maxRetryCount)';
         _isLoading = true;
+        _connectionFailed = true;
       });
       
       _connectionRetryTimer = Timer(const Duration(seconds: 3), () {
@@ -343,13 +357,13 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         }
       });
     } else {
-      // Final failure
       _showErrorDialog('Connection Failed', 
           'Unable to establish voice connection after $_maxRetryCount attempts. '
           'This may be due to network restrictions. Please check your internet connection.');
       
       setState(() {
         _isLoading = false;
+        _connectionFailed = true;
         _connectionStatus = 'Connection failed';
       });
     }
@@ -362,17 +376,53 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     _webRTCService.onUserJoined.add(_onUserJoined);
     _webRTCService.onUserLeft.add(_onUserLeft);
     _webRTCService.onUserAudioChanged.add(_onUserAudioChanged);
+    _webRTCService.onLocalAudioStateChanged.add(_onLocalAudioStateChanged);
+    
+    _webRTCService.onConnecting.add(() {
+      if (mounted) {
+        setState(() {
+          _isConnecting = true;
+          _connectionFailed = false;
+          _connectionStatus = 'Connecting to voice server...';
+        });
+      }
+    });
+    
+    _webRTCService.onConnected.add(() {
+      if (mounted) {
+        setState(() {
+          _isConnecting = false;
+          _connectionFailed = false;
+          _isWebRTCConnected = true;
+          _connectionStatus = 'Connected!';
+          _hasLocalAudioStream = _webRTCService.localStream != null;
+        });
+      }
+    });
   }
 
   void _onAddRemoteStream(MediaStream stream) {
     print('🎧 Remote stream added - user is speaking');
     setState(() {
       _isWebRTCConnected = true;
+      _hasRemoteAudioStreams = true;
+      _activeSpeakersCount++;
     });
+    
+    // Debug: Check the stream details
+    final audioTracks = stream.getAudioTracks();
+    print('🔍 Remote stream has ${audioTracks.length} audio tracks');
+    for (final track in audioTracks) {
+      print('   🎵 Track: ${track.id}, enabled: ${track.enabled}, kind: ${track.kind}');
+    }
   }
 
   void _onRemoveRemoteStream(MediaStream stream) {
     print('🎧 Remote stream removed - user stopped speaking');
+    setState(() {
+      _activeSpeakersCount = _activeSpeakersCount > 0 ? _activeSpeakersCount - 1 : 0;
+      _hasRemoteAudioStreams = _activeSpeakersCount > 0;
+    });
   }
 
   void _onUserJoined(String userId, String username) {
@@ -385,6 +435,21 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
 
   void _onUserAudioChanged(String userId, bool isMuted) {
     print('🎤 User audio changed: $userId - muted: $isMuted');
+    setState(() {
+      if (!isMuted) {
+        _activeSpeakersCount++;
+      } else {
+        _activeSpeakersCount = _activeSpeakersCount > 0 ? _activeSpeakersCount - 1 : 0;
+      }
+      _hasRemoteAudioStreams = _activeSpeakersCount > 0;
+    });
+  }
+
+  void _onLocalAudioStateChanged(bool isEnabled) {
+    print('🎤 Local audio state changed: ${isEnabled ? 'ENABLED' : 'DISABLED'}');
+    setState(() {
+      _isMuted = !isEnabled;
+    });
   }
 
   void _onWebRTCError(String error) {
@@ -394,6 +459,9 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     }
     setState(() {
       _isWebRTCConnected = false;
+      _connectionFailed = true;
+      _hasLocalAudioStream = false;
+      _hasRemoteAudioStreams = false;
     });
   }
 
@@ -415,6 +483,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
               onPressed: () {
                 Navigator.pop(context);
                 _connectionRetryCount = 0;
+                _connectionFailed = false;
                 _initializeUserAndRoom();
               },
               child: const Text('Retry'),
@@ -426,17 +495,47 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
 
   void _showConnectionStatus() {
     final status = _webRTCService.getConnectionStatus();
+    final audioStatus = _webRTCService.getAudioStatus();
+    final localStream = _webRTCService.localStream;
+    final remoteStreams = _webRTCService.remoteStreams;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('WebRTC Connection Status'),
-        content: Text(
-          'Socket Connected: ${status['socketConnected']}\n'
-          'Peer Connections: ${status['peerConnections']}\n'
-          'Remote Streams: ${status['remoteStreams']}\n'
-          'Has Local Stream: ${status['hasLocalStream']}\n'
-          'ICE Servers: ${status['iceServers']}\n'
-          'Connection Status: $_connectionStatus'
+        title: const Text('Voice Connection Status'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Socket Connected: ${status['socketConnected']}'),
+              Text('Is Connecting: ${status['isConnecting']}'),
+              Text('Peer Connections: ${status['peerConnections']}'),
+              Text('Remote Streams: ${status['remoteStreams']}'),
+              Text('Has Local Stream: ${status['hasLocalStream']}'),
+              Text('Has Audio Track: ${status['hasAudioTrack']}'),
+              Text('Audio Track Enabled: ${status['audioTrackEnabled']}'),
+              Text('Microphone Muted: ${status['isMicrophoneMuted']}'),
+              Text('Local Audio Tracks: ${localStream?.getAudioTracks().length ?? 0}'),
+              Text('Remote Audio Streams: ${remoteStreams.length}'),
+              Text('Active Speakers: $_activeSpeakersCount'),
+              Text('Production Server: ${status['productionServer']}'),
+              Text('Connection Status: $_connectionStatus'),
+              const SizedBox(height: 10),
+              const Text('Audio Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('  - Has Audio Track: ${audioStatus['hasAudioTrack']}'),
+              Text('  - Audio Track Enabled: ${audioStatus['audioTrackEnabled']}'),
+              Text('  - Audio Track Kind: ${audioStatus['audioTrackKind']}'),
+              Text('  - Audio Tracks Count: ${audioStatus['audioTracksCount']}'),
+              const SizedBox(height: 10),
+              if (!_hasLocalAudioStream)
+                const Text('⚠️ No local audio stream - check microphone permissions', 
+                  style: TextStyle(color: Colors.orange)),
+              if (_hasLocalAudioStream && _isMuted)
+                const Text('ℹ️ Microphone is muted - tap mic button to unmute',
+                  style: TextStyle(color: Colors.blue)),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -447,9 +546,25 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
             onPressed: () {
               Navigator.pop(context);
               _connectionRetryCount = 0;
+              _connectionFailed = false;
               _initializeUserAndRoom();
             },
             child: const Text('Retry Connection'),
+          ),
+          if (!_hasLocalAudioStream)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _requestMicrophonePermission();
+              },
+              child: const Text('Fix Permissions'),
+            ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _refreshAudioStream();
+            },
+            child: const Text('Refresh Audio'),
           ),
         ],
       ),
@@ -462,26 +577,74 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     }
   }
 
-  void _toggleMicrophone() async {
+  // 🎤 IMPROVED: Better microphone toggle with audio verification
+  Future<void> _toggleMicrophone() async {
     if (!_isInRoom || !_isWebRTCConnected) return;
     
-    setState(() {
-      _isMuted = !_isMuted;
-    });
-    
     try {
-      await _webRTCService.toggleMicrophone(_isMuted);
+      print('🎤 Toggling microphone...');
+      
+      // Check audio status before toggling
+      final audioStatus = _webRTCService.getAudioStatus();
+      print('🔍 Audio status before toggle: $audioStatus');
+      
+      final newMuteState = !_isMuted;
+      
+      // Update WebRTC
+      await _webRTCService.toggleMicrophone(newMuteState);
+      
+      // Update Firestore speaking status
       await _roomService.updateSpeakingStatus(
         widget.roomId, 
         _currentUserId, 
-        !_isMuted
+        !newMuteState // If not muted, then speaking
       );
-      print('🎤 Microphone ${_isMuted ? 'muted' : 'unmuted'}');
+      
+      // Update local state
+      setState(() {
+        _isMuted = newMuteState;
+      });
+      
+      // Verify the change
+      await Future.delayed(Duration(milliseconds: 200));
+      final newAudioStatus = _webRTCService.getAudioStatus();
+      print('🔍 Audio status after toggle: $newAudioStatus');
+      
+      print('✅ Microphone ${_isMuted ? 'muted' : 'unmuted'} successfully');
+      
     } catch (e) {
       print('❌ Error toggling microphone: $e');
+      _showErrorDialog('Microphone Error', 'Failed to toggle microphone: $e');
+    }
+  }
+
+  // 🆕 NEW: Refresh audio stream
+  Future<void> _refreshAudioStream() async {
+    try {
       setState(() {
-        _isMuted = !_isMuted; // Revert on error
+        _connectionStatus = 'Refreshing audio stream...';
+        _isLoading = true;
       });
+
+      await _webRTCService.refreshAudioStream();
+      
+      setState(() {
+        _isLoading = false;
+        _hasLocalAudioStream = _webRTCService.localStream != null;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Audio stream refreshed'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('❌ Error refreshing audio stream: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorDialog('Audio Refresh Error', 'Failed to refresh audio: $e');
     }
   }
 
@@ -834,7 +997,6 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     if (!_isInRoom) return;
     
     try {
-      // Check if seat is available
       final isSeatAvailable = await _roomService.isSeatAvailable(widget.roomId, seatNumber);
       if (!isSeatAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -846,12 +1008,10 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         return;
       }
       
-      // Leave current seat if any
       if (_currentSeatNumber != null) {
         await _roomService.leaveSeat(widget.roomId, _currentUserId);
       }
       
-      // Assign new seat
       await _roomService.assignSeat(widget.roomId, _currentUserId, seatNumber);
       
       setState(() {
@@ -877,7 +1037,6 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     if (!_isInRoom || _currentSeatNumber == null) return;
     
     try {
-      // Check if new seat is available
       final isSeatAvailable = await _roomService.isSeatAvailable(widget.roomId, newSeatNumber);
       if (!isSeatAvailable) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -889,10 +1048,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         return;
       }
       
-      // Leave current seat
       await _roomService.leaveSeat(widget.roomId, _currentUserId);
-      
-      // Assign new seat
       await _roomService.assignSeat(widget.roomId, _currentUserId, newSeatNumber);
       
       setState(() {
@@ -916,7 +1072,6 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     try {
       await _roomService.leaveSeat(widget.roomId, _currentUserId);
       
-      // Update local state
       setState(() {
         _currentSeatNumber = null;
         _isMuted = true;
@@ -979,6 +1134,11 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         _isInRoom = false;
         _isWebRTCConnected = false;
         _currentSeatNumber = null;
+        _isConnecting = false;
+        _connectionFailed = false;
+        _hasLocalAudioStream = false;
+        _hasRemoteAudioStreams = false;
+        _activeSpeakersCount = 0;
       });
       
       await _webRTCService.leaveRoom(widget.roomId, _currentUserId);
@@ -997,6 +1157,31 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
     }
   }
 
+  // Build individual seat widget
+  Widget _buildSeatForNumber(int seatNumber, List<RoomMember> listeners) {
+    final occupant = listeners.firstWhere(
+      (member) => member.seatNumber == seatNumber,
+      orElse: () => RoomMember.empty(),
+    );
+    
+    if (occupant.id.isNotEmpty) {
+      return MemberSeat(
+        member: occupant,
+        onTap: () => _showMemberOptions(occupant),
+        isCurrentUser: occupant.userId == _currentUserId,
+        onLeaveSeat: occupant.userId == _currentUserId ? _leaveCurrentSeat : null,
+      );
+    } else {
+      return EmptySeat(
+        seatNumber: seatNumber,
+        onTap: () => _assignSeat(seatNumber),
+        onSwitchSeat: _currentSeatNumber != null ? 
+            () => _switchSeat(seatNumber) : null,
+        canSwitch: _currentSeatNumber != null,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1004,13 +1189,42 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: AppBar(
-          title: Text(
-            _isInRoom ? _roomName : 'Left Room',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 18,
-            ),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _isInRoom ? _roomName : 'Left Room',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
+              ),
+              if (_isInRoom && _hasRemoteAudioStreams) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.volume_up, size: 12, color: Colors.green.shade300),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$_activeSpeakersCount',
+                        style: TextStyle(
+                          color: Colors.green.shade300,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
           centerTitle: true,
           backgroundColor: Colors.transparent,
@@ -1020,6 +1234,13 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
             onPressed: _leaveRoom,
           ),
           actions: _isInRoom ? [
+            // Audio status indicator
+            if (!_hasLocalAudioStream)
+              IconButton(
+                icon: const Icon(Icons.mic_off, color: Colors.red, size: 22),
+                onPressed: _showConnectionStatus,
+                tooltip: 'No microphone access',
+              ),
             IconButton(
               icon: const Icon(Icons.info_outline_rounded, color: Colors.white54, size: 22),
               onPressed: _showRoomInfoEdit,
@@ -1147,8 +1368,19 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4ECDC4)),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              if (_isConnecting)
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.withOpacity(0.3)),
+                ),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  _isConnecting ? Colors.blue : Color(0xFF4ECDC4),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Text(
@@ -1158,11 +1390,22 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
               fontSize: 16,
             ),
           ),
+          if (_isConnecting) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Server may take 30+ seconds to wake up...',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 12,
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
-          if (_connectionStatus.contains('Failed') || _connectionStatus.contains('Retrying'))
+          if (_connectionStatus.contains('Failed') || _connectionFailed)
             ElevatedButton(
               onPressed: () {
                 _connectionRetryCount = 0;
+                _connectionFailed = false;
                 _initializeUserAndRoom();
               },
               child: const Text('Retry Connection'),
@@ -1223,6 +1466,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
                   roomDescription: _roomDescription,
                   isCurrentUserHost: _currentUserRole == UserRole.admin,
                   activeSpeakersCount: activeSpeakersCount,
+                  hasAudioStream: _hasLocalAudioStream,
                 );
               },
             ),
@@ -1280,12 +1524,16 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
             isHost: _currentUserRole == MemberRole.admin,
             hasSeat: _currentSeatNumber != null,
             onLeaveSeat: _currentSeatNumber != null ? _leaveCurrentSeat : null,
+            hasAudioStream: _hasLocalAudioStream,
+            activeSpeakers: _activeSpeakersCount,
+            onRefreshAudio: _refreshAudioStream,
           ),
         ),
       ],
     );
   }
 
+  // 2x4 grid layout
   Widget _buildRoomLayout() {
     return StreamBuilder<List<RoomMember>>(
       stream: _roomService.getRoomMembersStream(widget.roomId),
@@ -1327,73 +1575,48 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
         );
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // Host seat - only show if user is host or host exists
-              if (_currentUserRole == UserRole.admin || host.userId != 'fallback_host')
-                HostSeat(
+              // Host seat - centered at top
+              Container(
+                width: double.infinity,
+                alignment: Alignment.center,
+                child: HostSeat(
                   host: host,
                   isCurrentUser: host.userId == _currentUserId,
                   onTap: _currentUserRole == UserRole.admin 
                       ? () => _showMemberOptions(host!)
                       : null,
                 ),
-              const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 24),
               
-              // Listener seats
-              _buildListenerSeats(listeners),
+              // 2x4 Grid of listener seats
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Column(
+                  children: [
+                    // Row 1: Seats 1-4
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [1, 2, 3, 4].map((seatNumber) {
+                        return _buildSeatForNumber(seatNumber, listeners);
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Row 2: Seats 5-8
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [5, 6, 7, 8].map((seatNumber) {
+                        return _buildSeatForNumber(seatNumber, listeners);
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildListenerSeats(List<RoomMember> listeners) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-        final totalSeats = 6; // Fixed 6 listener seats
-        final rows = (totalSeats / crossAxisCount).ceil();
-        
-        return SizedBox(
-          height: rows * 140,
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 0.9,
-            ),
-            itemCount: totalSeats,
-            itemBuilder: (context, index) {
-              final seatNumber = index + 1;
-              final occupant = listeners.firstWhere(
-                (member) => member.seatNumber == seatNumber,
-                orElse: () => RoomMember.empty(),
-              );
-              
-              if (occupant.id.isNotEmpty) {
-                // Seat is occupied
-                return MemberSeat(
-                  member: occupant,
-                  onTap: () => _showMemberOptions(occupant),
-                  isCurrentUser: occupant.userId == _currentUserId,
-                  onLeaveSeat: occupant.userId == _currentUserId ? _leaveCurrentSeat : null,
-                );
-              } else {
-                // Empty seat
-                return EmptySeat(
-                  seatNumber: seatNumber,
-                  onTap: () => _assignSeat(seatNumber),
-                  onSwitchSeat: _currentSeatNumber != null ? 
-                      () => _switchSeat(seatNumber) : null,
-                  canSwitch: _currentSeatNumber != null,
-                );
-              }
-            },
           ),
         );
       },
@@ -1423,6 +1646,7 @@ class _VoiceRoomScreenState extends State<VoiceRoomScreen> with WidgetsBindingOb
           ElevatedButton(
             onPressed: () {
               _connectionRetryCount = 0;
+              _connectionFailed = false;
               _initializeUserAndRoom();
             },
             style: ElevatedButton.styleFrom(
