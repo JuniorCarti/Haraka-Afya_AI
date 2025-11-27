@@ -91,6 +91,7 @@ flutter:
     - assets/onboarding1.jpg
     - assets/onboarding2.jpg
     - assets/onboarding3.jpg
+    - assets/onboarding4.jpg
     - assets/icons/google.png
     - assets/icons/facebook.png
     - assets/icons/twitter.png
@@ -109,4 +110,5 @@ flutter:
     - assets/animations/splash.json
     - assets/animations/chatbot.json
     - assets/animations/message.json
+    - assets/images/seat_icon.png
   
