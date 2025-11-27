@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:haraka_afya_ai/screens/auth/create_password_screen.dart';
 import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart';
+import 'package:haraka_afya_ai/screens/auth/user_type_selection_screen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   final String firstName;
@@ -21,7 +22,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   final _pageController = PageController();
   bool _isLoading = false;
   bool _emailSent = false;
-  String? _verificationId; // For manual verification if needed
 
   // Color scheme
   final Color _primaryColor = const Color(0xFF0C6D5B);
@@ -232,12 +232,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
+              // Navigate to User Type Selection instead of directly to password
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreatePasswordScreen(
+                  builder: (context) => UserTypeSelectionScreen(
                     firstName: widget.firstName,
                     email: _emailController.text.trim(),
+                    isSocialSignUp: false, // This is email sign-up
                   ),
                 ),
               );
@@ -250,7 +252,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               ),
             ),
             child: const Text(
-              'Continue to Password',
+              'Continue to User Type',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.white,
