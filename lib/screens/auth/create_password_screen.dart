@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:haraka_afya_ai/screens/home_screen.dart';
 import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart';
+import 'package:haraka_afya_ai/screens/auth/verification_screens/health_professional_verification.dart';
+import 'package:haraka_afya_ai/screens/auth/verification_screens/partner_facility_verification.dart';
+import 'package:haraka_afya_ai/screens/auth/verification_screens/support_partner_verification.dart';
+import 'package:haraka_afya_ai/models/user_profile.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CreatePasswordScreen extends StatefulWidget {
   final String firstName;
   final String email;
+  final String? userType;
+  final bool requiresVerification;
 
   const CreatePasswordScreen({
     super.key,
     required this.firstName,
     required this.email,
+    this.userType,
+    required this.requiresVerification,
   });
 
   @override
@@ -132,6 +141,45 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
             color: Colors.grey.shade600,
           ),
         ),
+        // Show user type if available
+        if (widget.userType != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            "As a ${widget.userType}",
+            style: TextStyle(
+              fontSize: 14,
+              color: _primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+        // Show verification notice if required
+        if (widget.requiresVerification) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.verified_user, size: 14, color: _primaryColor),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Additional verification required after account creation',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 40),
         Form(
           key: _formKey,
@@ -204,7 +252,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _isLoading ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryColor,
                     shape: RoundedRectangleBorder(
@@ -220,9 +268,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
-                          'Create Account',
-                          style: TextStyle(
+                      : Text(
+                          widget.requiresVerification 
+                            ? 'Create Account & Verify' 
+                            : 'Create Account',
+                          style: const TextStyle(
                             fontSize: 16,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -268,22 +318,78 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
         Text('Account created!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: _primaryColor)),
         const SizedBox(height: 10),
         Text('Welcome to Haraka Afya, ${widget.firstName}!', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+        // Show user type in success message
+        if (widget.userType != null) ...[
+          const SizedBox(height: 5),
+          Text(
+            'Registered as ${widget.userType}',
+            style: TextStyle(
+              fontSize: 14,
+              color: _primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+        // Show next steps for verification
+        if (widget.requiresVerification) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _primaryColor.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.verified_user, size: 40, color: _primaryColor),
+                const SizedBox(height: 12),
+                Text(
+                  'Verification Required',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please complete your professional verification to access all features.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 40),
         SizedBox(
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-            ),
+            onPressed: () {
+              if (widget.requiresVerification) {
+                _navigateToVerificationScreen();
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Continue to App', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              widget.requiresVerification ? 'Continue to Verification' : 'Continue to App',
+              style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],
@@ -294,11 +400,23 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
+        // Create user with email and password
         final UserCredential userCredential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: widget.email, password: _passwordController.text);
+            .createUserWithEmailAndPassword(
+              email: widget.email, 
+              password: _passwordController.text
+            );
 
-        await userCredential.user?.sendEmailVerification();
-        await userCredential.user?.updateDisplayName(widget.firstName);
+        final User user = userCredential.user!;
+        
+        // Update display name
+        await user.updateDisplayName(widget.firstName);
+        
+        // Send email verification
+        await user.sendEmailVerification();
+
+        // Create and save user profile with user type
+        await _saveUserProfile(user.uid);
 
         setState(() {
           _isLoading = false;
@@ -315,14 +433,108 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
           errorMessage = 'The email address is invalid';
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(errorMessage), 
+            backgroundColor: Colors.red
+          ),
         );
       } catch (e) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error: ${e.toString()}'), 
+            backgroundColor: Colors.red
+          ),
         );
       }
+    }
+  }
+
+  Future<void> _saveUserProfile(String userId) async {
+    try {
+      // Determine verification status based on user type
+      final requiresVerification = widget.userType == 'Health Professional' || 
+                                  widget.userType == 'Partner Facility' || 
+                                  widget.userType == 'Support Partner';
+      
+      final userProfile = UserProfile(
+        uid: userId,
+        firstName: widget.firstName,
+        lastName: '', // Can be updated later
+        email: widget.email,
+        userType: widget.userType ?? 'Health Explorer',
+        phoneNumber: '',
+        age: 0,
+        subscriptionType: 'free',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isProfileComplete: widget.userType != null,
+        isVerified: false,
+        verificationStatus: requiresVerification ? 'pending' : 'not_required',
+      );
+
+      // Save to Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .set(userProfile.toMap());
+
+      print('User profile saved successfully for $userId as ${widget.userType}');
+    } catch (e) {
+      print('Error saving user profile: $e');
+      // Don't throw error here - the account is already created
+    }
+  }
+
+  void _navigateToVerificationScreen() {
+    switch (widget.userType) {
+      case 'Health Professional':
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HealthProfessionalVerificationScreen(
+              userId: FirebaseAuth.instance.currentUser!.uid,
+              firstName: widget.firstName,
+              email: widget.email,
+              userType: widget.userType!,
+              isSocialSignUp: false,
+            ),
+          ),
+        );
+        break;
+      case 'Partner Facility':
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PartnerFacilityVerificationScreen(
+              userId: FirebaseAuth.instance.currentUser!.uid,
+              firstName: widget.firstName,
+              email: widget.email,
+              userType: widget.userType!,
+              isSocialSignUp: false,
+            ),
+          ),
+        );
+        break;
+      case 'Support Partner':
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SupportPartnerVerificationScreen(
+              userId: FirebaseAuth.instance.currentUser!.uid,
+              firstName: widget.firstName,
+              email: widget.email,
+              userType: widget.userType!,
+              isSocialSignUp: false,
+            ),
+          ),
+        );
+        break;
+      default:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
     }
   }
 }
