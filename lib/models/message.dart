@@ -34,6 +34,8 @@ class AnonymousMessage {
     );
   }
 
+  get senderId => null;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
