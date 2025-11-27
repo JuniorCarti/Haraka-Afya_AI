@@ -16,6 +16,7 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
   final Color _primaryColor = const Color(0xFF0C6D5B); // Brand green color
 
   final List<Map<String, dynamic>> _onboardingData = [
+    // Original screens
     {
       'title': 'AI-Powered Health Analysis',
       'description':
@@ -37,8 +38,25 @@ class _OnboardingScreensState extends State<OnboardingScreens> {
       'description':
           'Your health companion is always available. Get medical guidance, track symptoms, and stay informed about your wellness.',
       'image': 'assets/onboarding3.jpg',
-      'buttonText': 'Get Started',
+      'buttonText': 'Continue',
       'bgColor': Colors.black.withOpacity(0.4),
+    },
+    // New user type-focused screens
+    {
+      'title': 'Your Health Community Awaits',
+      'description':
+          'Join a supportive network of Health Explorers, In-Care Members, Support Partners, Health Professionals, and Partner Facilities.',
+      'image': 'https://images.unsplash.com/photo-1609777913028-e2de3dfdeeb1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fGhlYWx0aCUyMGNvbW11bml0eXxlbnwwfHwwfHx8MA%3D%3D',
+      'buttonText': 'Continue',
+      'bgColor': Colors.black.withOpacity(0.5),
+    },
+    {
+      'title': 'Find Your Role in Health',
+      'description':
+          'Whether you\'re exploring wellness, receiving care, supporting others, or providing expertise - your journey matters here.',
+      'image': 'https://plus.unsplash.com/premium_photo-1664475543697-229156438e1e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cm9sZSUyMGluJTIwaGVhbHRofGVufDB8fDB8fHww',
+      'buttonText': 'Get Started',
+      'bgColor': Colors.black.withOpacity(0.5),
     },
   ];
 
@@ -159,11 +177,42 @@ class OnboardingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Handle both local assets and network images
         Positioned.fill(
-          child: Image.asset(
-            imagePath,
-            fit: BoxFit.cover,
-          ),
+          child: imagePath.startsWith('http')
+              ? Image.network(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: Colors.grey[300],
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: _primaryColor.withOpacity(0.1),
+                      child: Center(
+                        child: Icon(
+                          Icons.health_and_safety,
+                          size: 100,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                ),
         ),
 
         Container(
