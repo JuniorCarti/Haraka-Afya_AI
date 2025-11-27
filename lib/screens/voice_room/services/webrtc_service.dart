@@ -8,6 +8,10 @@ class WebRTCService {
   final Map<String, MediaStream> _remoteStreams = {};
   MediaStream? _localStream;
   
+  // Track audio state
+  bool _isMicrophoneMuted = true;
+  MediaStreamTrack? _audioTrack;
+  
   // PREMIUM TURN/STUN configuration with custom Metered.ca domain
   static final List<Map<String, dynamic>> _iceServers = [
     // Primary Google STUN servers
@@ -28,8 +32,8 @@ class WebRTCService {
         'turns:harakaafyaai.metered.live:443?transport=tcp',
         'turn:harakaafyaai.metered.live:443?transport=udp'
       ],
-      'username': 'harakaafyaai', // Replace with your actual Metered.ca username
-      'credential': 'Shferick.1234' // Replace with your actual Metered.ca password
+      'username': 'harakaafyaai',
+      'credential': 'Shferick.1234'
     },
     
     // Twilio STUN (Backup)
@@ -49,11 +53,8 @@ class WebRTCService {
     },
   ];
 
-  // Local signaling server - Replace with your deployed server URL for production
-  static const String _signalingServer = 'http://localhost:3000';
-  
-  // For production deployment, use your deployed server:
-  // static const String _signalingServer = 'https://your-app.render.com';
+  // ✅ PRODUCTION SERVER - Updated with your Render URL
+  static const String _signalingServer = 'https://haraka-afya-voice-server.onrender.com';
 
   // Event callbacks
   final List<Function(MediaStream)> onAddRemoteStream = [];
@@ -62,17 +63,20 @@ class WebRTCService {
   final List<Function(String, String)> onUserJoined = [];
   final List<Function(String, String)> onUserLeft = [];
   final List<Function(String, bool)> onUserAudioChanged = [];
+  final List<Function()> onConnecting = [];
+  final List<Function()> onConnected = [];
+  final List<Function(bool)> onLocalAudioStateChanged = []; // NEW: Track local audio state
 
   bool get isConnected => _socket.connected;
   bool get hasLocalStream => _localStream != null;
+  bool get hasAudioTrack => _audioTrack != null;
+  bool _isConnecting = false;
 
   Future<void> initialize() async {
     try {
       print('🔄 Initializing WebRTC service...');
-      print('🌐 PREMIUM CONFIG: Custom TURN server - harakaafyaai.metered.live');
-      print('   - Dedicated TURN server for cross-location calls');
-      print('   - Enterprise-grade reliability');
-      print('   - Optimized for global voice chat');
+      print('🌐 PRODUCTION CONFIG: Custom TURN server - harakaafyaai.metered.live');
+      print('🚀 PRODUCTION SERVER: $_signalingServer');
       
       // Log ICE server details for verification
       for (var i = 0; i < _iceServers.length; i++) {
@@ -90,22 +94,22 @@ class WebRTCService {
         'transports': ['websocket', 'polling'],
         'autoConnect': true,
         'forceNew': true,
-        'timeout': 15000, // Increased timeout for TURN server negotiation
+        'timeout': 30000,
         'reconnection': true,
-        'reconnectionAttempts': 5,
-        'reconnectionDelay': 1000,
-        'reconnectionDelayMax': 5000,
+        'reconnectionAttempts': 3,
+        'reconnectionDelay': 2000,
+        'reconnectionDelayMax': 10000,
       });
 
       _setupSocketListeners();
       await _waitForConnection();
-      print('✅ WebRTC service initialized with CUSTOM TURN SERVER');
-      print('🚀 Ready for cross-location voice chat!');
+      print('✅ WebRTC service initialized with PRODUCTION SERVER');
       
     } catch (e) {
       print('❌ Error initializing WebRTC: $e');
-      _onError('Failed to initialize WebRTC: $e');
-      rethrow;
+      print('🔄 Retrying connection in 5 seconds...');
+      await Future.delayed(Duration(seconds: 5));
+      await initialize();
     }
   }
 
@@ -117,9 +121,15 @@ class WebRTCService {
       return completer.future;
     }
 
-    final connectionTimer = Timer(const Duration(seconds: 15), () {
+    // Show connecting state to UI
+    _isConnecting = true;
+    for (final callback in onConnecting) {
+      callback();
+    }
+
+    final connectionTimer = Timer(const Duration(seconds: 30), () {
       if (!completer.isCompleted) {
-        completer.completeError(TimeoutException('Server connection timeout after 15 seconds'));
+        completer.completeError(TimeoutException('Server connection timeout after 30 seconds - Server might be waking up'));
       }
     });
 
@@ -130,13 +140,18 @@ class WebRTCService {
     }
 
     _socket.once('connect', (_) {
-      print('🔗 Connected to signaling server');
+      print('🔗 Connected to production signaling server');
+      _isConnecting = false;
+      for (final callback in onConnected) {
+        callback();
+      }
       cleanup();
       completer.complete();
     });
 
     _socket.once('connect_error', (error) {
       print('❌ Server connection error: $error');
+      _isConnecting = false;
       cleanup();
       completer.completeError(error ?? 'Failed to connect to signaling server');
     });
@@ -145,13 +160,18 @@ class WebRTCService {
       await completer.future;
     } catch (e) {
       print('❌ Connection wait failed: $e');
+      _isConnecting = false;
       rethrow;
     }
   }
 
   void _setupSocketListeners() {
     _socket.on('connect', (_) {
-      print('✅ Connected to signaling server - Socket ID: ${_socket.id}');
+      print('✅ Connected to production server - Socket ID: ${_socket.id}');
+      _isConnecting = false;
+      for (final callback in onConnected) {
+        callback();
+      }
     });
 
     _socket.on('disconnect', (reason) {
@@ -161,6 +181,7 @@ class WebRTCService {
 
     _socket.on('connect_error', (error) {
       print('❌ Server connection error: $error');
+      print('🔄 Auto-reconnect will attempt shortly...');
       _onError('Connection failed: $error');
     });
 
@@ -267,7 +288,8 @@ class WebRTCService {
   Future<void> joinRoom(String roomId, String userId, String username) async {
     try {
       print('🚀 Joining room: $roomId as $username ($userId)');
-      print('🌐 Using premium TURN server for cross-location connectivity');
+      print('🌐 Using production server: $_signalingServer');
+      print('🔒 Premium TURN server enabled for cross-location calls');
       
       // Ensure we have media before joining
       if (_localStream == null) {
@@ -303,6 +325,7 @@ class WebRTCService {
     }
   }
 
+  // 🎤 IMPROVED: Better microphone access with verification
   Future<void> _getUserMedia() async {
     try {
       print('🎤 Requesting microphone access...');
@@ -324,9 +347,21 @@ class WebRTCService {
       
       final audioTracks = _localStream!.getAudioTracks();
       if (audioTracks.isNotEmpty) {
-        print('✅ Got local audio stream - Ready for premium voice chat');
+        _audioTrack = audioTracks.first;
+        
+        // 🆕 ADDED: Audio track event listeners
+        _setupAudioTrackListeners();
+        
+        print('✅ Got local audio stream - Track ID: ${_audioTrack!.id}');
+        print('🎯 Audio track enabled: ${_audioTrack!.enabled}');
+        print('🎯 Audio track kind: ${_audioTrack!.kind}');
+        print('🎯 Audio track label: ${_audioTrack!.label}');
+        
+        // Initial state: muted
+        await _setAudioTrackEnabled(false);
+        
       } else {
-        throw Exception('No audio tracks available');
+        throw Exception('No audio tracks available in stream');
       }
       
     } catch (e) {
@@ -335,6 +370,144 @@ class WebRTCService {
       rethrow;
     }
   }
+
+  // 🆕 NEW: Setup audio track listeners
+  void _setupAudioTrackListeners() {
+    if (_audioTrack == null) return;
+
+    // Note: Flutter WebRTC doesn't expose all track events directly
+    // We'll rely on manual state checking
+    print('🎧 Setting up audio track monitoring');
+  }
+
+  // 🆕 NEW: Proper audio track control
+  Future<void> _setAudioTrackEnabled(bool enabled) async {
+    if (_audioTrack == null) {
+      print('❌ No audio track available to enable/disable');
+      return;
+    }
+
+    try {
+      _audioTrack!.enabled = enabled;
+      _isMicrophoneMuted = !enabled;
+      
+      print('🎤 Audio track ${enabled ? 'ENABLED' : 'DISABLED'}');
+      print('   - Track enabled: ${_audioTrack!.enabled}');
+      print('   - Track kind: ${_audioTrack!.kind}');
+      print('   - Track ID: ${_audioTrack!.id}');
+      
+      // Notify UI about audio state change
+      for (final callback in onLocalAudioStateChanged) {
+        callback(enabled);
+      }
+      
+      // Notify server about audio state change
+      _socket.emit('toggle-audio', {
+        'isMuted': !enabled,
+      });
+      
+    } catch (e) {
+      print('❌ Error setting audio track state: $e');
+      _onError('Failed to control microphone: $e');
+    }
+  }
+
+  // 🎤 FIXED: Better microphone toggle with verification
+  Future<void> toggleMicrophone(bool mute) async {
+    try {
+      print('🎤 Toggle microphone: ${mute ? 'MUTE' : 'UNMUTE'}');
+      
+      if (_localStream == null) {
+        print('❌ No local stream available');
+        await _getUserMedia(); // Try to get media if not available
+      }
+
+      if (_audioTrack == null && _localStream != null) {
+        final audioTracks = _localStream!.getAudioTracks();
+        if (audioTracks.isNotEmpty) {
+          _audioTrack = audioTracks.first;
+          _setupAudioTrackListeners();
+        }
+      }
+
+      if (_audioTrack == null) {
+        print('❌ No audio track available for toggle');
+        _onError('No microphone access available');
+        return;
+      }
+
+      await _setAudioTrackEnabled(!mute);
+      
+      // Verify the change
+      await Future.delayed(Duration(milliseconds: 100));
+      print('✅ Microphone toggle completed');
+      print('   Final state - Enabled: ${_audioTrack!.enabled}, Muted: $_isMicrophoneMuted');
+      
+    } catch (e) {
+      print('❌ Error in toggleMicrophone: $e');
+      _onError('Failed to toggle microphone: $e');
+      rethrow;
+    }
+  }
+
+  // 🆕 NEW: Get detailed audio status
+  Map<String, dynamic> getAudioStatus() {
+    return {
+      'hasLocalStream': _localStream != null,
+      'hasAudioTrack': _audioTrack != null,
+      'audioTrackEnabled': _audioTrack?.enabled ?? false,
+      'audioTrackKind': _audioTrack?.kind ?? 'N/A',
+      'audioTrackId': _audioTrack?.id ?? 'N/A',
+      'isMicrophoneMuted': _isMicrophoneMuted,
+      'audioTracksCount': _localStream?.getAudioTracks().length ?? 0,
+      'remoteStreamsCount': _remoteStreams.length,
+    };
+  }
+
+  // 🆕 NEW: Force refresh audio stream
+  Future<void> refreshAudioStream() async {
+    try {
+      print('🔄 Refreshing audio stream...');
+      
+      // Stop old stream
+      if (_localStream != null) {
+        _localStream!.getTracks().forEach((track) => track.stop());
+        _localStream = null;
+      }
+      _audioTrack = null;
+      
+      // Get new stream
+      await _getUserMedia();
+      
+      // Update all peer connections with new stream
+      for (final entry in _peerConnections.entries) {
+        final userId = entry.key;
+        final connection = entry.value;
+        
+        // Remove old tracks
+        final senders = await connection.getSenders();
+        for (final sender in senders) {
+          if (sender.track?.kind == 'audio') {
+            await connection.removeTrack(sender);
+          }
+        }
+        
+        // Add new audio track
+        if (_localStream != null && _audioTrack != null) {
+          await connection.addTrack(_audioTrack!, _localStream!);
+          print('✅ Updated audio track for connection: $userId');
+        }
+      }
+      
+      print('✅ Audio stream refresh completed');
+      
+    } catch (e) {
+      print('❌ Error refreshing audio stream: $e');
+      _onError('Failed to refresh audio: $e');
+    }
+  }
+
+  bool get isMicrophoneMuted => _isMicrophoneMuted;
 
   Future<void> _createPeerConnectionForUser(String remoteUserId) async {
     if (_localStream == null) {
@@ -348,20 +521,22 @@ class WebRTCService {
     }
 
     try {
-      print('🔗 Creating premium peer connection for: $remoteUserId');
+      print('🔗 Creating peer connection for: $remoteUserId');
       final peerConnection = await _createPeerConnection();
       _peerConnections[remoteUserId] = peerConnection;
 
-      // Add local stream tracks
-      for (final track in _localStream!.getTracks()) {
-        await peerConnection.addTrack(track, _localStream!);
+      // 🆕 IMPROVED: Add audio track with verification
+      if (_audioTrack != null) {
+        await peerConnection.addTrack(_audioTrack!, _localStream!);
+        print('✅ Added audio track to peer connection for $remoteUserId');
+      } else {
+        print('⚠️ No audio track available for peer connection');
       }
 
-      // Create and send offer with enhanced options
+      // Create and send offer
       final offer = await peerConnection.createOffer({
         'offerToReceiveAudio': true,
         'offerToReceiveVideo': false,
-        'iceRestart': false,
       });
       
       await peerConnection.setLocalDescription(offer);
@@ -371,7 +546,7 @@ class WebRTCService {
         'targetUserId': remoteUserId,
       });
       
-      print('📞 Sent offer to $remoteUserId via custom TURN server');
+      print('📞 Sent offer to $remoteUserId');
       
     } catch (e) {
       print('❌ Error creating peer connection for $remoteUserId: $e');
@@ -492,10 +667,7 @@ class WebRTCService {
       ],
     };
 
-    print('🔧 Creating premium peer connection with custom TURN server');
-    print('   - STUN: 5 Google servers + Twilio');
-    print('   - TURN: harakaafyaai.metered.live (5 endpoints)');
-    print('   - Custom domain: Premium reliability for cross-location calls');
+    print('🔧 Creating peer connection with production TURN server');
     
     final peerConnection = await createPeerConnection(configuration, constraints);
 
@@ -507,7 +679,7 @@ class WebRTCService {
           'candidate': candidate.toMap(),
           'targetUserId': userId,
         });
-        print('🧊 Sent ICE candidate to $userId via TURN server');
+        print('🧊 Sent ICE candidate to $userId');
       }
     };
 
@@ -515,7 +687,7 @@ class WebRTCService {
       final userId = _getUserIdByConnection(peerConnection);
       if (userId != null) {
         _remoteStreams[userId] = stream;
-        print('🎧 Added remote stream from user: $userId - Cross-location connected!');
+        print('🎧 Added remote stream from user: $userId - Voice connected!');
         for (final callback in onAddRemoteStream) {
           callback(stream);
         }
@@ -538,9 +710,9 @@ class WebRTCService {
       print('🧊 ICE connection state for $userId: $state');
       
       if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
-        print('✅ Premium TURN connection established! Cross-location ready.');
+        print('✅ TURN connection established! Cross-location ready.');
       } else if (state == RTCIceConnectionState.RTCIceConnectionStateChecking) {
-        print('🔍 ICE checking - Using harakaafyaai.metered.live TURN server');
+        print('🔍 ICE checking - Using production TURN server');
       } else if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
         print('⚠️ ICE connection failed - TURN server fallback activated');
       }
@@ -551,7 +723,7 @@ class WebRTCService {
       print('🌐 ICE gathering state for $userId: $state');
       
       if (state == RTCIceGatheringState.RTCIceGatheringStateComplete) {
-        print('✅ ICE gathering complete - Custom TURN server optimized');
+        print('✅ ICE gathering complete');
       }
     };
 
@@ -580,29 +752,6 @@ class WebRTCService {
     }
   }
 
-  Future<void> toggleMicrophone(bool mute) async {
-    if (_localStream != null) {
-      final audioTracks = _localStream!.getAudioTracks();
-      for (final track in audioTracks) {
-        track.enabled = !mute;
-      }
-      
-      _socket.emit('toggle-audio', {
-        'isMuted': mute,
-      });
-      
-      print('🎤 ${mute ? 'Muted' : 'Unmuted'} microphone');
-    } else {
-      print('❌ No local stream available for mute/unmute');
-    }
-  }
-
-  bool get isMicrophoneMuted {
-    if (_localStream == null) return true;
-    final audioTracks = _localStream!.getAudioTracks();
-    return audioTracks.isEmpty || !audioTracks.first.enabled;
-  }
-
   Future<void> _cleanup() async {
     print('🧹 Cleaning up WebRTC resources...');
     
@@ -618,13 +767,14 @@ class WebRTCService {
 
     // Stop local stream
     if (_localStream != null) {
-      _localStream!.getTracks().forEach((track) {
-        track.stop();
-      });
+      _localStream!.getTracks().forEach((track) => track.stop());
       _localStream = null;
+      _audioTrack = null;
     }
 
     _remoteStreams.clear();
+    _isConnecting = false;
+    _isMicrophoneMuted = true;
     
     // Disconnect socket
     if (_socket.connected) {
@@ -634,14 +784,18 @@ class WebRTCService {
     print('✅ WebRTC cleanup complete');
   }
 
-  // Get connection status for debugging
+  // 🆕 IMPROVED: Get connection status with audio details
   Map<String, dynamic> getConnectionStatus() {
     return {
       'socketConnected': _socket.connected,
+      'isConnecting': _isConnecting,
       'peerConnections': _peerConnections.length,
       'remoteStreams': _remoteStreams.length,
       'hasLocalStream': _localStream != null,
-      'iceServers': _iceServers.length,
+      'hasAudioTrack': _audioTrack != null,
+      'audioTrackEnabled': _audioTrack?.enabled ?? false,
+      'isMicrophoneMuted': _isMicrophoneMuted,
+      'productionServer': _signalingServer,
       'customTurnServer': 'harakaafyaai.metered.live',
     };
   }
