@@ -18,7 +18,6 @@ class EmptySeat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSeatZero = seatNumber == 0;
     final seatColor = isHostSeat ? Colors.amber : Colors.green;
     
     return Container(
@@ -26,7 +25,7 @@ class EmptySeat extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Seat Circle with animated tap effect
+          // Seat Circle with custom icon
           GestureDetector(
             onTap: onTap,
             child: MouseRegion(
@@ -75,7 +74,7 @@ class EmptySeat extends StatelessWidget {
                       ),
                     ),
                     
-                    // Host crown icon for seat 0
+                    // Host crown border for seat 0
                     if (isHostSeat)
                     Positioned.fill(
                       child: Container(
@@ -90,13 +89,9 @@ class EmptySeat extends StatelessWidget {
                       ),
                     ),
                     
-                    // Main icon
+                    // Custom seat icon
                     Center(
-                      child: Icon(
-                        isHostSeat ? Icons.king_bed_rounded : Icons.person_add_alt_1_rounded,
-                        color: seatColor.withOpacity(0.6),
-                        size: isHostSeat ? 26 : 22,
-                      ),
+                      child: _buildCustomSeatIcon(seatColor),
                     ),
                     
                     // Hover effect layer
@@ -238,6 +233,24 @@ class EmptySeat extends StatelessWidget {
       ),
     );
   }
+
+  // Custom seat icon builder
+  Widget _buildCustomSeatIcon(Color color) {
+    return Image.asset(
+      'assets/images/seat_icon.png',
+      width: isHostSeat ? 28 : 24,
+      height: isHostSeat ? 28 : 24,
+      color: color.withOpacity(0.6),
+      errorBuilder: (context, error, stackTrace) {
+        // Fallback to Material icon if custom icon not found
+        return Icon(
+          isHostSeat ? Icons.king_bed_rounded : Icons.event_seat_outlined,
+          color: color.withOpacity(0.6),
+          size: isHostSeat ? 26 : 22,
+        );
+      },
+    );
+  }
 }
 
 // Enhanced Empty Seat with Tooltip and Better Animations
@@ -267,6 +280,7 @@ class _EnhancedEmptySeatState extends State<EnhancedEmptySeat> with SingleTicker
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
+  late Animation<Color?> _borderColorAnimation;
   
   bool _isHovered = false;
 
@@ -294,6 +308,15 @@ class _EnhancedEmptySeatState extends State<EnhancedEmptySeat> with SingleTicker
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
+    
+    final seatColor = widget.isHostSeat ? Colors.amber : Colors.green;
+    _borderColorAnimation = ColorTween(
+      begin: seatColor.withOpacity(0.3),
+      end: seatColor.withOpacity(0.6),
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
   }
 
   @override
@@ -304,7 +327,6 @@ class _EnhancedEmptySeatState extends State<EnhancedEmptySeat> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final isSeatZero = widget.seatNumber == 0;
     final seatColor = widget.isHostSeat ? Colors.amber : Colors.green;
     final canJoin = !widget.isHostSeat || (widget.isHostSeat && widget.canSwitch);
     
@@ -318,7 +340,7 @@ class _EnhancedEmptySeatState extends State<EnhancedEmptySeat> with SingleTicker
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Animated Seat Circle
+            // Animated Seat Circle with Custom Icon
             MouseRegion(
               onEnter: (_) => setState(() => _isHovered = true),
               onExit: (_) => setState(() => _isHovered = false),
@@ -343,7 +365,9 @@ class _EnhancedEmptySeatState extends State<EnhancedEmptySeat> with SingleTicker
                             end: Alignment.bottomRight,
                           ),
                           border: Border.all(
-                            color: seatColor.withOpacity(_isHovered && canJoin ? 0.5 : 0.3),
+                            color: _isHovered && canJoin 
+                                ? seatColor.withOpacity(0.5) 
+                                : _borderColorAnimation.value!,
                             width: _isHovered && canJoin ? 2.0 : 1.5,
                           ),
                           boxShadow: _isHovered && canJoin ? [
@@ -397,13 +421,9 @@ class _EnhancedEmptySeatState extends State<EnhancedEmptySeat> with SingleTicker
                               ),
                             ),
                             
-                            // Main icon
+                            // Custom seat icon
                             Center(
-                              child: Icon(
-                                widget.isHostSeat ? Icons.king_bed_rounded : Icons.person_add_alt_1_rounded,
-                                color: seatColor.withOpacity(canJoin ? (_isHovered ? 0.8 : 0.6) : 0.3),
-                                size: widget.isHostSeat ? 26 : 22,
-                              ),
+                              child: _buildEnhancedCustomSeatIcon(seatColor, canJoin),
                             ),
                             
                             // Disabled overlay
@@ -459,6 +479,27 @@ class _EnhancedEmptySeatState extends State<EnhancedEmptySeat> with SingleTicker
         ),
       ),
     );
+  }
+
+  // Enhanced custom seat icon with hover effects
+  Widget _buildEnhancedCustomSeatIcon(Color color, bool canJoin) {
+    final iconOpacity = canJoin ? (_isHovered ? 0.8 : 0.6) : 0.3;
+    final iconSize = widget.isHostSeat ? 28 : 24;
+return Image.asset(
+  'assets/images/seat_icon.png',
+  width: iconSize * 1.0, // Convert to double
+  height: iconSize * 1.0, // Convert to double
+  color: color.withOpacity(iconOpacity),
+  errorBuilder: (context, error, stackTrace) {
+    // Fallback to Material icons if custom icon not found
+    return Icon(
+      widget.isHostSeat ? Icons.king_bed_rounded : Icons.event_seat_outlined,
+      color: color.withOpacity(iconOpacity),
+      size: widget.isHostSeat ? 26 : 22,
+    );
+  },
+);
+  
   }
 
   Widget _buildSeatInfo(Color seatColor, bool canJoin) {
