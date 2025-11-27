@@ -13,10 +13,11 @@ class FirebaseRoomService {
   CollectionReference get _userUsernamesCollection => _firestore.collection('user_usernames');
   CollectionReference get _userAchievementsCollection => _firestore.collection('user_achievements');
 
-  // Session management - Track which users are in which rooms
-  final Map<String, Set<String>> _activeUsersInRooms = {}; // roomId -> Set<userId>
+  // Session management with audio state tracking
+  final Map<String, Set<String>> _activeUsersInRooms = {};
+  final Map<String, Map<String, bool>> _userAudioStates = {}; // roomId -> userId -> isSpeaking
 
-  // Get or create random username
+  // Get or create username with better error handling
   Future<String> getOrCreateUsername(String userId) async {
     try {
       // Check if user already has a username
@@ -44,16 +45,18 @@ class FirebaseRoomService {
         'username': username,
         'createdAt': FieldValue.serverTimestamp(),
         'userId': userId,
+        'lastActive': FieldValue.serverTimestamp(),
       });
 
+      print('✅ Created new username: $username for user: $userId');
       return username;
     } catch (e) {
       print('❌ Error getting/creating username: $e');
-      return 'Anonymous';
+      return 'Anonymous${DateTime.now().millisecondsSinceEpoch % 1000}';
     }
   }
 
-  // Get user achievements/level
+  // Get user achievements with audio-specific tracking
   Future<Map<String, dynamic>> getUserAchievements(String userId) async {
     try {
       final doc = await _userAchievementsCollection.doc(userId).get();
@@ -64,7 +67,7 @@ class FirebaseRoomService {
         }
       }
       
-      // Default achievements for new users
+      // Default achievements for new users with audio tracking
       return {
         'level': 1,
         'points': 0,
@@ -72,6 +75,12 @@ class FirebaseRoomService {
         'title': 'Newcomer',
         'totalMessages': 0,
         'roomsJoined': 1,
+        'totalSpeakingTime': 0,
+        'voiceSessions': 0,
+        'lastVoiceSession': null,
+        'audioQuality': 'good',
+        'microphoneEnabled': false,
+        'createdAt': FieldValue.serverTimestamp(),
       };
     } catch (e) {
       print('❌ Error getting user achievements: $e');
@@ -82,24 +91,28 @@ class FirebaseRoomService {
         'title': 'Newcomer',
         'totalMessages': 0,
         'roomsJoined': 1,
+        'totalSpeakingTime': 0,
+        'voiceSessions': 0,
       };
     }
   }
 
-  // Create or join room
+  // Create or join room with audio state initialization
   Future<void> createOrJoinRoom(String roomId, RoomMember member) async {
     try {
       final roomDoc = _roomsCollection.doc(roomId);
       final roomSnapshot = await roomDoc.get();
 
-      // Track user as active in this room
+      // Initialize audio state tracking for this room
       if (!_activeUsersInRooms.containsKey(roomId)) {
         _activeUsersInRooms[roomId] = <String>{};
+        _userAudioStates[roomId] = {};
       }
       _activeUsersInRooms[roomId]!.add(member.userId);
+      _userAudioStates[roomId]![member.userId] = false; // Start muted
 
       if (!roomSnapshot.exists) {
-        // Create new room
+        // Create new room with audio-specific settings
         await roomDoc.set({
           'id': roomId,
           'name': 'Support Room',
@@ -111,6 +124,14 @@ class FirebaseRoomService {
           'isActive': true,
           'memberCount': 1,
           'currentSessionId': _generateSessionId(),
+          'audioSettings': {
+            'noiseSuppression': true,
+            'echoCancellation': true,
+            'autoGainControl': true,
+            'maxSpeakers': 6,
+            'allowBackgroundAudio': false,
+          },
+          'lastActivity': FieldValue.serverTimestamp(),
         });
 
         // Send welcome message
@@ -130,12 +151,24 @@ class FirebaseRoomService {
         await sendChatMessage(roomId, welcomeMessage);
       }
 
-      // Add/update member in room
-      await roomDoc.collection('members').doc(member.id).set(member.toMap());
+      // Add/update member with audio state
+      final memberData = member.toMap();
+      memberData['audioState'] = {
+        'isSpeaking': false,
+        'isMuted': true,
+        'hasAudioPermission': true,
+        'lastAudioUpdate': FieldValue.serverTimestamp(),
+        'audioDevice': 'default',
+      };
 
-      // Update room member count
+      await roomDoc.collection('members').doc(member.id).set(memberData);
+
+      // Update room member count and last activity
       final membersSnapshot = await roomDoc.collection('members').get();
-      await roomDoc.update({'memberCount': membersSnapshot.docs.length});
+      await roomDoc.update({
+        'memberCount': membersSnapshot.docs.length,
+        'lastActivity': FieldValue.serverTimestamp(),
+      });
 
       // Send join notification only if not the first user
       if (roomSnapshot.exists) {
@@ -154,19 +187,42 @@ class FirebaseRoomService {
         await sendChatMessage(roomId, joinMessage);
       }
 
-      print('✅ Successfully joined room: $roomId');
+      // Update user achievements for room join
+      await _updateUserRoomJoin(member.userId);
+
+      print('✅ Successfully joined room: $roomId with audio state initialized');
     } catch (e) {
       print('❌ Error creating/joining room: $e');
       throw Exception('Failed to create/join room: $e');
     }
   }
 
-  // Generate session ID
-  String _generateSessionId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+  // Update user achievements when joining room
+  Future<void> _updateUserRoomJoin(String userId) async {
+    try {
+      final achievementsDoc = _userAchievementsCollection.doc(userId);
+      final achievements = await getUserAchievements(userId);
+      
+      final currentRoomsJoined = (achievements['roomsJoined'] as int?) ?? 0;
+      final currentVoiceSessions = (achievements['voiceSessions'] as int?) ?? 0;
+      
+      await achievementsDoc.set({
+        'roomsJoined': currentRoomsJoined + 1,
+        'voiceSessions': currentVoiceSessions + 1,
+        'lastVoiceSession': FieldValue.serverTimestamp(),
+        'lastActive': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('❌ Error updating user room join: $e');
+    }
   }
 
-  // Stream for room members with improved error handling
+  // Generate session ID with audio context
+  String _generateSessionId() {
+    return 'audio_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  // Stream for room members with audio state
   Stream<List<RoomMember>> getRoomMembersStream(String roomId) {
     return _roomsCollection
         .doc(roomId)
@@ -175,7 +231,7 @@ class FirebaseRoomService {
         .snapshots()
         .handleError((error) {
           print('❌ Error in members stream: $error');
-          return Stream.value([]); // Return empty list on error
+          return Stream.value([]);
         })
         .map((snapshot) {
           try {
@@ -183,15 +239,25 @@ class FirebaseRoomService {
                 .map((doc) {
                   try {
                     final data = doc.data();
-                    // Ensure required fields exist
+                    // Enhanced validation with audio state
                     if (data['userId'] == null || data['username'] == null) {
                       print('⚠️ Invalid member data: $data');
                       return null;
                     }
-                    return RoomMember.fromMap(data);
+                    
+                    // Merge real-time audio state with stored data
+                    final member = RoomMember.fromMap(data);
+                    
+                    // Update with real-time audio state if available
+                    if (_userAudioStates.containsKey(roomId) && 
+                        _userAudioStates[roomId]!.containsKey(member.userId)) {
+                      final isSpeaking = _userAudioStates[roomId]![member.userId] ?? false;
+                      member.updateSpeakingStatus(isSpeaking);
+                    }
+                    
+                    return member;
                   } catch (e) {
                     print('❌ Error parsing individual member: $e');
-                    print('❌ Problematic member data: ${doc.data()}');
                     return null;
                   }
                 })
@@ -199,7 +265,7 @@ class FirebaseRoomService {
                 .cast<RoomMember>()
                 .toList();
 
-            print('📊 Loaded ${members.length} valid members');
+            print('📊 Loaded ${members.length} valid members with audio states');
             return members;
           } catch (e) {
             print('❌ Error parsing members list: $e');
@@ -217,7 +283,7 @@ class FirebaseRoomService {
         .snapshots()
         .handleError((error) {
           print('❌ Error in messages stream: $error');
-          return Stream.value([]); // Return empty list on error
+          return Stream.value([]);
         })
         .map((snapshot) {
           try {
@@ -260,10 +326,400 @@ class FirebaseRoomService {
            _activeUsersInRooms[roomId]!.isNotEmpty;
   }
 
+  // Speaking status update with audio verification
+  Future<void> updateSpeakingStatus(String roomId, String memberId, bool isSpeaking) async {
+    try {
+      print('🎤 Updating speaking status: $memberId -> $isSpeaking');
+      
+      // Update real-time audio state
+      if (_userAudioStates.containsKey(roomId)) {
+        _userAudioStates[roomId]![memberId] = isSpeaking;
+      }
+
+      // Update Firestore with enhanced audio data
+      await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .update({
+            'isSpeaking': isSpeaking,
+            'lastActive': FieldValue.serverTimestamp(),
+            'lastAudioActivity': FieldValue.serverTimestamp(),
+            'audioState.isSpeaking': isSpeaking,
+            'audioState.lastAudioUpdate': FieldValue.serverTimestamp(),
+          });
+
+      // Update room activity timestamp
+      await _roomsCollection
+          .doc(roomId)
+          .update({
+            'lastActivity': FieldValue.serverTimestamp(),
+          });
+
+      // Update user speaking time if they started speaking
+      if (isSpeaking) {
+        await _updateUserSpeakingTime(memberId);
+      }
+
+      print('✅ Speaking status updated for member: $isSpeaking');
+    } catch (e) {
+      print('❌ Error updating speaking status: $e');
+      throw Exception('Failed to update speaking status: $e');
+    }
+  }
+
+  // Track user speaking time for achievements
+  Future<void> _updateUserSpeakingTime(String userId) async {
+    try {
+      final achievementsDoc = _userAchievementsCollection.doc(userId);
+      final achievements = await getUserAchievements(userId);
+      
+      final currentSpeakingTime = (achievements['totalSpeakingTime'] as int?) ?? 0;
+      await achievementsDoc.set({
+        'totalSpeakingTime': currentSpeakingTime + 1, // Increment by 1 minute (approximate)
+        'lastSpeakingActivity': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('❌ Error updating user speaking time: $e');
+    }
+  }
+
+  // Leave room with audio state cleanup
+  Future<void> leaveRoom(String roomId, String memberId, String username) async {
+    try {
+      print('🚪 Leaving room: $roomId, user: $username ($memberId)');
+      
+      // Clean up audio state tracking
+      if (_activeUsersInRooms.containsKey(roomId)) {
+        _activeUsersInRooms[roomId]!.remove(memberId);
+      }
+      if (_userAudioStates.containsKey(roomId)) {
+        _userAudioStates[roomId]!.remove(memberId);
+      }
+
+      // Remove member from room
+      await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .doc(memberId)
+          .delete();
+
+      // Update room member count and activity
+      final membersSnapshot = await _roomsCollection
+          .doc(roomId)
+          .collection('members')
+          .get();
+      
+      await _roomsCollection
+          .doc(roomId)
+          .update({
+            'memberCount': membersSnapshot.docs.length,
+            'lastActivity': FieldValue.serverTimestamp(),
+          });
+
+      // Send leave notification
+      final leaveMessage = ChatMessage(
+        id: 'leave_${DateTime.now().millisecondsSinceEpoch}',
+        roomId: roomId,
+        userId: 'system',
+        username: 'System',
+        text: '$username left the room',
+        timestamp: DateTime.now(),
+        userRole: UserRole.system,
+        userLevel: 0,
+        messageColor: '#FF5722',
+        sessionId: 'system',
+      );
+      await sendChatMessage(roomId, leaveMessage);
+
+      // If no more active users, clear room data
+      if (_activeUsersInRooms.containsKey(roomId) && _activeUsersInRooms[roomId]!.isEmpty) {
+        await _clearInactiveRoomData(roomId);
+        _activeUsersInRooms.remove(roomId);
+        _userAudioStates.remove(roomId);
+        print('🗑️ Cleared inactive room data: $roomId');
+      }
+
+      print('✅ User $username successfully left room $roomId');
+    } catch (e) {
+      print('❌ Error leaving room: $e');
+      throw Exception('Failed to leave room: $e');
+    }
+  }
+
+  // Clear inactive room data (optimized)
+  Future<void> _clearInactiveRoomData(String roomId) async {
+    try {
+      // Only clear messages, keep room structure
+      final messagesSnapshot = await _roomsCollection
+          .doc(roomId)
+          .collection('messages')
+          .where('userRole', isNotEqualTo: 'system')
+          .get();
+
+      final batch = _firestore.batch();
+      for (final doc in messagesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      if (messagesSnapshot.docs.isNotEmpty) {
+        await batch.commit();
+        print('🗑️ Cleared ${messagesSnapshot.docs.length} user messages from room: $roomId');
+      }
+    } catch (e) {
+      print('❌ Error clearing inactive room data: $e');
+    }
+  }
+
+  // Seat management with audio state integration
+  Future<void> assignSeat(String roomId, String userId, int seatNumber) async {
+    try {
+      print('💺 Assigning seat $seatNumber to user $userId');
+      
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .update({
+            'seatNumber': seatNumber,
+            'isSpeaking': true, // Auto-unmute when taking a seat
+            'role': _roleToString(MemberRole.speaker),
+            'lastActive': FieldValue.serverTimestamp(),
+            'audioState.isSpeaking': true,
+            'audioState.isMuted': false,
+            'audioState.lastAudioUpdate': FieldValue.serverTimestamp(),
+          });
+
+      // Update real-time audio state
+      if (_userAudioStates.containsKey(roomId)) {
+        _userAudioStates[roomId]![userId] = true;
+      }
+
+      // Send seat assignment notification
+      final memberDoc = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .get();
+      
+      if (memberDoc.exists) {
+        final memberData = memberDoc.data() as Map<String, dynamic>;
+        final seatMessage = ChatMessage(
+          id: 'seat_${DateTime.now().millisecondsSinceEpoch}',
+          roomId: roomId,
+          userId: 'system',
+          username: 'System',
+          text: '${memberData['username']} joined seat $seatNumber',
+          timestamp: DateTime.now(),
+          userRole: UserRole.system,
+          userLevel: 0,
+          messageColor: '#9C27B0',
+          sessionId: 'system',
+        );
+        await sendChatMessage(roomId, seatMessage);
+      }
+
+      print('✅ Seat $seatNumber assigned to user $userId with audio enabled');
+    } catch (e) {
+      print('❌ Error assigning seat: $e');
+      throw Exception('Failed to assign seat: $e');
+    }
+  }
+
+  // Leave seat with proper audio state cleanup
+  Future<void> leaveSeat(String roomId, String userId) async {
+    try {
+      print('💺 Leaving seat for user $userId');
+      
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .update({
+            'seatNumber': FieldValue.delete(),
+            'isSpeaking': false, // Auto-mute when leaving seat
+            'role': _roleToString(MemberRole.listener),
+            'lastActive': FieldValue.serverTimestamp(),
+            'audioState.isSpeaking': false,
+            'audioState.isMuted': true,
+            'audioState.lastAudioUpdate': FieldValue.serverTimestamp(),
+          });
+
+      // Update real-time audio state
+      if (_userAudioStates.containsKey(roomId)) {
+        _userAudioStates[roomId]![userId] = false;
+      }
+
+      print('✅ User $userId left their seat with audio disabled');
+    } catch (e) {
+      print('❌ Error leaving seat: $e');
+      throw Exception('Failed to leave seat: $e');
+    }
+  }
+
+  // Switch host to speaker role when they take a seat
+  Future<void> switchHostToSpeaker(String roomId, String hostId) async {
+    try {
+      print('🔄 Switching host $hostId to speaker role');
+      
+      // Update host's role to speaker but keep host privileges
+      await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(hostId)
+          .update({
+            'role': _roleToString(MemberRole.speaker),
+            'isSpeaking': true,
+            'lastActive': FieldValue.serverTimestamp(),
+            'audioState.isSpeaking': true,
+            'audioState.isMuted': false,
+            'audioState.lastAudioUpdate': FieldValue.serverTimestamp(),
+          });
+
+      // Update real-time audio state
+      if (_userAudioStates.containsKey(roomId)) {
+        _userAudioStates[roomId]![hostId] = true;
+      }
+
+      // Send system notification
+      final switchMessage = ChatMessage(
+        id: 'switch_${DateTime.now().millisecondsSinceEpoch}',
+        roomId: roomId,
+        userId: 'system',
+        username: 'System',
+        text: 'Host joined as a speaker',
+        timestamp: DateTime.now(),
+        userRole: UserRole.system,
+        userLevel: 0,
+        messageColor: '#FF9800',
+        sessionId: 'system',
+      );
+      await sendChatMessage(roomId, switchMessage);
+
+      print('✅ Host $hostId switched to speaker role with audio enabled');
+    } catch (e) {
+      print('❌ Error switching host to speaker: $e');
+      throw Exception('Failed to switch host to speaker: $e');
+    }
+  }
+
+  // Get real-time audio state for a user
+  bool? getUserAudioState(String roomId, String userId) {
+    if (_userAudioStates.containsKey(roomId) && 
+        _userAudioStates[roomId]!.containsKey(userId)) {
+      return _userAudioStates[roomId]![userId];
+    }
+    return null;
+  }
+
+  // Get all speaking users in a room
+  List<String> getSpeakingUsers(String roomId) {
+    if (!_userAudioStates.containsKey(roomId)) return [];
+    
+    return _userAudioStates[roomId]!
+        .entries
+        .where((entry) => entry.value == true)
+        .map((entry) => entry.key)
+        .toList();
+  }
+
+  // Get active speakers count
+  int getActiveSpeakersCount(String roomId) {
+    return getSpeakingUsers(roomId).length;
+  }
+
+  // Update user microphone permission state
+  Future<void> updateMicrophonePermission(String userId, bool hasPermission) async {
+    try {
+      await _userAchievementsCollection.doc(userId).set({
+        'microphoneEnabled': hasPermission,
+        'lastPermissionCheck': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      
+      print('✅ Microphone permission updated: $hasPermission for user: $userId');
+    } catch (e) {
+      print('❌ Error updating microphone permission: $e');
+    }
+  }
+
+  // Get room audio statistics
+  Future<Map<String, dynamic>> getRoomAudioStats(String roomId) async {
+    try {
+      final speakingUsers = getSpeakingUsers(roomId);
+      final activeUsers = _activeUsersInRooms[roomId]?.length ?? 0;
+      
+      return {
+        'activeSpeakers': speakingUsers.length,
+        'totalActiveUsers': activeUsers,
+        'speakingPercentage': activeUsers > 0 ? (speakingUsers.length / activeUsers) * 100 : 0,
+        'speakingUserIds': speakingUsers,
+        'roomAudioEnabled': true,
+        'lastAudioUpdate': DateTime.now().toIso8601String(),
+      };
+    } catch (e) {
+      print('❌ Error getting room audio stats: $e');
+      return {
+        'activeSpeakers': 0,
+        'totalActiveUsers': 0,
+        'speakingPercentage': 0,
+        'speakingUserIds': [],
+        'roomAudioEnabled': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Check if seat is available with audio state consideration
+  Future<bool> isSeatAvailable(String roomId, int seatNumber) async {
+    try {
+      final seatOccupant = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .where('seatNumber', isEqualTo: seatNumber)
+          .limit(1)
+          .get();
+
+      final isAvailable = seatOccupant.docs.isEmpty;
+      print('💺 Seat $seatNumber available: $isAvailable');
+      return isAvailable;
+    } catch (e) {
+      print('❌ Error checking seat availability: $e');
+      return false;
+    }
+  }
+
+  // Get current seat with audio state
+  Future<int?> getCurrentSeat(String roomId, String userId) async {
+    try {
+      final memberDoc = await _firestore
+          .collection('voice_rooms')
+          .doc(roomId)
+          .collection('members')
+          .doc(userId)
+          .get();
+
+      if (memberDoc.exists) {
+        final data = memberDoc.data();
+        final seatNumber = data?['seatNumber'] as int?;
+        print('💺 User $userId current seat: $seatNumber');
+        return seatNumber;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting current seat: $e');
+      return null;
+    }
+  }
+
   // Send chat message
   Future<void> sendChatMessage(String roomId, ChatMessage message) async {
     try {
-      // Only allow sending messages if user is active in the room or it's a system message
+      // Enhanced validation with audio state check
       if (_isUserActiveInRoom(roomId, message.userId) || message.userRole == UserRole.system) {
         await _roomsCollection
             .doc(roomId)
@@ -271,12 +727,19 @@ class FirebaseRoomService {
             .doc(message.id)
             .set(message.toMap());
 
-        // Update user's message count if it's a user message
+        // Update user's message count and activity
         if (message.userRole == UserRole.user || message.userRole == UserRole.moderator || message.userRole == UserRole.admin) {
           await _updateUserMessageCount(message.userId);
         }
         
-        print('✅ Message sent by ${message.username}');
+        // Update room activity
+        await _roomsCollection
+            .doc(roomId)
+            .update({
+              'lastActivity': FieldValue.serverTimestamp(),
+            });
+
+        print('✅ Message sent by ${message.username} with audio context');
       } else {
         print('❌ User not active in room, message not sent');
         throw Exception('User not active in room');
@@ -303,6 +766,7 @@ class FirebaseRoomService {
       await achievementsDoc.set({
         'totalMessages': currentCount + 1,
         'lastMessageAt': FieldValue.serverTimestamp(),
+        'lastActive': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
       print('❌ Error updating user message count: $e');
@@ -388,94 +852,39 @@ class FirebaseRoomService {
         });
   }
 
-  // Switch host to speaker seat
-  Future<void> switchHostToSpeaker(String roomId, String userId) async {
+  // Check if user is room host
+  Future<bool> isRoomHost(String roomId, String userId) async {
     try {
-      final roomRef = _roomsCollection.doc(roomId);
-      
-      // Update the user's role to speaker
-      await roomRef.collection('members').doc(userId).update({
-        'role': _roleToString(MemberRole.speaker),
-        'isSpeaking': true,
-        'isHost': false,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Try to transfer host role to another member
-      await _transferHostToAnotherMember(roomId, userId);
-      
-      print('✅ Host switched to speaker successfully');
+      final doc = await _roomsCollection.doc(roomId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null && data['hostId'] != null) {
+          return data['hostId'] == userId;
+        }
+      }
+      return false;
     } catch (e) {
-      print('❌ Error switching host to speaker: $e');
-      rethrow;
+      print('❌ Error checking room host: $e');
+      return false;
     }
   }
 
-  // Transfer host role to another member
-  Future<void> _transferHostToAnotherMember(String roomId, String currentHostId) async {
+  // Update member role
+  Future<void> updateMemberRole(String roomId, String memberId, MemberRole role) async {
     try {
-      final membersSnapshot = await _firestore
-          .collection('voice_rooms')
+      await _roomsCollection
           .doc(roomId)
           .collection('members')
-          .where('userId', isNotEqualTo: currentHostId)
-          .where('role', whereIn: [_roleToString(MemberRole.moderator), _roleToString(MemberRole.speaker), _roleToString(MemberRole.listener)])
-          .orderBy('joinedAt')
-          .limit(1)
-          .get();
-      
-      if (membersSnapshot.docs.isNotEmpty) {
-        final newHost = membersSnapshot.docs.first;
-        final newHostData = newHost.data();
-        
-        await _firestore
-            .collection('voice_rooms')
-            .doc(roomId)
-            .collection('members')
-            .doc(newHost.id)
-            .update({
-              'role': _roleToString(MemberRole.admin),
-              'isHost': true,
-              'updatedAt': FieldValue.serverTimestamp(),
-            });
-
-        // Update room host ID
-        await _firestore
-            .collection('voice_rooms')
-            .doc(roomId)
-            .update({
-              'hostId': newHostData['userId'],
-            });
-
-        // Send system message about host transfer
-        final transferMessage = ChatMessage(
-          id: 'transfer_${DateTime.now().millisecondsSinceEpoch}',
-          roomId: roomId,
-          userId: 'system',
-          username: 'System',
-          text: '${newHostData['username']} is now the room host',
-          timestamp: DateTime.now(),
-          userRole: UserRole.system,
-          userLevel: 0,
-          messageColor: '#FFD700',
-          sessionId: 'system',
-        );
-        await sendChatMessage(roomId, transferMessage);
-        
-        print('✅ Host role transferred to ${newHostData['username']}');
-      } else {
-        // No other members to transfer to, room continues without host
-        await _firestore
-            .collection('voice_rooms')
-            .doc(roomId)
-            .update({
-              'hostId': null,
-            });
-        print('ℹ️ No other members to transfer host role to');
-      }
+          .doc(memberId)
+          .update({
+            'role': _roleToString(role),
+            'isHost': role == MemberRole.admin,
+            'lastActive': FieldValue.serverTimestamp(),
+          });
+      print('✅ Member role updated to: ${_roleToString(role)}');
     } catch (e) {
-      print('❌ Error transferring host role: $e');
-      // Continue without host if transfer fails
+      print('❌ Error updating member role: $e');
+      throw Exception('Failed to update member role: $e');
     }
   }
 
@@ -538,604 +947,6 @@ class FirebaseRoomService {
     }
   }
 
-  // Helper method to convert MemberRole to string
-  String _roleToString(MemberRole role) {
-    switch (role) {
-      case MemberRole.admin:
-        return 'admin';
-      case MemberRole.moderator:
-        return 'moderator';
-      case MemberRole.speaker:
-        return 'speaker';
-      case MemberRole.listener:
-        return 'listener';
-      default:
-        return 'listener';
-    }
-  }
-
-  // Helper method to convert string to MemberRole
-  MemberRole _stringToRole(String role) {
-    switch (role) {
-      case 'admin':
-        return MemberRole.admin;
-      case 'moderator':
-        return MemberRole.moderator;
-      case 'speaker':
-        return MemberRole.speaker;
-      case 'listener':
-        return MemberRole.listener;
-      default:
-        return MemberRole.listener;
-    }
-  }
-
-  // Leave room
-  Future<void> leaveRoom(String roomId, String memberId, String username) async {
-    try {
-      // Remove user from active users tracking
-      if (_activeUsersInRooms.containsKey(roomId)) {
-        _activeUsersInRooms[roomId]!.remove(memberId);
-        
-        // If no more active users, clear all messages
-        if (_activeUsersInRooms[roomId]!.isEmpty) {
-          await _clearAllRoomMessages(roomId);
-          _activeUsersInRooms.remove(roomId);
-          print('🗑️ Cleared messages and removed room from active tracking');
-        }
-      }
-
-      // Remove member from room
-      await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .delete();
-
-      // Update room member count
-      final membersSnapshot = await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .get();
-      
-      await _roomsCollection
-          .doc(roomId)
-          .update({'memberCount': membersSnapshot.docs.length});
-
-      // Send leave notification
-      final leaveMessage = ChatMessage(
-        id: 'leave_${DateTime.now().millisecondsSinceEpoch}',
-        roomId: roomId,
-        userId: 'system',
-        username: 'System',
-        text: '$username left the room',
-        timestamp: DateTime.now(),
-        userRole: UserRole.system,
-        userLevel: 0,
-        messageColor: '#FF5722',
-        sessionId: 'system',
-      );
-      await sendChatMessage(roomId, leaveMessage);
-
-      print('✅ User $username left room $roomId');
-    } catch (e) {
-      print('❌ Error leaving room: $e');
-      throw Exception('Failed to leave room: $e');
-    }
-  }
-
-  // Clear all messages in room (when room becomes empty)
-  Future<void> _clearAllRoomMessages(String roomId) async {
-    try {
-      final messagesSnapshot = await _roomsCollection
-          .doc(roomId)
-          .collection('messages')
-          .get();
-
-      final batch = _firestore.batch();
-      for (final doc in messagesSnapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-      
-      print('🗑️ Cleared all messages for room: $roomId');
-    } catch (e) {
-      print('❌ Error clearing room messages: $e');
-    }
-  }
-
-  // Update member speaking status
-  Future<void> updateSpeakingStatus(String roomId, String memberId, bool isSpeaking) async {
-    try {
-      await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .update({
-            'isSpeaking': isSpeaking,
-            'lastActive': FieldValue.serverTimestamp(),
-          });
-      print('✅ Speaking status updated for member: $isSpeaking');
-    } catch (e) {
-      print('❌ Error updating speaking status: $e');
-      throw Exception('Failed to update speaking status: $e');
-    }
-  }
-
-  // Update member role with improved error handling
-  Future<void> updateMemberRole(String roomId, String memberId, MemberRole role) async {
-    try {
-      await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .update({
-            'role': _roleToString(role),
-            'isHost': role == MemberRole.admin,
-            'lastActive': FieldValue.serverTimestamp(),
-          });
-      print('✅ Member role updated to: ${_roleToString(role)}');
-    } catch (e) {
-      print('❌ Error updating member role: $e');
-      throw Exception('Failed to update member role: $e');
-    }
-  }
-
-  // Check if user is room host
-  Future<bool> isRoomHost(String roomId, String userId) async {
-    try {
-      final doc = await _roomsCollection.doc(roomId).get();
-      if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>?;
-        if (data != null && data['hostId'] != null) {
-          return data['hostId'] == userId;
-        }
-      }
-      return false;
-    } catch (e) {
-      print('❌ Error checking room host: $e');
-      return false;
-    }
-  }
-
-  // Get current session ID
-  String? getCurrentSessionId(String roomId) {
-    return 'current';
-  }
-
-  // Get user level
-  Future<int> getUserLevel(String userId) async {
-    final achievements = await getUserAchievements(userId);
-    return (achievements['level'] as int?) ?? 1;
-  }
-
-  // Get message color based on user level and role
-  Future<String> getUserMessageColor(String userId, UserRole role) async {
-    if (role == UserRole.admin) {
-      return '#FFD700'; // Gold for admin
-    } else if (role == UserRole.moderator) {
-      return '#4CAF50'; // Green for moderator
-    }
-
-    final level = await getUserLevel(userId);
-    
-    if (level >= 10) return '#FF6B6B'; // Bright red for high level
-    if (level >= 5) return '#48DBFB'; // Bright blue for medium level
-    if (level >= 3) return '#FFA500'; // Orange for low-medium level
-    
-    return '#4A5568'; // Default gray for new users
-  }
-
-  // Get room host safely
-  Future<RoomMember?> getRoomHost(String roomId) async {
-    try {
-      final hostSnapshot = await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .where('isHost', isEqualTo: true)
-          .limit(1)
-          .get();
-      
-      if (hostSnapshot.docs.isNotEmpty) {
-        return RoomMember.fromMap(hostSnapshot.docs.first.data());
-      }
-      
-      // Fallback: get first member if no host found
-      final membersSnapshot = await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .limit(1)
-          .get();
-      
-      if (membersSnapshot.docs.isNotEmpty) {
-        return RoomMember.fromMap(membersSnapshot.docs.first.data());
-      }
-      
-      return null;
-    } catch (e) {
-      print('❌ Error getting room host: $e');
-      return null;
-    }
-  }
-
-  // Get active users count for a room
-  int getActiveUsersCount(String roomId) {
-    return _activeUsersInRooms.containsKey(roomId) ? _activeUsersInRooms[roomId]!.length : 0;
-  }
-
-  // Check if user is active in any room
-  bool isUserActive(String userId) {
-    return _activeUsersInRooms.values.any((users) => users.contains(userId));
-  }
-
-  // Force clear all messages (admin function)
-  Future<void> adminClearAllMessages(String roomId) async {
-    await _clearAllRoomMessages(roomId);
-  }
-
-  // Promote member to moderator
-  Future<void> promoteToModerator(String roomId, String memberId) async {
-    try {
-      await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .update({
-            'role': _roleToString(MemberRole.moderator),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-
-      // Send system message
-      final memberDoc = await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .get();
-      
-      if (memberDoc.exists) {
-        final memberData = memberDoc.data() as Map<String, dynamic>;
-        final promoteMessage = ChatMessage(
-          id: 'promote_${DateTime.now().millisecondsSinceEpoch}',
-          roomId: roomId,
-          userId: 'system',
-          username: 'System',
-          text: '${memberData['username']} was promoted to Moderator',
-          timestamp: DateTime.now(),
-          userRole: UserRole.system,
-          userLevel: 0,
-          messageColor: '#4CAF50',
-          sessionId: 'system',
-        );
-        await sendChatMessage(roomId, promoteMessage);
-      }
-      
-      print('✅ Member promoted to moderator');
-    } catch (e) {
-      print('❌ Error promoting to moderator: $e');
-      throw Exception('Failed to promote to moderator: $e');
-    }
-  }
-
-  // Demote member to listener
-  Future<void> demoteToListener(String roomId, String memberId) async {
-    try {
-      await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .update({
-            'role': _roleToString(MemberRole.listener),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-
-      // Send system message
-      final memberDoc = await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .get();
-      
-      if (memberDoc.exists) {
-        final memberData = memberDoc.data() as Map<String, dynamic>;
-        final demoteMessage = ChatMessage(
-          id: 'demote_${DateTime.now().millisecondsSinceEpoch}',
-          roomId: roomId,
-          userId: 'system',
-          username: 'System',
-          text: '${memberData['username']} was demoted to Listener',
-          timestamp: DateTime.now(),
-          userRole: UserRole.system,
-          userLevel: 0,
-          messageColor: '#FF9800',
-          sessionId: 'system',
-        );
-        await sendChatMessage(roomId, demoteMessage);
-      }
-      
-      print('✅ Member demoted to listener');
-    } catch (e) {
-      print('❌ Error demoting to listener: $e');
-      throw Exception('Failed to demote to listener: $e');
-    }
-  }
-
-  // Mute/unmute member
-  Future<void> toggleMemberMute(String roomId, String memberId, bool isMuted) async {
-    try {
-      await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .update({
-            'isMuted': isMuted,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-
-      // Send system message for mute actions
-      if (isMuted) {
-        final memberDoc = await _roomsCollection
-            .doc(roomId)
-            .collection('members')
-            .doc(memberId)
-            .get();
-        
-        if (memberDoc.exists) {
-          final memberData = memberDoc.data() as Map<String, dynamic>;
-          final muteMessage = ChatMessage(
-            id: 'mute_${DateTime.now().millisecondsSinceEpoch}',
-            roomId: roomId,
-            userId: 'system',
-            username: 'System',
-            text: '${memberData['username']} was muted',
-            timestamp: DateTime.now(),
-            userRole: UserRole.system,
-            userLevel: 0,
-            messageColor: '#FF5722',
-            sessionId: 'system',
-          );
-          await sendChatMessage(roomId, muteMessage);
-        }
-      }
-      
-      print('✅ Member mute status updated: $isMuted');
-    } catch (e) {
-      print('❌ Error toggling member mute: $e');
-      throw Exception('Failed to toggle member mute: $e');
-    }
-  }
-
-  // Get member by ID
-  Future<RoomMember?> getMember(String roomId, String memberId) async {
-    try {
-      final doc = await _roomsCollection
-          .doc(roomId)
-          .collection('members')
-          .doc(memberId)
-          .get();
-      
-      if (doc.exists) {
-        return RoomMember.fromMap(doc.data() as Map<String, dynamic>);
-      }
-      return null;
-    } catch (e) {
-      print('❌ Error getting member: $e');
-      return null;
-    }
-  }
-
-  // Update user achievements
-  Future<void> updateUserAchievements(String userId, Map<String, dynamic> achievements) async {
-    try {
-      await _userAchievementsCollection
-          .doc(userId)
-          .set(achievements, SetOptions(merge: true));
-      print('✅ User achievements updated');
-    } catch (e) {
-      print('❌ Error updating user achievements: $e');
-    }
-  }
-
-  // Get all active rooms (for debugging)
-  Map<String, Set<String>> getActiveRooms() {
-    return Map.from(_activeUsersInRooms);
-  }
-
-  // Clean up all rooms (for testing/debugging)
-  void cleanupAllRooms() {
-    _activeUsersInRooms.clear();
-    print('🧹 Cleaned up all room tracking');
-  }
-
-  // Clean up user from all rooms (when user logs out or app closes)
-  Future<void> cleanupUserFromAllRooms(String userId) async {
-    try {
-      for (final roomId in _activeUsersInRooms.keys) {
-        if (_activeUsersInRooms[roomId]!.contains(userId)) {
-          // Get username before removing
-          final memberDoc = await _roomsCollection
-              .doc(roomId)
-              .collection('members')
-              .doc(userId)
-              .get();
-          
-          String username = 'User';
-          if (memberDoc.exists) {
-            final data = memberDoc.data();
-            username = data?['username'] ?? 'User';
-          }
-
-          // Remove from active tracking
-          _activeUsersInRooms[roomId]!.remove(userId);
-          
-          // Remove from Firestore
-          await _roomsCollection
-              .doc(roomId)
-              .collection('members')
-              .doc(userId)
-              .delete();
-
-          // Update member count
-          final membersSnapshot = await _roomsCollection
-              .doc(roomId)
-              .collection('members')
-              .get();
-          
-          await _roomsCollection
-              .doc(roomId)
-              .update({'memberCount': membersSnapshot.docs.length});
-
-          // Send leave message
-          final leaveMessage = ChatMessage(
-            id: 'leave_${DateTime.now().millisecondsSinceEpoch}',
-            roomId: roomId,
-            userId: 'system',
-            username: 'System',
-            text: '$username left the room',
-            timestamp: DateTime.now(),
-            userRole: UserRole.system,
-            userLevel: 0,
-            messageColor: '#FF5722',
-            sessionId: 'system',
-          );
-          await sendChatMessage(roomId, leaveMessage);
-
-          print('✅ Cleaned up user $username from room $roomId');
-        }
-      }
-    } catch (e) {
-      print('❌ Error cleaning up user from rooms: $e');
-    }
-  }
-
-  // Validate room exists and is active
-  Future<bool> validateRoom(String roomId) async {
-    try {
-      final doc = await _roomsCollection.doc(roomId).get();
-      if (!doc.exists) {
-        return false;
-      }
-      
-      final data = doc.data() as Map<String, dynamic>?;
-      return data?['isActive'] == true;
-    } catch (e) {
-      print('❌ Error validating room: $e');
-      return false;
-    }
-  }
-
-  // Get room statistics
-  Future<Map<String, dynamic>> getRoomStats(String roomId) async {
-    try {
-      final roomDoc = await _roomsCollection.doc(roomId).get();
-      final membersSnapshot = await _roomsCollection.doc(roomId).collection('members').get();
-      final messagesSnapshot = await _roomsCollection.doc(roomId).collection('messages').get();
-
-      return {
-        'roomExists': roomDoc.exists,
-        'memberCount': membersSnapshot.docs.length,
-        'messageCount': messagesSnapshot.docs.length,
-        'activeUsers': getActiveUsersCount(roomId),
-        'createdAt': (roomDoc.data() as Map<String, dynamic>?)?['createdAt'],
-      };
-    } catch (e) {
-      print('❌ Error getting room stats: $e');
-      return {
-        'roomExists': false,
-        'memberCount': 0,
-        'messageCount': 0,
-        'activeUsers': 0,
-        'error': e.toString(),
-      };
-    }
-  }
-
-  // ========== SEAT MANAGEMENT METHODS ==========
-
-  // Check if a seat is available
-  Future<bool> isSeatAvailable(String roomId, int seatNumber) async {
-    try {
-      final seatOccupant = await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .where('seatNumber', isEqualTo: seatNumber)
-          .limit(1)
-          .get();
-
-      return seatOccupant.docs.isEmpty;
-    } catch (e) {
-      print('❌ Error checking seat availability: $e');
-      return false;
-    }
-  }
-
-  // Assign a seat to a user
-  Future<void> assignSeat(String roomId, String userId, int seatNumber) async {
-    try {
-      await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .doc(userId)
-          .update({
-            'seatNumber': seatNumber,
-            'isSpeaking': true,
-            'role': _roleToString(MemberRole.speaker),
-            'lastActive': FieldValue.serverTimestamp(),
-          });
-
-      print('✅ Seat $seatNumber assigned to user $userId');
-    } catch (e) {
-      print('❌ Error assigning seat: $e');
-      throw Exception('Failed to assign seat: $e');
-    }
-  }
-
-  // Leave current seat
-  Future<void> leaveSeat(String roomId, String userId) async {
-    try {
-      await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .doc(userId)
-          .update({
-            'seatNumber': FieldValue.delete(),
-            'isSpeaking': false,
-            'role': _roleToString(MemberRole.listener),
-            'lastActive': FieldValue.serverTimestamp(),
-          });
-
-      print('✅ User $userId left their seat');
-    } catch (e) {
-      print('❌ Error leaving seat: $e');
-      throw Exception('Failed to leave seat: $e');
-    }
-  }
-
-  // Get current seat of a user
-  Future<int?> getCurrentSeat(String roomId, String userId) async {
-    try {
-      final memberDoc = await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .doc(userId)
-          .get();
-
-      if (memberDoc.exists) {
-        final data = memberDoc.data();
-        return data?['seatNumber'] as int?;
-      }
-      return null;
-    } catch (e) {
-      print('❌ Error getting current seat: $e');
-      return null;
-    }
-  }
-
   // Get all occupied seats in a room
   Future<Map<int, String>> getOccupiedSeats(String roomId) async {
     try {
@@ -1163,83 +974,15 @@ class FirebaseRoomService {
     }
   }
 
-  // Force remove user from seat (admin function)
-  Future<void> forceRemoveFromSeat(String roomId, String userId) async {
-    try {
-      await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .doc(userId)
-          .update({
-            'seatNumber': FieldValue.delete(),
-            'isSpeaking': false,
-            'role': _roleToString(MemberRole.listener),
-            'lastActive': FieldValue.serverTimestamp(),
-          });
-
-      // Send system message
-      final memberDoc = await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .doc(userId)
-          .get();
-      
-      if (memberDoc.exists) {
-        final memberData = memberDoc.data() as Map<String, dynamic>;
-        final removeMessage = ChatMessage(
-          id: 'remove_seat_${DateTime.now().millisecondsSinceEpoch}',
-          roomId: roomId,
-          userId: 'system',
-          username: 'System',
-          text: '${memberData['username']} was removed from their seat',
-          timestamp: DateTime.now(),
-          userRole: UserRole.system,
-          userLevel: 0,
-          messageColor: '#FF5722',
-          sessionId: 'system',
-        );
-        await sendChatMessage(roomId, removeMessage);
-      }
-
-      print('✅ User $userId forcibly removed from seat');
-    } catch (e) {
-      print('❌ Error forcing seat removal: $e');
-      throw Exception('Failed to force remove from seat: $e');
-    }
-  }
-
-  // Get seat information for a specific seat
-  Future<RoomMember?> getSeatOccupant(String roomId, int seatNumber) async {
-    try {
-      final seatOccupant = await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .where('seatNumber', isEqualTo: seatNumber)
-          .limit(1)
-          .get();
-
-      if (seatOccupant.docs.isNotEmpty) {
-        return RoomMember.fromMap(seatOccupant.docs.first.data());
-      }
-      return null;
-    } catch (e) {
-      print('❌ Error getting seat occupant: $e');
-      return null;
-    }
-  }
-
-  // Get all available seats (1-6)
+  // Get all available seats (1-8)
   Future<List<int>> getAvailableSeats(String roomId) async {
     try {
       final occupiedSeats = await getOccupiedSeats(roomId);
-      final allSeats = List.generate(6, (index) => index + 1); // Seats 1-6
+      final allSeats = List.generate(8, (index) => index + 1); // Seats 1-8
       return allSeats.where((seat) => !occupiedSeats.containsKey(seat)).toList();
     } catch (e) {
       print('❌ Error getting available seats: $e');
-      return List.generate(6, (index) => index + 1); // Return all seats as available on error
+      return List.generate(8, (index) => index + 1);
     }
   }
 
@@ -1254,66 +997,27 @@ class FirebaseRoomService {
     }
   }
 
-  // Get user's current seat information
-  Future<Map<String, dynamic>?> getUserSeatInfo(String roomId, String userId) async {
-    try {
-      final currentSeat = await getCurrentSeat(roomId, userId);
-      if (currentSeat != null) {
-        return {
-          'seatNumber': currentSeat,
-          'hasSeat': true,
-        };
-      }
-      return {
-        'hasSeat': false,
-      };
-    } catch (e) {
-      print('❌ Error getting user seat info: $e');
-      return null;
+  // Helper method to convert MemberRole to string
+  String _roleToString(MemberRole role) {
+    switch (role) {
+      case MemberRole.admin:
+        return 'admin';
+      case MemberRole.moderator:
+        return 'moderator';
+      case MemberRole.speaker:
+        return 'speaker';
+      case MemberRole.listener:
+        return 'listener';
+      default:
+        return 'listener';
     }
   }
 
-  // Reset all seats (admin function - for room cleanup)
-  Future<void> resetAllSeats(String roomId) async {
-    try {
-      final membersWithSeats = await _firestore
-          .collection('voice_rooms')
-          .doc(roomId)
-          .collection('members')
-          .where('seatNumber', isNotEqualTo: null)
-          .get();
-
-      final batch = _firestore.batch();
-      for (final doc in membersWithSeats.docs) {
-        batch.update(doc.reference, {
-          'seatNumber': FieldValue.delete(),
-          'isSpeaking': false,
-          'role': _roleToString(MemberRole.listener),
-          'lastActive': FieldValue.serverTimestamp(),
-        });
-      }
-
-      await batch.commit();
-
-      // Send system message
-      final resetMessage = ChatMessage(
-        id: 'reset_seats_${DateTime.now().millisecondsSinceEpoch}',
-        roomId: roomId,
-        userId: 'system',
-        username: 'System',
-        text: 'All seats have been reset',
-        timestamp: DateTime.now(),
-        userRole: UserRole.system,
-        userLevel: 0,
-        messageColor: '#FF9800',
-        sessionId: 'system',
-      );
-      await sendChatMessage(roomId, resetMessage);
-
-      print('✅ All seats reset for room $roomId');
-    } catch (e) {
-      print('❌ Error resetting all seats: $e');
-      throw Exception('Failed to reset all seats: $e');
-    }
+  void dispose() {
+    print('🧹 Cleaning up Firebase Room Service...');
+    // Clear all tracking data
+    _activeUsersInRooms.clear();
+    _userAudioStates.clear();
+    print('✅ Firebase Room Service disposed');
   }
 }
