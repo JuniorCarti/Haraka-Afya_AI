@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:haraka_afya_ai/screens/auth/email_verification_screen.dart';
 import 'package:haraka_afya_ai/screens/auth/sign_in_page.dart';
+import 'package:haraka_afya_ai/screens/auth/user_type_selection_screen.dart';
 import 'package:haraka_afya_ai/screens/home_screen.dart';
 import 'package:haraka_afya_ai/screens/onboarding_screen.dart';
 
@@ -306,18 +307,41 @@ class _NameInputScreenState extends State<NameInputScreen> {
       final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       if (userCredential.user != null) {
         final user = userCredential.user!;
-        if (user.displayName == null || user.displayName!.isEmpty) {
-          await user.updateDisplayName(googleUser.displayName ?? 'User');
+        
+        // Extract first name from display name
+        String firstName = 'User';
+        if (googleUser.displayName != null && googleUser.displayName!.isNotEmpty) {
+          firstName = googleUser.displayName!.split(' ').first;
         }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        
+        // Check if this is a new user
+        if (userCredential.additionalUserInfo?.isNewUser == true) {
+          // New user - redirect to user type selection
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UserTypeSelectionScreen(
+                firstName: firstName,
+                email: googleUser.email,
+                isSocialSignUp: true,
+              ),
+            ),
+          );
+        } else {
+          // Existing user - go directly to home
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        }
       }
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in failed: $e')),
+        SnackBar(
+          content: Text('Google sign-in failed: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -326,35 +350,41 @@ class _NameInputScreenState extends State<NameInputScreen> {
     try {
       setState(() => _isLoading = true);
       
-      // Trigger Facebook login
       final LoginResult result = await _facebookAuth.login();
       
       if (result.status == LoginStatus.success) {
-        // Get the access token
         final AccessToken accessToken = result.accessToken!;
-        
-        // Create a credential from the access token
-        final OAuthCredential credential = 
-            FacebookAuthProvider.credential(accessToken.token);
-        
-        // Sign in to Firebase with the Facebook credential
-        final UserCredential userCredential = 
-            await FirebaseAuth.instance.signInWithCredential(credential);
+        final OAuthCredential credential = FacebookAuthProvider.credential(accessToken.token);
+        final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
         
         if (userCredential.user != null) {
           final user = userCredential.user!;
-          // Update display name if not set
-          if (user.displayName == null || user.displayName!.isEmpty) {
-            // Get Facebook user data
-            final userData = await _facebookAuth.getUserData();
-            final fullName = userData['name'] ?? 'User';
-            await user.updateDisplayName(fullName);
+          
+          // Get Facebook user data for name
+          final userData = await _facebookAuth.getUserData();
+          String firstName = 'User';
+          if (userData['name'] != null) {
+            firstName = userData['name'].split(' ').first;
           }
           
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
+          // Check if this is a new user
+          if (userCredential.additionalUserInfo?.isNewUser == true) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UserTypeSelectionScreen(
+                  firstName: firstName,
+                  email: userData['email'],
+                  isSocialSignUp: true,
+                ),
+              ),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()),
+            );
+          }
         }
       } else {
         setState(() => _isLoading = false);
@@ -365,7 +395,10 @@ class _NameInputScreenState extends State<NameInputScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Facebook sign-in failed: $e')),
+        SnackBar(
+          content: Text('Facebook sign-in failed: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
